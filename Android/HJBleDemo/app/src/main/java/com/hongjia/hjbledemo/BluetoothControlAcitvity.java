@@ -35,9 +35,12 @@ public class BluetoothControlAcitvity extends BaseActivity
 
     public static final String EXTRAS_DEVICE_NAME = "DEVICE_NAME";
     public static final String EXTRAS_DEVICE_ADDRESS = "DEVICE_ADDRESS";
+    // 是否支持配置
+	public static final String EXTRAS_DEVICE_IS_CONFIG = "DEVICE_IS_CONFIG";
     
     private String mDeviceName;
     private String mDeviceAddress;
+	private boolean isConfig;
     private WiseBluetoothLe mble;
     private Context context;
     private EditText sendEdit; 
@@ -65,6 +68,7 @@ public class BluetoothControlAcitvity extends BaseActivity
         final Intent intent = getIntent();
         mDeviceName = intent.getStringExtra(EXTRAS_DEVICE_NAME);
         mDeviceAddress = intent.getStringExtra(EXTRAS_DEVICE_ADDRESS);
+		isConfig = intent.getBooleanExtra(EXTRAS_DEVICE_IS_CONFIG, false);
 
 		topLeftBtn.setVisibility(View.VISIBLE);
 
@@ -73,6 +77,8 @@ public class BluetoothControlAcitvity extends BaseActivity
 			@Override
 			public void onClick(View v) {
 				final Intent intent = new Intent(BluetoothControlAcitvity.this, SetActivity.class);
+
+				intent.putExtra(SetActivity.EXTRAS_SET_IS_CONFIG, isConfig);
 
 				BluetoothControlAcitvity.this.startActivity(intent);
 			}

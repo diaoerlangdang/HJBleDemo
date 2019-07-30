@@ -175,7 +175,16 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
         mLeDeviceListAdapter.clear();
         mLeDeviceListAdapter.notifyDataSetChanged();
 
-        scanLeDevice(true);		//开始蓝牙扫描
+        if (!checkPermissions()) {
+
+            Toast.makeText(this, "请打开位置信息", Toast.LENGTH_SHORT).show();
+        }
+
+        EasyPermissions.requestPermissions(
+                this,
+                "请求位置权限",
+                RC_PERM_CODE,
+                permissionList);
     }
 
     @Override
@@ -255,6 +264,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
                             final Intent intent = new Intent(ScanBleActivity.this, BluetoothControlAcitvity.class);
                             intent.putExtra(BluetoothControlAcitvity.EXTRAS_DEVICE_NAME, device.getName());
                             intent.putExtra(BluetoothControlAcitvity.EXTRAS_DEVICE_ADDRESS, device.getAddress().toUpperCase());
+                            intent.putExtra(BluetoothControlAcitvity.EXTRAS_DEVICE_IS_CONFIG, isConfig);
 
                             ScanBleActivity.this.startActivity(intent);
                         }
@@ -303,12 +313,14 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
         public void onScanFailed(final int errorCode) {
             super.onScanFailed(errorCode);
 
+            scanLeDevice(false);
+
             if (errorCode == SCAN_FAILED_LOCATION_CLOSE){
-                Toast.makeText(ScanBleActivity.this, "Location is closed, you should open first", Toast.LENGTH_LONG).show();
+                Toast.makeText(ScanBleActivity.this, "位置已关闭，请先打开位置信息", Toast.LENGTH_LONG).show();
             }else if(errorCode == SCAN_FAILED_LOCATION_PERMISSION_FORBID){
-                Toast.makeText(ScanBleActivity.this, "You have not permission of location", Toast.LENGTH_LONG).show();
+                Toast.makeText(ScanBleActivity.this, "你没有位置权限", Toast.LENGTH_LONG).show();
             }else{
-                Toast.makeText(ScanBleActivity.this, "Other exception", Toast.LENGTH_LONG).show();
+                Toast.makeText(ScanBleActivity.this, "未知错误", Toast.LENGTH_LONG).show();
             }
 
         }
@@ -370,8 +382,6 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
     //enable = true表示蓝牙开始扫描，否则表示停止扫描
     private void scanLeDevice(final boolean enable)
     {
-        turnOnPermissions();
-
         if (enable)
         {
             mScanning = true;
@@ -396,7 +406,10 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
 
         if (Build.VERSION.SDK_INT >= 23){
             boolean hasPermission = EasyPermissions.hasPermissions(this, permissionList);
-            if (!isGpsProviderEnabled(this)){
+
+            boolean bResult = isGpsProviderEnabled(this);
+
+            if (!bResult){
                 return false;
             }
             return hasPermission;
@@ -415,16 +428,13 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
         return service.isProviderEnabled(LocationManager.GPS_PROVIDER);
     }
 
-    @AfterPermissionGranted(RC_PERM_CODE)
-    public void turnOnPermissions() {
-        if (!checkPermissions()) {
 
-            EasyPermissions.requestPermissions(
-                    this,
-                    "请求位置权限",
-                    RC_PERM_CODE,
-                    permissionList);
+    @AfterPermissionGranted(RC_PERM_CODE)
+    public void onPermissionsSuccess() {
+        if (checkPermissions()) {
+            scanLeDevice(true);
         }
+
     }
 
     @Override
@@ -445,6 +455,13 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
     @Override
     public void onRationaleDenied(int requestCode) {
 
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        EasyPermissions.onRequestPermissionsResult(requestCode, permissions, grantResults, this);
     }
 
     private class HJBleScanDevice {

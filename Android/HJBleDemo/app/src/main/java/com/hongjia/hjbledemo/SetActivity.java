@@ -1,5 +1,6 @@
 package com.hongjia.hjbledemo;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.MenuItem;
 import android.view.View;
@@ -13,6 +14,9 @@ import com.wise.wisekit.activity.BaseActivity;
 
 public class SetActivity extends BaseActivity {
 
+    // 是否支持配置
+    public static final String EXTRAS_SET_IS_CONFIG = "DEVICE_IS_CONFIG";
+
     // 选择模式
     private LinearLayout selectModeBtn;
     // 选择字符
@@ -22,6 +26,8 @@ public class SetActivity extends BaseActivity {
     private TextView modeTxt;
     // 选择字符
     private TextView charTxt;
+
+    private boolean isConfig;
 
     @Override
     protected int getPageLayoutId() {
@@ -36,6 +42,9 @@ public class SetActivity extends BaseActivity {
     @Override
     protected void initView() {
         super.initView();
+
+        final Intent intent = getIntent();
+        isConfig = intent.getBooleanExtra(EXTRAS_SET_IS_CONFIG, false);
 
         setTitle("设置");
 
@@ -71,6 +80,15 @@ public class SetActivity extends BaseActivity {
         else {
             charTxt.setText("ASCII");
         }
+
+        // 不支持配置
+        if (!isConfig) {
+            findViewById(R.id.config_layout).setVisibility(View.GONE);
+        }
+        else {
+            findViewById(R.id.config_layout).setVisibility(View.VISIBLE);
+        }
+
     }
 
     private void showSelectModePopupMenu(){
