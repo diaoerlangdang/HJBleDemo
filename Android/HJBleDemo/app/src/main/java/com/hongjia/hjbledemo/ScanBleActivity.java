@@ -11,6 +11,8 @@ import android.graphics.Color;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.text.format.Time;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -37,7 +39,10 @@ import com.wise.wisekit.activity.BaseActivity;
 import com.wise.wisekit.dialog.LoadingDialog;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
@@ -185,6 +190,8 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
                 "请求位置权限",
                 RC_PERM_CODE,
                 permissionList);
+
+        timer.schedule(timerTask,1000,2000);//延时1s，每隔2秒执行一次run方法
     }
 
     @Override
@@ -193,7 +200,30 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
         super.onPause();
         scanLeDevice(false);		//停止蓝牙扫描
         mLeDeviceListAdapter.clear();	//清空list
+        timer.cancel();
     }
+
+    Handler handler = new Handler() {
+        @Override
+        public void handleMessage(Message msg) {
+            if (msg.what == 1){
+                mLeDeviceListAdapter.sort();
+                mLeDeviceListAdapter.notifyDataSetChanged();
+            }
+            super.handleMessage(msg);
+        }
+    };
+
+    Timer timer = new Timer();
+    TimerTask timerTask = new TimerTask() {
+        @Override
+        public void run() {
+            Message message = new Message();
+            message.what = 1;
+            handler.sendMessage(message);
+        }
+    };
+
 
     // 连接蓝牙
     void connectBle(final BluetoothDevice device, final int sendDataLenMax, final boolean isConfig) {
@@ -464,7 +494,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
         EasyPermissions.onRequestPermissionsResult(requestCode, permissions, grantResults, this);
     }
 
-    private class HJBleScanDevice {
+    private class HJBleScanDevice implements Comparable<HJBleScanDevice> {
         // 蓝牙设备
         BluetoothDevice device;
         // 信号强度
@@ -477,50 +507,61 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
         boolean isConfig;
         // 最大发送数据长度
         int sendDataLenMax;
+
+        // 时间
+        Time time;
+
+        @Override
+        public int compareTo(HJBleScanDevice o) {
+
+            // 降序
+            return o.rssi - this.rssi;
+        }
     }
 
 
     // Adapter for holding devices found through scanning.
     private class LeDeviceListAdapter extends BaseAdapter
     {
-        private ArrayList<BluetoothDevice> mLeDevices;
-        private ArrayList<Time> mLeTime;
         private ArrayList<HJBleScanDevice> mScanDevices;
         private LayoutInflater mInflator;
 
         public LeDeviceListAdapter(Context context)
         {
             super();
-            mLeDevices = new ArrayList<BluetoothDevice>();
-            mLeTime = new ArrayList<Time>();
             mScanDevices = new ArrayList<>();
             mInflator = LayoutInflater.from(context);
         }
 
         public void addDevice(HJBleScanDevice scanDevice)
         {
-            if(!mLeDevices.contains(scanDevice.device))
-            {
+            boolean isAdd = true;
+
+            for (int i=0; i<mScanDevices.size(); i++) {
+                if (mScanDevices.get(i).device.getAddress().equals(scanDevice.device.getAddress())) {
+                    scanDevice.time = new Time();
+                    scanDevice.time.setToNow();
+                    mScanDevices.set(i, scanDevice);
+                    isAdd = false;
+                    break;
+                }
+            }
+
+            if (isAdd) {
+                scanDevice.time = new Time();
+                scanDevice.time.setToNow();
                 mScanDevices.add(scanDevice);
-                mLeDevices.add(scanDevice.device);
-                Time time = new Time();
-                time.setToNow();
-                mLeTime.add(time);
             }
-            else {
-                int pos = mLeDevices.indexOf(scanDevice.device);
-                mScanDevices.remove(pos);
-                mScanDevices.add(pos, scanDevice);
-                mLeTime.remove(pos);
-                Time time = new Time();
-                time.setToNow();
-                mLeTime.add(pos, time);
-            }
+
+        }
+
+        public void sort() {
+            Collections.sort(mScanDevices);
         }
 
         public BluetoothDevice getDevice(int position)
         {
-            return mLeDevices.get(position);
+            return mScanDevices.get(position).device;
         }
 
         public HJBleScanDevice getScanDeviceInfo(int position)
@@ -530,20 +571,19 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
 
 
         public void clear() {
-            mLeDevices.clear();
             mScanDevices.clear();
         }
 
         @Override
         public int getCount()
         {
-            return mLeDevices.size();
+            return mScanDevices.size();
         }
 
         @Override
         public Object getItem(int i)
         {
-            return mLeDevices.get(i);
+            return mScanDevices.get(i);
         }
 
         @Override
@@ -576,7 +616,6 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
             }
 
             HJBleScanDevice scanDevice = mScanDevices.get(i);
-            Time time = mLeTime.get(i);
             final String deviceName = scanDevice.device.getName();
             if (deviceName != null && deviceName.length() > 0)
                 viewHolder.deviceName.setText(deviceName);
@@ -585,8 +624,8 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
 
             viewHolder.deviceAddress.setText("address:"+scanDevice.device.getAddress() + "     RSSI:"+scanDevice.rssi+"dB");
             viewHolder.deviceRecord.setText("broadcast:"+scanDevice.record);
-            String timeStr = "time: " + time.year + "-" + time.month + "-" + time.monthDay + " " +
-                    time.hour + ":" + time.minute + ":" + time.second;
+            String timeStr = "time: " + scanDevice.time.year + "-" + scanDevice.time.month + "-" + scanDevice.time.monthDay + " " +
+                    scanDevice.time.hour + ":" + scanDevice.time.minute + ":" + scanDevice.time.second;
             viewHolder.deviceTime.setText(timeStr);
 
             if (!scanDevice.isEasy) {
