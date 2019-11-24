@@ -21,11 +21,15 @@ public class SetActivity extends BaseActivity {
     private LinearLayout selectModeBtn;
     // 选择字符
     private LinearLayout selectCharBtn;
+    // 选择是否添加回车
+    private LinearLayout selectAddReturnBtn;
 
     // 选择模式
     private TextView modeTxt;
     // 选择字符
     private TextView charTxt;
+    // 选择是否添加回车
+    private TextView returnTxt;
 
     private boolean isConfig;
 
@@ -50,6 +54,7 @@ public class SetActivity extends BaseActivity {
 
         modeTxt = findViewById(R.id.mode_txt);
         charTxt = findViewById(R.id.char_txt);
+        returnTxt = findViewById(R.id.return_txt);
 
         selectCharBtn = findViewById(R.id.select_char);
         selectCharBtn.setOnClickListener(new View.OnClickListener() {
@@ -67,6 +72,14 @@ public class SetActivity extends BaseActivity {
             }
         });
 
+        selectAddReturnBtn = findViewById(R.id.select_return);
+        selectAddReturnBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                showSelectReturnPopupMenu();
+            }
+        });
+
         if (HJBleApplication.shareInstance().isBleConfig()) {
             modeTxt.setText("配置模式");
         }
@@ -79,6 +92,13 @@ public class SetActivity extends BaseActivity {
         }
         else {
             charTxt.setText("ASCII");
+        }
+
+        if (HJBleApplication.shareInstance().isAddReturn()) {
+            returnTxt.setText("是");
+        }
+        else {
+            returnTxt.setText("否");
         }
 
         // 不支持配置
@@ -133,6 +153,33 @@ public class SetActivity extends BaseActivity {
                     case R.id.hex:
                         charTxt.setText("Hex");
                         HJBleApplication.shareInstance().setBleHex(true);
+                        return true;
+
+                    default:
+                        //do nothing
+                }
+
+                return false;
+            }
+        });
+        popupMenu.show();
+    }
+
+    private void showSelectReturnPopupMenu(){
+        PopupMenu popupMenu = new PopupMenu(this,selectAddReturnBtn);
+        popupMenu.inflate(R.menu.menu_select_return);
+
+        popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem menuItem) {
+                switch (menuItem.getItemId()){
+                    case R.id.yes:
+                        returnTxt.setText("是");
+                        HJBleApplication.shareInstance().setAddReturn(true);
+                        return true;
+                    case R.id.no:
+                        returnTxt.setText("否");
+                        HJBleApplication.shareInstance().setAddReturn(false);
                         return true;
 
                     default:

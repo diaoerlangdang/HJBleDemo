@@ -1,0 +1,15 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="com.android.peter.menudemo.MenuDemoActivity">
+    <item
+        android:id="@+id/yes"
+        android:orderInCategory="100"
+        android:title="是"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/no"
+        android:orderInCategory="100"
+        android:title="否"
+        app:showAsAction="never" />
+</menu>

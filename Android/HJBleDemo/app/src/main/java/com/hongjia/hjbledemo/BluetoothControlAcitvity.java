@@ -227,9 +227,18 @@ public class BluetoothControlAcitvity extends BaseActivity
 				return;
 			}
 
+			// 添加回车
+			if (HJBleApplication.shareInstance().isAddReturn()) {
+				sendString += "0D0A";
+			}
+
 			tmpBytes = ConvertData.hexStringToBytes(sendString);
 		}
 		else {
+			// 添加回车
+			if (HJBleApplication.shareInstance().isAddReturn()) {
+				sendString += "\r\n";
+			}
 			tmpBytes = ConvertData.utf8ToBytes(sendString);
 		}
 

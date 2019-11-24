@@ -53,4 +53,16 @@ public class HJBleApplication extends Application {
 
         SPUtils.put(getAppContext(), "isBleHex", bleHex);
     }
+
+    // 是否在发送数据后面自动加回车
+    public boolean isAddReturn() {
+
+        Boolean addReturn = (Boolean)SPUtils.get(getAppContext(), "isAddReturn", false);
+        return addReturn.booleanValue();
+    }
+
+    public void setAddReturn(boolean addReturn) {
+
+        SPUtils.put(getAppContext(), "isAddReturn", addReturn);
+    }
 }
