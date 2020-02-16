@@ -238,6 +238,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
                     if(mble.connectDevice(device.getAddress()))	//连接蓝牙设备
                         break;
 
+                    mble.disconnectDevice();
                     try {
                         Thread.sleep(500,0);//200ms
                     }
@@ -269,6 +270,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
                 // 打开配置通知
                 if(isConfig && !mble.openNotify(BleConfig.Ble_Config_Receive_Service))
                 {
+                    mble.disconnectDevice();
 
                     runOnUiThread(new Runnable() {
                         @Override
@@ -303,6 +305,8 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
                 }
                 else
                 {
+                    mble.disconnectDevice();
+
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
