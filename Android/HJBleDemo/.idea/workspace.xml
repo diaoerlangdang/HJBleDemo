@@ -10,8 +10,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="2b745310-d820-4f65-8e3c-672edd799a99" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/caches/build_file_checksums.ser" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/caches/build_file_checksums.ser" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/caches/gradle_models.ser" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/caches/gradle_models.ser" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/hongjia/hjbledemo/LaunchActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/hongjia/hjbledemo/LaunchActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/app/build.gradle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/release/output.json" beforeDir="false" afterPath="$PROJECT_DIR$/app/release/output.json" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -41,7 +44,7 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/app/src/main/java/com/hongjia/hjbledemo/LaunchActivity.java">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="234">
@@ -57,46 +60,21 @@
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="jar://$USER_HOME$/Library/Android/sdk/platforms/android-29/android.jar!/android/graphics/Color.class">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="3096">
-              <caret line="254" column="22" selection-start-line="254" selection-start-column="22" selection-end-line="254" selection-end-column="22" />
-            </state>
-          </provider>
+        <entry file="file://$PROJECT_DIR$/app/src/main/AndroidManifest.xml">
+          <provider selected="true" editor-type-id="text-editor" />
+          <provider editor-type-id="android-manifest" />
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/app/src/main/res/values/colors.xml">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="126">
-              <caret line="7" column="41" selection-start-line="7" selection-start-column="35" selection-end-line="7" selection-end-column="41" />
-            </state>
-          </provider>
+        <entry file="file://$PROJECT_DIR$/build.gradle">
+          <provider selected="true" editor-type-id="text-editor" />
         </entry>
       </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="jar://$USER_HOME$/Library/Android/sdk/platforms/android-29/android.jar!/android/content/res/Resources.class">
+      <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/app/build.gradle">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="2106">
-              <caret line="139" column="10" selection-start-line="139" selection-start-column="10" selection-end-line="139" selection-end-column="10" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="jar://$USER_HOME$/Library/Android/sdk/platforms/android-29/android.jar!/android/os/Build.class">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1278">
-              <caret line="81" column="32" selection-start-line="81" selection-start-column="32" selection-end-line="81" selection-end-column="32" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="jar://$APPLICATION_HOME_DIR$/gradle/gradle-5.1.1/caches/modules-2/files-2.1/com.githang/status-bar-compat/0.7/cdd1df9a800bc3fc83cb109a4390326dc626dae9/status-bar-compat-0.7-sources.jar!/com/githang/statusbar/StatusBarCompat.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1620">
-              <caret line="105" column="62" selection-start-line="105" selection-start-column="62" selection-end-line="105" selection-end-column="62" />
+            <state relative-caret-position="198">
+              <caret line="11" column="75" selection-start-line="11" selection-start-column="75" selection-end-line="11" selection-end-column="75" />
             </state>
           </provider>
         </entry>
@@ -132,6 +110,7 @@
         <option value="$PROJECT_DIR$/app/src/main/java/com/wise/ble/WiseBluetoothLe.java" />
         <option value="$PROJECT_DIR$/app/src/main/java/com/hongjia/hjbledemo/ScanBleActivity.java" />
         <option value="$PROJECT_DIR$/app/src/main/java/com/hongjia/hjbledemo/LaunchActivity.java" />
+        <option value="$PROJECT_DIR$/app/build.gradle" />
       </list>
     </option>
   </component>
@@ -147,10 +126,20 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="PackagesPane" />
+      <pane id="Scope" />
+      <pane id="ProjectPane" />
       <pane id="AndroidView">
         <subPane>
           <expand>
+            <path>
+              <item name="HJBleDemo" type="1abcf292:AndroidViewProjectNode" />
+              <item name="app" type="feadf853:AndroidModuleNode" />
+            </path>
+            <path>
+              <item name="HJBleDemo" type="1abcf292:AndroidViewProjectNode" />
+              <item name="app" type="feadf853:AndroidModuleNode" />
+              <item name="manifests" type="f94875db:AndroidManifestsGroupNode" />
+            </path>
             <path>
               <item name="HJBleDemo" type="1abcf292:AndroidViewProjectNode" />
               <item name="Gradle Scripts" type="ae0cef3a:AndroidBuildScriptsGroupNode" />
@@ -159,8 +148,7 @@
           <select />
         </subPane>
       </pane>
-      <pane id="ProjectPane" />
-      <pane id="Scope" />
+      <pane id="PackagesPane" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -388,13 +376,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/app/build.gradle">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="126">
-          <caret line="7" column="24" selection-start-line="7" selection-start-column="24" selection-end-line="7" selection-end-column="24" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/app/src/main/res/layout/men_select_return.xml" />
     <entry file="file://$PROJECT_DIR$/app/src/main/res/menu/menu_select_return.xml">
       <provider selected="true" editor-type-id="text-editor">
@@ -523,13 +504,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="jar://$USER_HOME$/Library/Android/sdk/platforms/android-29/android.jar!/android/graphics/Color.class">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="3096">
-          <caret line="254" column="22" selection-start-line="254" selection-start-column="22" selection-end-line="254" selection-end-column="22" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/app/src/main/res/values/colors.xml">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="126">
@@ -568,6 +542,27 @@
             <element signature="e#1245#1246#0" expanded="true" />
             <element signature="e#1276#1277#0" expanded="true" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://$USER_HOME$/Library/Android/sdk/platforms/android-29/android.jar!/android/graphics/Color.class">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="458">
+          <caret line="254" column="22" selection-start-line="254" selection-start-column="22" selection-end-line="254" selection-end-column="22" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/AndroidManifest.xml">
+      <provider selected="true" editor-type-id="text-editor" />
+      <provider editor-type-id="android-manifest" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/build.gradle">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/build.gradle">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="198">
+          <caret line="11" column="75" selection-start-line="11" selection-start-column="75" selection-end-line="11" selection-end-column="75" />
         </state>
       </provider>
     </entry>
