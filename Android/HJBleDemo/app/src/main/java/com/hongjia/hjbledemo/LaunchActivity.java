@@ -2,7 +2,9 @@ package com.hongjia.hjbledemo;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.graphics.Color;
 import android.graphics.PixelFormat;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.Window;
@@ -17,7 +19,7 @@ public class LaunchActivity extends Activity {
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
 
-        StatusBarCompat.setStatusBarColor(this, getResources().getColor(R.color.colorBackground, null), true);
+        StatusBarCompat.setStatusBarColor(this, Color.parseColor("#e6e6e6"), true);
 
         getWindow().setFormat(PixelFormat.RGBA_8888);
 
