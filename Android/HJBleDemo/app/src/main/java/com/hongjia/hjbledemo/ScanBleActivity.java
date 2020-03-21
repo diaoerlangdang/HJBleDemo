@@ -2,11 +2,14 @@ package com.hongjia.hjbledemo;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.location.LocationManager;
 import android.os.Build;
@@ -92,6 +95,30 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
         return R.layout.activity_scan_ble;
     }
 
+    /**
+     * 获取版本名称
+     *
+     * @param context 上下文
+     *
+     * @return 版本名称
+     */
+    public String getVersionName(Context context) {
+
+        //获取包管理器
+        PackageManager pm = context.getPackageManager();
+        //获取包信息
+        try {
+            PackageInfo packageInfo = pm.getPackageInfo(context.getPackageName(), 0);
+            //返回版本号
+            return packageInfo.versionName;
+        } catch (PackageManager.NameNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        return null;
+
+    }
+
 
     @Override
     protected void initView() {
@@ -100,7 +127,18 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
         StatusBarCompat.setStatusBarColor(this, getResources().getColor(R.color.colorNavBackground, null), false);
 
         setTitle("扫描列表");
-        topLeftBtn.setVisibility(View.GONE);
+        topLeftBtn.setImageResource(R.mipmap.info);
+        topLeftBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                AlertDialog.Builder ab=new AlertDialog.Builder(ScanBleActivity.this);  //(普通消息框)
+
+                ab.setTitle("版本信息");  //设置标题
+                ab.setMessage("V " + getVersionName(ScanBleActivity.this));//设置消息内容
+                ab.setNegativeButton("确定",null);//设置取消按钮
+                ab.show();//显示弹出框
+            }
+        });
 
         setRightText("停止扫描");
         rightTitleTxt.setOnClickListener(new View.OnClickListener() {
@@ -190,8 +228,6 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
                 "请求位置权限",
                 RC_PERM_CODE,
                 permissionList);
-
-        timer.schedule(timerTask,1000,2000);//延时1s，每隔2秒执行一次run方法
     }
 
     @Override
@@ -467,6 +503,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
     public void onPermissionsSuccess() {
         if (checkPermissions()) {
             scanLeDevice(true);
+            timer.schedule(timerTask,1000,2000);//延时1s，每隔2秒执行一次run方法
         }
 
     }
