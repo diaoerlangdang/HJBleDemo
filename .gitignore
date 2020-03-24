@@ -58,3 +58,5 @@ fastlane/screenshots
 fastlane/test_output
 fastlane/readme.md
 
+iOS/HJBleDemo/Podfile.lock
+iOS/HJBleDemo/Pods
