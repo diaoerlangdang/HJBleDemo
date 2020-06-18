@@ -17,10 +17,12 @@
 	<key>CFBundleShortVersionString</key>
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
-	<string>1</string>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>需要您的同意,才能使用蓝牙搜索设备</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
 	<string>需要您的同意,才能使用蓝牙搜索设备</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>

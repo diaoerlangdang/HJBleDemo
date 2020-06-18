@@ -319,6 +319,13 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
                     return ;
                 }
 
+                try {
+                    Thread.sleep(200,0);//200ms
+                }
+                catch (Exception e){
+
+                }
+
 
                 if(mble.openNotify(BleConfig.Ble_Data_Receive_Service))
                 {
