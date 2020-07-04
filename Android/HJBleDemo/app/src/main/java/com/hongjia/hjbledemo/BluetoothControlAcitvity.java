@@ -8,6 +8,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
+import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 import android.view.MenuItem;
@@ -15,6 +16,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -26,6 +28,8 @@ import com.wise.ble.WiseBluetoothLe;
 import com.wise.ble.WiseCharacteristic;
 import com.wise.wisekit.activity.BaseActivity;
 
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.regex.Pattern;
 
 
@@ -49,10 +53,36 @@ public class BluetoothControlAcitvity extends BaseActivity
     private Handler mHandler;  
 	private static final int MSG_DATA_CHANGE = 0x11;
 
+	// 更新速率
+	private static final int MSG_UPDATE_RATE = 0x12;
+
+	private RelativeLayout rateLayout;
+
+	// 发送字节数text view
+	private TextView sendByteCountTV;
+
+	// 发送字节数
+	private int sendByteCount = 0;
+
+	// 接收字节数text view
+	private TextView receiveByteCountTV;
+
+	// 接收字节数
+	private int receiveByteCount = 0;
+
+	// 接收速率
+	private TextView receiveRateTV;
+
+	private int recCountBySecond = 0;
+
 	// 发送服务
 	private WiseCharacteristic mSendCharact = BleConfig.Ble_Data_Send_Service;
 	// 接收服务
 	private WiseCharacteristic mReceiveCharact = BleConfig.Ble_Data_Receive_Service;
+
+	private Timer timer;
+
+	private TimerTask timerTask;
 
 
 	@Override
@@ -87,6 +117,18 @@ public class BluetoothControlAcitvity extends BaseActivity
         context = this;
 
         setButtonsState(true);
+
+		timer = new Timer();
+		timerTask = new TimerTask() {
+			@Override
+			public void run() {
+				Message message = new Message();
+				message.what = MSG_UPDATE_RATE;
+				message.arg1 = recCountBySecond;
+				recCountBySecond = 0;
+				mHandler.sendMessage(message);
+			}
+		};
         
         mble = WiseBluetoothLe.getInstance(getApplicationContext());	//获取蓝牙实例
 		mble.mBleCallBack = bleCallBack;
@@ -127,6 +169,12 @@ public class BluetoothControlAcitvity extends BaseActivity
 						scrollView.fullScroll(ScrollView.FOCUS_DOWN);
 						break;
 
+						// 更新速率
+					case MSG_UPDATE_RATE:
+						int rate = msg.arg1;
+						showRecCountBySecond(rate);
+						break;
+
 					default:
 						break;
 				}
@@ -141,6 +189,11 @@ public class BluetoothControlAcitvity extends BaseActivity
 	protected void initView() {
 		super.initView();
 
+		rateLayout = findViewById(R.id.rate_layout);
+		sendByteCountTV = findViewById(R.id.send_byte_count_tv);
+		receiveByteCountTV = findViewById(R.id.receive_byte_count_tv);
+		receiveRateTV = findViewById(R.id.receive_rate_tv);
+
 		scrollView = findViewById(R.id.scroll);
 		sendBt = findViewById(R.id.send);
 		sendEdit = findViewById(R.id.sendData);
@@ -151,6 +204,9 @@ public class BluetoothControlAcitvity extends BaseActivity
 			public void onClick(View view) {
 				LinearLayout layout = findViewById(R.id.scroll_layout);
 				layout.removeAllViews();
+
+				setReceiveByteCount(0);
+				setSendByteCount(0);
 			}
 		});
 
@@ -161,7 +217,7 @@ public class BluetoothControlAcitvity extends BaseActivity
 			{
 
 				String sendString = sendEdit.getText().toString();
-				if(sendString == null || sendString.isEmpty())
+				if(TextUtils.isEmpty(sendString))
 					return ;
 				sendEdit.setText("");
 
@@ -171,6 +227,66 @@ public class BluetoothControlAcitvity extends BaseActivity
 		});
 
 	}
+
+	private void setSendByteCount(int count) {
+		sendByteCount = count;
+		sendByteCountTV.setText(String.format("发送字节数：%d Byte", count));
+	}
+
+	private void addSendByteCount(int count) {
+		setSendByteCount(sendByteCount+count);
+	}
+
+	private void setReceiveByteCount(int count) {
+		receiveByteCount = count;
+		receiveByteCountTV.setText(String.format("接收字节数：%d Byte", count));
+	}
+
+	private void addReceiveByteCount(int count) {
+		setReceiveByteCount(receiveByteCount+count);
+	}
+
+	// 显示速率
+	private void showRecCountBySecond(int count) {
+		receiveRateTV.setText(String.format("实时速率：%d B/s", count));
+	}
+
+	// 开始定时器
+	private void startTimer(){
+		if (timer == null) {
+			timer = new Timer();
+		}
+
+		if (timerTask == null) {
+			timerTask = new TimerTask() {
+				@Override
+				public void run() {
+					Message message = new Message();
+					message.what = MSG_UPDATE_RATE;
+					message.arg1 = recCountBySecond;
+					recCountBySecond = 0;
+					mHandler.sendMessage(message);
+				}
+			};
+		}
+
+		if(timer != null && timerTask != null ) {
+			timer.schedule(timerTask, 10, 1000);
+		}
+	}
+
+	// 停止定时器
+	private void stopTimer(){
+		if (timer != null) {
+			timer.cancel();
+			timer = null;
+		}
+		if (timerTask != null) {
+			timerTask.cancel();
+			timerTask = null;
+		}
+	}
+
 
 	@Override
 	protected void onResume() {
@@ -183,6 +299,10 @@ public class BluetoothControlAcitvity extends BaseActivity
 			mReceiveCharact = BleConfig.Ble_Config_Receive_Service;
 
 			setTitle(mDeviceName+"-配置");
+
+			rateLayout.setVisibility(View.GONE);
+
+			stopTimer();
 		}
 		else {
 			// 发送服务
@@ -191,6 +311,10 @@ public class BluetoothControlAcitvity extends BaseActivity
 			mReceiveCharact = BleConfig.Ble_Data_Receive_Service;
 
 			setTitle(mDeviceName+"-数据");
+
+			rateLayout.setVisibility(View.VISIBLE);
+
+			startTimer();
 		}
 
 		if (HJBleApplication.shareInstance().isBleHex()) {
@@ -203,10 +327,16 @@ public class BluetoothControlAcitvity extends BaseActivity
 		}
 	}
 
+	@Override
+	protected void onPause() {
+		super.onPause();
+
+		stopTimer();
+	}
+
 	void setButtonsState(boolean enable)
 	{
 		sendBt.setEnabled(enable);
-
 	}
 
 	//发送数据
@@ -248,13 +378,14 @@ public class BluetoothControlAcitvity extends BaseActivity
 
 		addLogText("发送：\r\n      "+sendString,Color.BLUE, sendString.length());
 
+		if (!HJBleApplication.shareInstance().isBleConfig()) {
+			addSendByteCount(tmpBytes.length);
+		}
+
 		final byte[] bytes = tmpBytes;
 		new Thread(new Runnable() {
 			@Override
 			public void run() {
-
-				if (bytes == null)
-					return;
 
 				if(!mble.sendData(mSendCharact, bytes))
 					addLogText("发送失败！",Color.RED,0);
@@ -291,6 +422,19 @@ public class BluetoothControlAcitvity extends BaseActivity
 		public void OnReceiveData(WiseCharacteristic characteristic,  byte[] recvData) {
 
 			if (characteristic.equals(mReceiveCharact)) {
+
+				// 不是配置模式
+				if (!HJBleApplication.shareInstance().isBleConfig()) {
+					final int len = recvData.length;
+					runOnUiThread(new Runnable() {
+						@Override
+						public void run() {
+							addReceiveByteCount(len);
+							recCountBySecond += len;
+						}
+					});
+				}
+
 				String str = "";
 				if (HJBleApplication.shareInstance().isBleHex()) {
 					str = ConvertData.bytesToHexString(recvData, false);

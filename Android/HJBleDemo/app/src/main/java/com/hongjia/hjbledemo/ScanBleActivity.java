@@ -53,6 +53,9 @@ import pub.devrel.easypermissions.EasyPermissions;
 public class ScanBleActivity extends BaseActivity implements EasyPermissions.PermissionCallbacks,
         EasyPermissions.RationaleCallbacks {
 
+    // 扫描是否过滤
+    private static final boolean SCAN_FILTER = true;
+
     private static final int REQUEST_ENABLE_BT = 1;
     private static final int RC_PERM_CODE = 124;
 
@@ -412,36 +415,40 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
             boolean isConfig = false;
             int maxLen = 20;
 
-            //02010603035869
-            if(scanRecord.length >= 7 && scanRecord[0] == 0x02 && scanRecord[1] == 0x01 &&
-                    scanRecord[2] == 0x06 && scanRecord[3] == 0x03 && scanRecord[4] == 0x03 &&
-                    scanRecord[5] == 0x58 && scanRecord[6] == 0x69) {
+            // 是否扫描过滤
+            if (SCAN_FILTER) {
+
+                //02010603035869
+                if(scanRecord.length >= 7 && scanRecord[0] == 0x02 && scanRecord[1] == 0x01 &&
+                        scanRecord[2] == 0x06 && scanRecord[3] == 0x03 && scanRecord[4] == 0x03 &&
+                        scanRecord[5] == 0x58 && scanRecord[6] == 0x69) {
 
 
-                isEasy = false;
-                maxLen = 20;
-                isConfig = false;
+                    isEasy = false;
+                    maxLen = 20;
+                    isConfig = false;
+                }
+                else if(scanRecord.length >= 7 && scanRecord[0] == 0x02 && scanRecord[1] == 0x01 &&
+                        scanRecord[2] == 0x06 && scanRecord[3] == 0x09 && scanRecord[4] == 0x03 &&
+                        scanRecord[5] == 0x58 && scanRecord[6] == 0x69) {
+
+                    isEasy = false;
+                    maxLen = 160;
+                    isConfig = true;
+                }
+                else if(scanRecord.length >= 7 && scanRecord[0] == 0x02 && scanRecord[1] == 0x01 &&
+                        scanRecord[2] == 0x06 && scanRecord[3] == 0x09 && scanRecord[4] == 0x03 &&
+                        scanRecord[5] == 0x59 && scanRecord[6] == 0x69) {
+
+                    isEasy = true;
+                    maxLen = 160;
+                    isConfig = true;
+                }
+                else {
+                    return;
+                }
+
             }
-            else if(scanRecord.length >= 7 && scanRecord[0] == 0x02 && scanRecord[1] == 0x01 &&
-                    scanRecord[2] == 0x06 && scanRecord[3] == 0x09 && scanRecord[4] == 0x03 &&
-                    scanRecord[5] == 0x58 && scanRecord[6] == 0x69) {
-
-                isEasy = false;
-                maxLen = 160;
-                isConfig = true;
-            }
-            else if(scanRecord.length >= 7 && scanRecord[0] == 0x02 && scanRecord[1] == 0x01 &&
-                    scanRecord[2] == 0x06 && scanRecord[3] == 0x09 && scanRecord[4] == 0x03 &&
-                    scanRecord[5] == 0x59 && scanRecord[6] == 0x69) {
-
-                isEasy = true;
-                maxLen = 160;
-                isConfig = true;
-            }
-            else {
-                return;
-            }
-
 
             Log.d(TAG, ConvertData.bytesToHexString(scanRecord, false));
             HJBleScanDevice scanDevice = new HJBleScanDevice();

@@ -75,11 +75,8 @@ public class BluetoothLe
      */
 	public boolean isOpened()
 	{
-		if(!mBluetoothAdapter.isEnabled())
-			return false;
-		
-		return true;
-	}
+        return mBluetoothAdapter.isEnabled();
+    }
 
     /**
      * 设置扫描回调函数

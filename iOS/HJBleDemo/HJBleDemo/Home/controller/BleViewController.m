@@ -11,6 +11,9 @@
 #import <Toast/Toast.h>
 #import "SetViewController.h"
 #import "HJConfigInfo.h"
+ 
+// header view 高度
+#define HEADER_VIEW_HEIGHT 30.f
 
 @interface BleViewController ()<WWBluetoothLEConnectDelegate>
 
@@ -24,6 +27,27 @@
 
 @property (nonatomic, assign) BOOL isShowHex;
 
+@property (nonatomic, strong) UIView *headerView;
+
+// 发送字节数
+@property (nonatomic, strong) UILabel *sendByteCountLabel;
+
+@property (nonatomic, assign) NSInteger sendByteCount;
+
+// 接收字节数
+@property (nonatomic, strong) UILabel *receiveByteCountLabel;
+
+@property (nonatomic, assign) NSInteger receiveByteCount;
+
+// 接收速率
+@property (nonatomic, strong) UILabel *receiveRateLabel;
+
+// 每秒钟接收的字节数
+@property (nonatomic, assign) NSInteger recCountBySecond;
+
+// 定时器
+@property (nonatomic, strong) NSTimer *timer;
+
 @end
 
 @implementation BleViewController
@@ -32,6 +56,10 @@
     [super viewDidLoad];
     // Do any additional setup after loading the view.
     self.view.backgroundColor = [UIColor whiteColor];
+    
+    _sendByteCount = 0;
+    _receiveByteCount = 0;
+    _recCountBySecond = 0;
     
     _peripheral = _scanData.peripheral;
     if (!_scanData.isConfig) {
@@ -51,14 +79,17 @@
     [self.view addSubview:_chatToolBar];
     self.isShowHex = true;
     
+    [self setupHeaderView];
+    
     [self.tableView mas_remakeConstraints:^(MASConstraintMaker *make) {
         if (@available(iOS 11.0, *)) {
             make.left.equalTo(self.view.mas_safeAreaLayoutGuideLeft);
             make.right.equalTo(self.view.mas_safeAreaLayoutGuideRight);
-            make.top.equalTo(self.view.mas_safeAreaLayoutGuideTop);
+            make.top.equalTo(_headerView.mas_bottom);
             make.bottom.equalTo(self.view).offset(-5-chatToolBarHeight);
         } else {
-            make.left.right.top.equalTo(self.view);
+            make.left.right.equalTo(self.view);
+            make.top.equalTo(_headerView.mas_bottom);
             make.bottom.equalTo(self.view).offset(-5-chatToolBarHeight);
         }
     }];
@@ -72,6 +103,17 @@
     _ble.managerDelegate = self;
     _ble.bleDelegate = self;
     _ble.connectDelegate = self;
+    
+    _timer = [NSTimer timerWithTimeInterval:1
+                                             target:self
+                                           selector:@selector(computeRate)
+                                           userInfo:nil
+                                            repeats:YES];
+    [[NSRunLoop currentRunLoop] addTimer:_timer forMode:NSRunLoopCommonModes];
+    
+    // 定时器停止
+    [_timer setFireDate:[NSDate distantFuture]];
+    
 }
 
 - (void)viewWillAppear:(BOOL)animated
@@ -80,9 +122,20 @@
     
     if ([HJConfigInfo shareInstance].isBleConfig) {
         self.navigationItem.title = [NSString stringWithFormat:@"%@-配置",_peripheral.name];
+        _headerView.height = CGFLOAT_MIN;
+        _headerView.hidden = true;
+        
+        // 定时器停止
+        [_timer setFireDate:[NSDate distantFuture]];
     }
     else {
         self.navigationItem.title = [NSString stringWithFormat:@"%@-数据",_peripheral.name];
+        
+        _headerView.height = HEADER_VIEW_HEIGHT;
+        _headerView.hidden = false;
+        
+        //启动定时器
+        [_timer setFireDate:[NSDate distantPast]];
     }
     
     [self.view endEditing:true];
@@ -93,6 +146,83 @@
 - (void)viewWillDisappear:(BOOL)animated
 {
     [super viewWillDisappear:animated];
+    
+    // 定时器停止
+    [_timer setFireDate:[NSDate distantFuture]];
+}
+
+// 计算速率
+- (void)computeRate
+{
+    NSInteger tmp = _recCountBySecond;
+    _recCountBySecond = 0;
+    
+    [self showRecCountBySecond: tmp];
+}
+
+- (void)setupHeaderView
+{
+    _headerView = [UIView new];
+    [self.view addSubview:_headerView];
+    [_headerView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.right.top.equalTo(self.view);
+        make.height.equalTo(@(HEADER_VIEW_HEIGHT));
+    }];
+    
+    _sendByteCountLabel = [UILabel labelWithTextColor:WW_COLOR_HexRGB(0x333333) font:WW_Font(9)];
+    [_headerView addSubview:_sendByteCountLabel];
+    [_sendByteCountLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.centerY.equalTo(_headerView);
+        make.left.equalTo(_headerView).offset(10);
+    }];
+    
+    [self setSendByteCount:0];
+    
+    _receiveRateLabel = [UILabel labelWithTextColor:WW_COLOR_HexRGB(0x333333) font:WW_Font(9)];
+    [_headerView addSubview:_receiveRateLabel];
+    [_receiveRateLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.center.equalTo(_headerView);
+    }];
+    
+    [self showRecCountBySecond:0];
+    
+    _receiveByteCountLabel = [UILabel labelWithTextColor:WW_COLOR_HexRGB(0x333333) font:WW_Font(9)];
+    [_headerView addSubview:_receiveByteCountLabel];
+    [_receiveByteCountLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.centerY.equalTo(_headerView);
+        make.right.equalTo(_headerView).offset(-10);
+    }];
+    
+    [self setReceiveByteCount:0];
+    
+}
+
+- (void)setSendByteCount:(NSInteger)count
+{
+    _sendByteCount = count;
+    _sendByteCountLabel.text = [NSString stringWithFormat:@"发送字节：%ld Byte", (long)count];
+}
+
+- (void)addSendByteCount:(NSInteger)count
+{
+    [self setSendByteCount:_sendByteCount+count];
+}
+
+
+- (void)setReceiveByteCount:(NSInteger)count
+{
+    _receiveByteCount = count;
+    _receiveByteCountLabel.text = [NSString stringWithFormat:@"接收字节：%ld Byte", (long)count];
+}
+
+- (void)addReceiveByteCount:(NSInteger)count
+{
+    [self setReceiveByteCount:_receiveByteCount+count];
+}
+
+- (void)showRecCountBySecond:(NSInteger)recCountBySecond
+{
+    _receiveRateLabel.text = [NSString stringWithFormat:@"实时速率：%ld B/s", (long)recCountBySecond];
 }
 
 // 返回
@@ -105,7 +235,10 @@
 // 清除数据
 -(void)clearData
 {
-    _tableData  = [NSMutableArray array];
+    [_tableData removeAllObjects];
+    
+    [self setReceiveByteCount:0];
+    [self setSendByteCount:0];
     
     [self.tableView reloadData];
 }
@@ -228,6 +361,12 @@
         sendData = [NSData unicodeToUtf8:tempText];
     }
     
+    
+    // 数据模式下统计
+    if (![HJConfigInfo shareInstance].isBleConfig) {
+        [self addSendByteCount:sendData.length];
+    }
+    
     bResult = [_ble send:_peripheral characteristic:chart value:sendData];
     
     if (bResult) {
@@ -345,6 +484,12 @@
         return;
     }
     
+    // 数据模式下统计
+    if (![HJConfigInfo shareInstance].isBleConfig) {
+        [self addReceiveByteCount:data.length];
+        _recCountBySecond += data.length;
+    }
+    
     NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
     NSDate* now = [NSDate date];
     NSDateFormatter* fmt = [[NSDateFormatter alloc] init];
@@ -365,9 +510,16 @@
     [_tableData addObject:[BleSendReceiveData BleSendReceiveDataWithDictionary:dict]];
     [self.tableView reloadData];
     
+    [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(delayScrollToBottom) object:nil];
+    
+    [self performSelector:@selector(delayScrollToBottom) withObject:nil afterDelay:0.2];
+}
+
+// 延迟滑动到底部，避免卡顿
+- (void)delayScrollToBottom
+{
     NSIndexPath *indexPath = [NSIndexPath indexPathForRow:_tableData.count-1 inSection:0];
     [self.tableView scrollToRowAtIndexPath:indexPath atScrollPosition:UITableViewScrollPositionTop animated:YES];
-
 }
 
 

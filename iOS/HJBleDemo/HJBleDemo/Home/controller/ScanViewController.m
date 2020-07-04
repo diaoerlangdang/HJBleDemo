@@ -313,14 +313,16 @@
         if ([[NSString hexToString:serviceUUID1.data space:false] isEqualToString:@"6958"]) {
             isEasy = false;
             
-            mac = [NSString stringWithFormat:@"%@ %@ %@", [NSString hexToString:[self reversalData:arr[1].data] space:true], [NSString hexToString:[self reversalData:arr[2].data] space:true], [NSString hexToString:[self reversalData:arr[3].data] space:true]];
+            mac = [NSString stringWithFormat:@"%@%@%@", [NSString hexToString:[self reversalData:arr[1].data] space:true], [NSString hexToString:[self reversalData:arr[2].data] space:true], [NSString hexToString:[self reversalData:arr[3].data] space:true]];
+            mac = [mac stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
             mac = [mac stringByReplacingOccurrencesOfString:@" " withString:@":"].uppercaseString;
         }
         // 支持简易模式
         else if ([[NSString hexToString:serviceUUID1.data space:false] isEqualToString:@"6959"]) {
             isEasy = true;
             
-            mac = [NSString stringWithFormat:@"%@ %@ %@", [NSString hexToString:[self reversalData:arr[1].data] space:true], [NSString hexToString:[self reversalData:arr[2].data] space:true], [NSString hexToString:[self reversalData:arr[3].data] space:true]];
+            mac = [NSString stringWithFormat:@"%@%@%@", [NSString hexToString:[self reversalData:arr[1].data] space:true], [NSString hexToString:[self reversalData:arr[2].data] space:true], [NSString hexToString:[self reversalData:arr[3].data] space:true]];
+            mac = [mac stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
             mac = [mac stringByReplacingOccurrencesOfString:@" " withString:@":"].uppercaseString;
         }
         else {

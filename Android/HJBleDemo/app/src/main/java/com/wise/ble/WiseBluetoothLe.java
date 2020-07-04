@@ -416,6 +416,8 @@ public class WiseBluetoothLe extends BluetoothLe
 				mBleState = WISE_BLE_DISCONNECTED;
 				if(mBleCallBack != null)
 					mBleCallBack.OnWiseBluetoothState(mBleState);
+
+				gatt.close();
 				
 				Log.d(TAG, "Disconnected from GATT server "+mBleState);
 			}
@@ -515,133 +517,119 @@ public class WiseBluetoothLe extends BluetoothLe
 			}
 		}
 	};
-    
-	private class WaitEvent
-	{
-		public final static int ERROR_FAILED = 3;
-		public final static int ERROR_TIME_OUT = 2;
-		public final static int Waitting = 1;
-		public final static int SUCCESS = 0;
-		
+
+	private static class WaitEvent {
+		final static int ERROR_FAILED = 3;
+		final static int ERROR_TIME_OUT = 2;
+		final static int Waitting = 1;
+		final static int SUCCESS = 0;
+
 		private Object mSignal;
 		private boolean mFlag;
-		private int mResult;		
-	    
-	    private MyThread myThread;
+		private int mResult;
 
-		public WaitEvent()
-		{
+		private MyThread myThread;
+
+		WaitEvent() {
 			mSignal = new Object();
 			mFlag = true;
 			mResult = SUCCESS;
 		}
-		public void Init()
-		{
+
+		void Init() {
 			mFlag = true;
 			mResult = SUCCESS;
 			Log.d(TAG, "Init Event");
 		}
-		public int waitSignal(int millis)
-		{
-			myThread = new MyThread();
-			myThread.startThread(millis);
-			if(!mFlag)
+
+		int waitSignal(int millis) {
+			if (!mFlag)
 				return mResult;
 
-			mResult = Waitting;
-			
-			synchronized (mSignal)
-			{
-				try
-				{
-					Log.d(TAG, "waitSignal ");	
+			myThread = new MyThread();
+			myThread.startThread(millis);
+
+			synchronized (mSignal) {
+				try {
+					if (!mFlag) {
+						return mResult;
+					}
+
+					mResult = Waitting;
+					Log.d(TAG, "waitSignal ");
 					mSignal.wait();
 					Log.d(TAG, "waitSignal over");
-				}
-				catch (InterruptedException e)
-				{
+				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
 			}
-			
+
 			return mResult;
 		}
-		
-		public void setSignal(int result)
-		{
-			synchronized (mSignal)
-			{
-				Log.d(TAG, "setSignal");
-				mFlag = false;
+
+		void setSignal(int result) {
+			synchronized (mSignal) {
+				Log.d(TAG, "setSignal " + result );
 				mResult = result;
-				if(myThread != null)
+				mFlag = false;
+				if (myThread != null)
 					myThread.stopThread();
 				mSignal.notify();
 			}
 		}
 
 		//获取等待状态
-		public int getWaitStatus()
-		{
+		int getWaitStatus() {
 			return mResult;
 		}
 
-		
-		private void waitTimeOut()
-		{
+
+		private void waitTimeOut() {
 			Log.d(TAG, "waitTimeOut");
 			setSignal(ERROR_TIME_OUT);
 		}
-		
-		class MyThread extends Thread
-		{
+
+		class MyThread extends Thread {
 			boolean mThreadAlive = false;
 			int mCount = 0;
 			int mTotal = 0;
-			public void startThread(int millis)
-			{
-				mTotal = millis/10;
+
+			void startThread(int millis) {
+				mTotal = millis / 10;
 				mCount = 0;
 				mThreadAlive = true;
 				start();
 				Log.d(TAG, "runable start");
 			}
-			
-			public void stopThread()
-			{
+
+			void stopThread() {
 				Log.d(TAG, "runable stop");
 				mThreadAlive = false;
 			}
-			
+
 			@Override
-			public void run()
-			{
-				while(true)
-				{
+			public void run() {
+				while (true) {
 					//Log.d(TAG, "Thread Running");
-					try
-					{
+					try {
 						mCount++;
 						Thread.sleep(10);
-						
-						if(!mThreadAlive)
-						{
-							return ;
+
+						if (!mThreadAlive) {
+							return;
 						}
-						
-						if(mCount > mTotal)		//超时
+
+						if (mCount > mTotal)        //超时
 						{
 							waitTimeOut();
-							return ;
+							return;
 						}
-					}
-					catch (InterruptedException e)
-					{
+					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
 				}
 			}
-			
+
 		}
 	}
 	
