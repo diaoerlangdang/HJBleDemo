@@ -76,6 +76,9 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
 
     private BluetoothScanManager scanManager;
 
+    private Timer timer = new Timer();
+    private TimerTask timerTask;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -231,6 +234,41 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
                 "请求位置权限",
                 RC_PERM_CODE,
                 permissionList);
+
+        startTimer();
+    }
+
+    private void startTimer() {
+        if (timer == null) {
+            timer = new Timer();
+        }
+
+        if (timerTask == null) {
+            timerTask = new TimerTask() {
+                @Override
+                public void run() {
+                    Message message = new Message();
+                    message.what = 1;
+                    handler.sendMessage(message);
+                }
+            };
+        }
+
+        if (timer != null) {
+            timer.schedule(timerTask,1000,2000);//延时1s，每隔2秒执行一次run方法
+        }
+    }
+
+    private  void stopTimer() {
+        if (timer != null) {
+            timer.cancel();
+            timer = null;
+        }
+
+        if (timerTask != null) {
+            timerTask.cancel();
+            timerTask = null;
+        }
     }
 
     @Override
@@ -239,7 +277,8 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
         super.onPause();
         scanLeDevice(false);		//停止蓝牙扫描
         mLeDeviceListAdapter.clear();	//清空list
-        timer.cancel();
+
+        stopTimer();
     }
 
     Handler handler = new Handler() {
@@ -250,16 +289,6 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
                 mLeDeviceListAdapter.notifyDataSetChanged();
             }
             super.handleMessage(msg);
-        }
-    };
-
-    Timer timer = new Timer();
-    TimerTask timerTask = new TimerTask() {
-        @Override
-        public void run() {
-            Message message = new Message();
-            message.what = 1;
-            handler.sendMessage(message);
         }
     };
 
@@ -374,7 +403,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
     protected void onActivityResult(int requestCode, int resultCode, Intent data)
     {
         //打开蓝牙结果
-        if(resultCode == REQUEST_ENABLE_BT && resultCode == Activity.RESULT_CANCELED)
+        if(requestCode == REQUEST_ENABLE_BT && resultCode == Activity.RESULT_CANCELED)
         {
             finish();
             return ;
@@ -517,7 +546,6 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
     public void onPermissionsSuccess() {
         if (checkPermissions()) {
             scanLeDevice(true);
-            timer.schedule(timerTask,1000,2000);//延时1s，每隔2秒执行一次run方法
         }
 
     }
