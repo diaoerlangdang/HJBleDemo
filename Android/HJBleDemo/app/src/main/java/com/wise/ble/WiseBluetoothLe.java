@@ -15,9 +15,9 @@ import android.util.Log;
  * @说明： 蓝牙通信类
  *
  * @作者: 吴睿智
- * 
+ *
  * @创建时间：2014-9-10
- * 
+ *
  * @修改时间:
  */
 
@@ -27,34 +27,40 @@ public class WiseBluetoothLe extends BluetoothLe
 
 	// 蓝牙状态
 	public final static int WISE_BLE_CONNECTED = 1;			//蓝牙已连接
-    public final static int WISE_BLE_DISCONNECTED = 3;		//蓝牙断开
-	
+	public final static int WISE_BLE_DISCONNECTED = 3;		//蓝牙断开
+
 //    public final static UUID UUID_WISE_SERVICE = UUID.fromString("0000fff0-0000-1000-8000-00805f9b34fb");
 //
 //    public final static UUID UUID_WISE_DATA_RECEIVE = UUID.fromString("0000fff1-0000-1000-8000-00805f9b34fb");
 //    public final static UUID UUID_WISE_DATA_SEND = UUID.fromString("0000fff2-0000-1000-8000-00805f9b34fb");
-    
-    public final static int RECV_TIME_OUT_SHORT	= 2000;		//短的接收超时，ms
-    public final static int RECV_TIME_OUT_MIDDLE = 5000;	//中长的接收超时，ms
-    public final static int RECV_TIME_OUT_LONG	= 10000;	//长的接收超时，ms
-    
-    public final static int DEFALUT_BLE_SEND_DATA_LEN_MAX = 20;
-	
-	
-    private WaitEvent connectEvent = new WaitEvent();
-    
-    private WaitEvent stateEvent = new WaitEvent();
-    
-    private WaitEvent sendEvent = new WaitEvent();
+
+	public final static int RECV_TIME_OUT_SHORT	= 2000;		//短的接收超时，ms
+	public final static int RECV_TIME_OUT_MIDDLE = 5000;	//中长的接收超时，ms
+	public final static int RECV_TIME_OUT_LONG	= 10000;	//长的接收超时，ms
+
+	public final static int DEFALUT_BLE_SEND_DATA_LEN_MAX = 20;
+
+
+	private WaitEvent connectEvent = new WaitEvent();
+
+	private WaitEvent stateEvent = new WaitEvent();
+
+	private WaitEvent readEvent = new WaitEvent();
+
+	private WaitEvent sendEvent = new WaitEvent();
 
 	private WaitEvent recvEvent = new WaitEvent();
 
+	private WaitEvent mtuEvent = new WaitEvent();
+
 	private ByteArrayOutputStream recvBuffer = new ByteArrayOutputStream();
 
-    private int mBleState = WISE_BLE_DISCONNECTED;
+	private byte[] readDataInfo;
+
+	private int mBleState = WISE_BLE_DISCONNECTED;
 
 	private static WiseBluetoothLe mble = null;
-	
+
 	public OnWiseBluetoothCallBack mBleCallBack = null;
 
 	private OnWiseBluetoothManagerData mManagerData = null;
@@ -67,7 +73,7 @@ public class WiseBluetoothLe extends BluetoothLe
 
 	//每包发送的最大包数
 	private int sendDataLenMax = DEFALUT_BLE_SEND_DATA_LEN_MAX;
-	
+
 	public interface OnWiseBluetoothCallBack
 	{
 		/**
@@ -108,39 +114,62 @@ public class WiseBluetoothLe extends BluetoothLe
 		 */
 		byte[] OnPreReceive(WiseCharacteristic characteristic, byte[] data);
 	}
-	
+
 	private WiseBluetoothLe(Context context)
 	{
 		super(context);
 	}
-	
-    /**
-     * 获取WiseBluetooth类实例
-     *
-     * @param context context
-     *
-     * @return WiseBluetoothLe，当WiseBluetooth未实例化过，且context为null时，返回null
-     * 		       当WiseBluetooth已实例化过，无论context是否为null，皆返回WiseBluetooth类的实例
-     * 
-     */
+
+	/**
+	 * 获取WiseBluetooth类实例
+	 *
+	 * @param context context
+	 *
+	 * @return WiseBluetoothLe，当WiseBluetooth未实例化过，且context为null时，返回null
+	 * 		       当WiseBluetooth已实例化过，无论context是否为null，皆返回WiseBluetooth类的实例
+	 *
+	 */
 	public static synchronized WiseBluetoothLe getInstance(Context context)
 	{
-        if (mble == null)
-        {  
-        	if(context == null)
-        		return null;
+		if (mble == null)
+		{
+			if(context == null)
+				return null;
 
 			mble = new WiseBluetoothLe(context);
-        }
-        return mble;
-    }
+		}
+		return mble;
+	}
 
 	public int getSendDataLenMax() {
 		return sendDataLenMax;
 	}
 
-	public void setSendDataLenMax(int sendDataLenMax) {
-		this.sendDataLenMax = sendDataLenMax;
+	/**
+	 * 设置发送数据一包长度
+	 * @param sendDataLenMax 发送数据一包长度
+	 * @return 失败false，成功true，成功后，需调用getSendDataLenMax函数，来获取真实的一包长度，可能小于设置的长度
+	 */
+	public boolean setSendDataLenMax(int sendDataLenMax) {
+
+		// 大于20时，在回调中设置发送数据长度
+		if (sendDataLenMax > 20) {
+			mtuEvent.Init();
+			// ATT的Opcode占1个Byte、ATT的Handle占2个Byte
+			if (!mBluetoothGatt.requestMtu(sendDataLenMax + 3)) {
+				return false;
+			}
+
+			int result = mtuEvent.waitSignal(RECV_TIME_OUT_SHORT);
+			if(WaitEvent.SUCCESS != result) {
+				return false;
+			}
+		}
+		else {
+			this.sendDataLenMax = sendDataLenMax;
+		}
+
+		return true;
 	}
 
 	/**
@@ -176,21 +205,21 @@ public class WiseBluetoothLe extends BluetoothLe
 	}
 
 
-    /**
-     * 连接远端蓝牙设备
-     *
-     * @param address 远端蓝牙mac地址
-     * @param bleCallBack 蓝牙回调函数，当蓝牙非主动断开时，调用
-     *
-     * @return 连接成功返回true，否则返回false
-     * 
-     */
+	/**
+	 * 连接远端蓝牙设备
+	 *
+	 * @param address 远端蓝牙mac地址
+	 * @param bleCallBack 蓝牙回调函数，当蓝牙非主动断开时，调用
+	 *
+	 * @return 连接成功返回true，否则返回false
+	 *
+	 */
 	public boolean connectDevice(String address, OnWiseBluetoothCallBack bleCallBack)
 	{
 		mBleCallBack = bleCallBack;
-		
+
 		connectEvent.Init();
-		
+
 		if(!super.connectDevice(address, mGattCallback))
 			return false;
 
@@ -202,7 +231,7 @@ public class WiseBluetoothLe extends BluetoothLe
 			disconnectDevice();
 			return false;
 		}
-		
+
 		return true;
 	}
 
@@ -220,27 +249,27 @@ public class WiseBluetoothLe extends BluetoothLe
 		super.disconnectDevice();
 	}
 
-	
-    /**
-     * 是否已连接
-     *
-     * @return 已连接返回true，否则返回false
-     * 
-     */
+
+	/**
+	 * 是否已连接
+	 *
+	 * @return 已连接返回true，否则返回false
+	 *
+	 */
 	public boolean isConnect()
 	{
 		return (mBleState == WISE_BLE_CONNECTED);
 	}
-	
-	
-    /**
-     * 打开通知
-     *
-     * @param charact 需要打开通知的服务
-     *
-     * @return 成功true，否则返回false
-     * 
-     */
+
+
+	/**
+	 * 打开通知
+	 *
+	 * @param charact 需要打开通知的服务
+	 *
+	 * @return 成功true，否则返回false
+	 *
+	 */
 	public boolean openNotify(WiseCharacteristic charact)
 	{
 		if(mBluetoothGatt == null)
@@ -251,15 +280,48 @@ public class WiseBluetoothLe extends BluetoothLe
 		if (characteristic == null) {
 			return false;
 		}
-		
-		stateEvent.Init();					
+
+		stateEvent.Init();
 		if(!setCharacteristicNotification(characteristic, true))
 			return false;
-		
+
 		if(WaitEvent.SUCCESS != stateEvent.waitSignal(RECV_TIME_OUT_MIDDLE))
 			return false;
-		
+
 		return true;
+	}
+
+	/**
+	 * 读取服务数据
+	 *
+	 * @param charact 需要读取服务
+	 *
+	 * @return 成功true，否则返回false
+	 *
+	 */
+	public byte[] readData(WiseCharacteristic charact)
+	{
+		if(mBluetoothGatt == null)
+			return null;
+
+		BluetoothGattCharacteristic characteristic = getBleCharacteristic(charact);
+
+		if (characteristic == null) {
+			return null;
+		}
+
+		readDataInfo = null;
+
+		readEvent.Init();
+
+		if(!mBluetoothGatt.readCharacteristic(characteristic))
+			return null;
+
+		if(WaitEvent.SUCCESS != readEvent.waitSignal(RECV_TIME_OUT_MIDDLE))
+			return null;
+
+
+		return readDataInfo;
 	}
 
 
@@ -294,7 +356,7 @@ public class WiseBluetoothLe extends BluetoothLe
 		int nCount = (sendTmp.length + MaxLen - 1) / MaxLen;
 
 		byte[] temp;
-		for (int i = 0; i < nCount; i++) 
+		for (int i = 0; i < nCount; i++)
 		{
 			sendEvent.Init();
 
@@ -306,8 +368,8 @@ public class WiseBluetoothLe extends BluetoothLe
 			{
 				temp = new byte[sendTmp.length-MaxLen*i];
 			}
-			
-			for (int j = 0; j < temp.length; j++) 
+
+			for (int j = 0; j < temp.length; j++)
 			{
 				temp[j] = sendTmp[i*(MaxLen)+j];
 			}
@@ -315,11 +377,11 @@ public class WiseBluetoothLe extends BluetoothLe
 			characteristic.setValue(temp);
 			if(!mBluetoothGatt.writeCharacteristic(characteristic))
 				return false;
-			
+
 			if(WaitEvent.SUCCESS != sendEvent.waitSignal(RECV_TIME_OUT_MIDDLE))
 				return false;
 		}
-		
+
 		return true;
 	}
 
@@ -376,7 +438,7 @@ public class WiseBluetoothLe extends BluetoothLe
 	 *
 	 * @return 蓝牙可使用的特征
 	 */
-	private BluetoothGattCharacteristic getBleCharacteristic(WiseCharacteristic charact) {
+	public BluetoothGattCharacteristic getBleCharacteristic(WiseCharacteristic charact) {
 
 		if (!charact.isHaveValue()) return null;
 
@@ -403,7 +465,7 @@ public class WiseBluetoothLe extends BluetoothLe
 	{
 		@Override
 		public void onConnectionStateChange(BluetoothGatt gatt, int status,
-				int newState)
+											int newState)
 		{
 			// String intentAction;
 			if (newState == BluetoothProfile.STATE_CONNECTED)
@@ -418,7 +480,7 @@ public class WiseBluetoothLe extends BluetoothLe
 					mBleCallBack.OnWiseBluetoothState(mBleState);
 
 				gatt.close();
-				
+
 				Log.d(TAG, "Disconnected from GATT server "+mBleState);
 			}
 		}
@@ -434,8 +496,10 @@ public class WiseBluetoothLe extends BluetoothLe
 
 		@Override
 		public void onCharacteristicRead(BluetoothGatt gatt,
-				BluetoothGattCharacteristic characteristic, int status)
+										 BluetoothGattCharacteristic characteristic, int status)
 		{
+			int result = (status == BluetoothGatt.GATT_SUCCESS) ? WaitEvent.SUCCESS : WaitEvent.ERROR_FAILED;
+
 			if (status == BluetoothGatt.GATT_SUCCESS)
 			{
 				// broadcastUpdate(ACTION_DATA_AVAILABLE, characteristic);
@@ -443,13 +507,16 @@ public class WiseBluetoothLe extends BluetoothLe
 				final byte[] data = characteristic.getValue();
 				if (data != null && data.length > 0)
 				{
+					readDataInfo = data;
 				}
 			}
+
+			readEvent.setSignal(result);
 		}
 
 		@Override
 		public void onCharacteristicWrite(BluetoothGatt gatt,
-				BluetoothGattCharacteristic characteristic, int status)
+										  BluetoothGattCharacteristic characteristic, int status)
 		{
 			if (mSendService.isEqualBleGattCharacteristic(characteristic))
 			{
@@ -461,7 +528,7 @@ public class WiseBluetoothLe extends BluetoothLe
 
 		@Override
 		public void onCharacteristicChanged(BluetoothGatt gatt,
-				BluetoothGattCharacteristic characteristic)
+											BluetoothGattCharacteristic characteristic)
 		{
 			// broadcastUpdate(ACTION_DATA_AVAILABLE, characteristic);
 			final byte[] data = characteristic.getValue();
@@ -501,12 +568,13 @@ public class WiseBluetoothLe extends BluetoothLe
 
 		@Override
 		public void onDescriptorWrite(BluetoothGatt gatt,
-				BluetoothGattDescriptor descriptor, int status)
+									  BluetoothGattDescriptor descriptor, int status)
 		{
 			if (status == BluetoothGatt.GATT_SUCCESS)
 			{
 				Log.d(TAG, "Descript success ");
-				if(ConvertData.cmpBytes(descriptor.getValue(), BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE))
+				if(ConvertData.cmpBytes(descriptor.getValue(), BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE) ||
+						ConvertData.cmpBytes(descriptor.getValue(), BluetoothGattDescriptor.ENABLE_INDICATION_VALUE))
 				{
 					stateEvent.setSignal(WaitEvent.SUCCESS);
 				}
@@ -515,6 +583,18 @@ public class WiseBluetoothLe extends BluetoothLe
 			{
 				stateEvent.setSignal(WaitEvent.ERROR_FAILED);
 			}
+		}
+
+		@Override
+		public void onMtuChanged(BluetoothGatt gatt, int mtu, int status) {
+			super.onMtuChanged(gatt, mtu, status);
+
+			if (status == BluetoothGatt.GATT_SUCCESS) {
+				// ATT的Opcode占1个Byte、ATT的Handle占2个Byte
+				sendDataLenMax = mtu - 3;
+			}
+			mtuEvent.setSignal(status == BluetoothGatt.GATT_SUCCESS ? WaitEvent.SUCCESS : WaitEvent.ERROR_FAILED);
+
 		}
 	};
 
@@ -632,5 +712,5 @@ public class WiseBluetoothLe extends BluetoothLe
 
 		}
 	}
-	
+
 }
