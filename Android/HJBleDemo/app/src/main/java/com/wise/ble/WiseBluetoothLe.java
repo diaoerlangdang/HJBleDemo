@@ -148,28 +148,10 @@ public class WiseBluetoothLe extends BluetoothLe
 	/**
 	 * 设置发送数据一包长度
 	 * @param sendDataLenMax 发送数据一包长度
-	 * @return 失败false，成功true，成功后，需调用getSendDataLenMax函数，来获取真实的一包长度，可能小于设置的长度
 	 */
-	public boolean setSendDataLenMax(int sendDataLenMax) {
+	public void setSendDataLenMax(int sendDataLenMax) {
 
-		// 大于20时，在回调中设置发送数据长度
-		if (sendDataLenMax > 20) {
-			mtuEvent.Init();
-			// ATT的Opcode占1个Byte、ATT的Handle占2个Byte
-			if (!mBluetoothGatt.requestMtu(sendDataLenMax + 3)) {
-				return false;
-			}
-
-			int result = mtuEvent.waitSignal(RECV_TIME_OUT_SHORT);
-			if(WaitEvent.SUCCESS != result) {
-				return false;
-			}
-		}
-		else {
-			this.sendDataLenMax = sendDataLenMax;
-		}
-
-		return true;
+		this.sendDataLenMax = sendDataLenMax;
 	}
 
 	/**
@@ -588,13 +570,6 @@ public class WiseBluetoothLe extends BluetoothLe
 		@Override
 		public void onMtuChanged(BluetoothGatt gatt, int mtu, int status) {
 			super.onMtuChanged(gatt, mtu, status);
-
-			if (status == BluetoothGatt.GATT_SUCCESS) {
-				// ATT的Opcode占1个Byte、ATT的Handle占2个Byte
-				sendDataLenMax = mtu - 3;
-			}
-			mtuEvent.setSignal(status == BluetoothGatt.GATT_SUCCESS ? WaitEvent.SUCCESS : WaitEvent.ERROR_FAILED);
-
 		}
 	};
 
