@@ -594,6 +594,9 @@ public class WiseBluetoothLe extends BluetoothLe
 		void Init() {
 			mFlag = true;
 			mResult = SUCCESS;
+			if (myThread != null) {
+				myThread.stopThread();
+			}
 			Log.d(TAG, "Init Event");
 		}
 
@@ -601,6 +604,9 @@ public class WiseBluetoothLe extends BluetoothLe
 			if (!mFlag)
 				return mResult;
 
+			if (myThread != null) {
+				myThread.stopThread();
+			}
 			myThread = new MyThread();
 			myThread.startThread(millis);
 
@@ -645,9 +651,9 @@ public class WiseBluetoothLe extends BluetoothLe
 		}
 
 		class MyThread extends Thread {
-			boolean mThreadAlive = false;
-			int mCount = 0;
-			int mTotal = 0;
+			volatile boolean mThreadAlive = false;
+			volatile int mCount = 0;
+			volatile int mTotal = 0;
 
 			void startThread(int millis) {
 				mTotal = millis / 10;
