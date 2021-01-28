@@ -74,6 +74,9 @@ public class WiseBluetoothLe extends BluetoothLe
 	//每包发送的最大包数
 	private int sendDataLenMax = DEFALUT_BLE_SEND_DATA_LEN_MAX;
 
+	// 写方式是否为response
+	private boolean bResponse = true;
+
 	public interface OnWiseBluetoothCallBack
 	{
 		/**
@@ -306,6 +309,10 @@ public class WiseBluetoothLe extends BluetoothLe
 		return readDataInfo;
 	}
 
+	public void setWriteTypeResponse(boolean bResponse) {
+		this.bResponse = bResponse;
+	}
+
 
 	/**
 	 * 发送数据
@@ -328,6 +335,10 @@ public class WiseBluetoothLe extends BluetoothLe
 		int MaxLen = this.sendDataLenMax;
 
 		BluetoothGattCharacteristic characteristic = getBleCharacteristic(charact);
+
+		// 写类型
+		characteristic.setWriteType(bResponse ? BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT : BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
+
 
 		if (characteristic == null) {
 			return false;

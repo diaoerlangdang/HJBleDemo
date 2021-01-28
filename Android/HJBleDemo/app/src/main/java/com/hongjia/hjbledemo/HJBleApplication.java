@@ -65,4 +65,49 @@ public class HJBleApplication extends Application {
 
         SPUtils.put(getAppContext(), "isAddReturn", addReturn);
     }
+
+    // 是否为respone
+    public boolean isWriteTypeResponse() {
+
+        Boolean isResponse = (Boolean)SPUtils.get(getAppContext(), "isWriteTypeResponse", true);
+        return isResponse.booleanValue();
+    }
+
+    public void setWriteTypeResponse(boolean isWriteTypeResponse) {
+
+        SPUtils.put(getAppContext(), "isWriteTypeResponse", isWriteTypeResponse);
+    }
+
+    // 每包数据长度
+    public int groupLen() {
+
+        return (Integer)SPUtils.get(getAppContext(), "groupLen", 20);
+    }
+
+    public void setGroupLen(int groupLen) {
+
+        SPUtils.put(getAppContext(), "groupLen", groupLen);
+    }
+
+    // 每次下发测试数据长度
+    public int testDataLen() {
+
+        return (Integer)SPUtils.get(getAppContext(), "testDataLen", 20);
+    }
+
+    public void setTestDataLen(int testDataLen) {
+
+        SPUtils.put(getAppContext(), "testDataLen", testDataLen);
+    }
+
+    // 下发数据时间间隙
+    public int testGapTime() {
+
+        return (Integer)SPUtils.get(getAppContext(), "testGapTime", 20);
+    }
+
+    public void setTestGapTime(int testGapTime) {
+
+        SPUtils.put(getAppContext(), "testGapTime", testGapTime);
+    }
 }

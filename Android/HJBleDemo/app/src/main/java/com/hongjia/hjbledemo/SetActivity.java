@@ -1,13 +1,18 @@
 package com.hongjia.hjbledemo;
 
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.InputType;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.PopupMenu;
 
 import com.wise.wisekit.activity.BaseActivity;
@@ -23,6 +28,17 @@ public class SetActivity extends BaseActivity {
     private LinearLayout selectCharBtn;
     // 选择是否添加回车
     private LinearLayout selectAddReturnBtn;
+    // 选择写方式
+    private LinearLayout selectWriteTypeBtn;
+
+    // 每包数据长度
+    private RelativeLayout selecGroupLenBtn;
+
+    // 每次下发测试数据长度
+    private RelativeLayout selecDataLenBtn;
+
+    // 下发数据时间间隙
+    private RelativeLayout selecGapTimeBtn;
 
     // 选择模式
     private TextView modeTxt;
@@ -30,6 +46,17 @@ public class SetActivity extends BaseActivity {
     private TextView charTxt;
     // 选择是否添加回车
     private TextView returnTxt;
+    // 写方式
+    private TextView writeTypeTxt;
+
+    // 每包数据长度
+    private TextView groupLenTxt;
+
+    // 每次下发测试数据长度
+    private TextView dataLenTxt;
+
+    // 下发数据时间间隙
+    private TextView gapTimeTxt;
 
     private boolean isConfig;
 
@@ -55,6 +82,11 @@ public class SetActivity extends BaseActivity {
         modeTxt = findViewById(R.id.mode_txt);
         charTxt = findViewById(R.id.char_txt);
         returnTxt = findViewById(R.id.return_txt);
+        writeTypeTxt = findViewById(R.id.write_type_txt);
+
+        groupLenTxt = findViewById(R.id.group_len_txt);
+        dataLenTxt = findViewById(R.id.data_len_txt);
+        gapTimeTxt = findViewById(R.id.gap_time_txt);
 
         selectCharBtn = findViewById(R.id.select_char);
         selectCharBtn.setOnClickListener(new View.OnClickListener() {
@@ -80,6 +112,80 @@ public class SetActivity extends BaseActivity {
             }
         });
 
+        selectWriteTypeBtn = findViewById(R.id.select_write_type);
+        selectWriteTypeBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                showSelectWriteTypePopupMenu();
+            }
+        });
+
+        selecGroupLenBtn = findViewById(R.id.group_len_layout);
+        selecGroupLenBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                final EditText inputServer = new EditText(SetActivity.this);
+                inputServer.setInputType(InputType.TYPE_CLASS_NUMBER);
+                inputServer.setText(groupLenTxt.getText());
+                AlertDialog.Builder builder = new AlertDialog.Builder(SetActivity.this);
+                builder.setTitle("设置每包数据长度").setView(inputServer)
+                        .setNegativeButton("取消", null);
+                builder.setPositiveButton("确定", new DialogInterface.OnClickListener() {
+
+                    public void onClick(DialogInterface dialog, int which) {
+                        String info = inputServer.getText().toString();
+                        groupLenTxt.setText(info);
+                        HJBleApplication.shareInstance().setGroupLen(Integer.parseInt(info));
+                    }
+                });
+                builder.show();
+            }
+        });
+
+        selecDataLenBtn = findViewById(R.id.data_len_layout);
+        selecDataLenBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                final EditText inputServer = new EditText(SetActivity.this);
+                inputServer.setInputType(InputType.TYPE_CLASS_NUMBER);
+                inputServer.setText(dataLenTxt.getText());
+                AlertDialog.Builder builder = new AlertDialog.Builder(SetActivity.this);
+                builder.setTitle("设置每次下发测试数据长度").setView(inputServer)
+                        .setNegativeButton("取消", null);
+                builder.setPositiveButton("确定", new DialogInterface.OnClickListener() {
+
+                    public void onClick(DialogInterface dialog, int which) {
+                        String info = inputServer.getText().toString();
+                        dataLenTxt.setText(info);
+                        HJBleApplication.shareInstance().setTestDataLen(Integer.parseInt(info));
+                    }
+                });
+                builder.show();
+            }
+        });
+
+        selecGapTimeBtn = findViewById(R.id.gap_time_layout);
+        selecGapTimeBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                final EditText inputServer = new EditText(SetActivity.this);
+                inputServer.setInputType(InputType.TYPE_CLASS_NUMBER);
+                inputServer.setText(gapTimeTxt.getText());
+                AlertDialog.Builder builder = new AlertDialog.Builder(SetActivity.this);
+                builder.setTitle("设置下发数据时间间隙(ms)").setView(inputServer)
+                        .setNegativeButton("取消", null);
+                builder.setPositiveButton("确定", new DialogInterface.OnClickListener() {
+
+                    public void onClick(DialogInterface dialog, int which) {
+                        String info = inputServer.getText().toString();
+                        gapTimeTxt.setText(info);
+                        HJBleApplication.shareInstance().setTestGapTime(Integer.parseInt(info));
+                    }
+                });
+                builder.show();
+            }
+        });
+
         if (HJBleApplication.shareInstance().isBleConfig()) {
             modeTxt.setText("配置模式");
         }
@@ -100,6 +206,17 @@ public class SetActivity extends BaseActivity {
         else {
             returnTxt.setText("否");
         }
+
+        if (HJBleApplication.shareInstance().isWriteTypeResponse()) {
+            writeTypeTxt.setText("是");
+        }
+        else {
+            writeTypeTxt.setText("否");
+        }
+
+        groupLenTxt.setText("" + HJBleApplication.shareInstance().groupLen());
+        dataLenTxt.setText("" + HJBleApplication.shareInstance().testDataLen());
+        gapTimeTxt.setText("" + HJBleApplication.shareInstance().testGapTime());
 
         // 不支持配置
         if (!isConfig) {
@@ -180,6 +297,33 @@ public class SetActivity extends BaseActivity {
                     case R.id.no:
                         returnTxt.setText("否");
                         HJBleApplication.shareInstance().setAddReturn(false);
+                        return true;
+
+                    default:
+                        //do nothing
+                }
+
+                return false;
+            }
+        });
+        popupMenu.show();
+    }
+
+    private void showSelectWriteTypePopupMenu(){
+        PopupMenu popupMenu = new PopupMenu(this,selectWriteTypeBtn);
+        popupMenu.inflate(R.menu.menu_select_write_type);
+
+        popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem menuItem) {
+                switch (menuItem.getItemId()){
+                    case R.id.yes:
+                        writeTypeTxt.setText("是");
+                        HJBleApplication.shareInstance().setWriteTypeResponse(true);
+                        return true;
+                    case R.id.no:
+                        writeTypeTxt.setText("否");
+                        HJBleApplication.shareInstance().setWriteTypeResponse(false);
                         return true;
 
                     default:
