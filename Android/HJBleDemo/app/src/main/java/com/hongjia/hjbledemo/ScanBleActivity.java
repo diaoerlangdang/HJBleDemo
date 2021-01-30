@@ -523,7 +523,8 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
             boolean bResult = isGpsProviderEnabled(this);
 
             if (!bResult){
-                return false;
+                Toast.makeText(ScanBleActivity.this, "部分机型需要打开gps才能扫描到设备", Toast.LENGTH_SHORT).show();
+//                return false;
             }
             return hasPermission;
         }
