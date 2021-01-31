@@ -58,7 +58,8 @@ public class BluetoothControlAcitvity extends BaseActivity {
     // 更新速率
     private static final int MSG_UPDATE_RATE = 0x12;
 
-    private RelativeLayout rateLayout;
+    // 字节数
+    private RelativeLayout dataBytesLayout;
 
     // 发送字节数text view
     private TextView sendByteCountTV;
@@ -74,8 +75,12 @@ public class BluetoothControlAcitvity extends BaseActivity {
 
     // 接收速率
     private TextView receiveRateTV;
+    // 发送速率
+    private TextView sendRateTV;
 
     private int recCountBySecond = 0;
+
+    private int sendCountBySecond = 0;
 
     // 发送服务
     private WiseCharacteristic mSendCharact = BleConfig.Ble_Data_Send_Service;
@@ -126,7 +131,9 @@ public class BluetoothControlAcitvity extends BaseActivity {
                 Message message = new Message();
                 message.what = MSG_UPDATE_RATE;
                 message.arg1 = recCountBySecond;
+                message.arg2 = sendCountBySecond;
                 recCountBySecond = 0;
+                sendCountBySecond = 0;
                 mHandler.sendMessage(message);
             }
         };
@@ -172,8 +179,11 @@ public class BluetoothControlAcitvity extends BaseActivity {
 
                     // 更新速率
                     case MSG_UPDATE_RATE:
-                        int rate = msg.arg1;
-                        showRecCountBySecond(rate);
+                        int recvRate = msg.arg1;
+                        int sendRate = msg.arg2;
+
+                        showRecCountBySecond(recvRate);
+                        showSendCountBySecond(sendRate);
                         break;
 
                     default:
@@ -190,8 +200,9 @@ public class BluetoothControlAcitvity extends BaseActivity {
     protected void initView() {
         super.initView();
 
-        rateLayout = findViewById(R.id.rate_layout);
+        dataBytesLayout = findViewById(R.id.data_bytes_layout);
         sendByteCountTV = findViewById(R.id.send_byte_count_tv);
+        sendRateTV = findViewById(R.id.send_rate_tv);
         receiveByteCountTV = findViewById(R.id.receive_byte_count_tv);
         receiveRateTV = findViewById(R.id.receive_rate_tv);
 
@@ -265,6 +276,7 @@ public class BluetoothControlAcitvity extends BaseActivity {
 						public void run() {
 							if (!isBleConfig) {
 								addSendByteCount(dataLen);
+                                sendCountBySecond += dataLen;
 							}
 						}
 					});
@@ -311,9 +323,14 @@ public class BluetoothControlAcitvity extends BaseActivity {
         setReceiveByteCount(receiveByteCount + count);
     }
 
-    // 显示速率
+    // 显示接收速率
     private void showRecCountBySecond(int count) {
-        receiveRateTV.setText(String.format("实时速率：%d B/s", count));
+        receiveRateTV.setText(String.format("接收速率：%d B/s", count));
+    }
+
+    // 显示发送速率
+    private void showSendCountBySecond(int count) {
+        sendRateTV.setText(String.format("发送速率：%d B/s", count));
     }
 
     // 开始定时器
@@ -329,7 +346,9 @@ public class BluetoothControlAcitvity extends BaseActivity {
                     Message message = new Message();
                     message.what = MSG_UPDATE_RATE;
                     message.arg1 = recCountBySecond;
+                    message.arg2 = sendCountBySecond;
                     recCountBySecond = 0;
+                    sendCountBySecond = 0;
                     mHandler.sendMessage(message);
                 }
             };
@@ -366,7 +385,7 @@ public class BluetoothControlAcitvity extends BaseActivity {
 
             setTitle(mDeviceName + "-配置");
 
-            rateLayout.setVisibility(View.GONE);
+            dataBytesLayout.setVisibility(View.GONE);
 
             stopTimer();
 
@@ -379,7 +398,7 @@ public class BluetoothControlAcitvity extends BaseActivity {
 
             setTitle(mDeviceName + "-数据");
 
-            rateLayout.setVisibility(View.VISIBLE);
+            dataBytesLayout.setVisibility(View.VISIBLE);
 
             startTimer();
         }
