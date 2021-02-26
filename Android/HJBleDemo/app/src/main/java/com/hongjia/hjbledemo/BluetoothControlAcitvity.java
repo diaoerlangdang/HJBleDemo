@@ -269,7 +269,7 @@ public class BluetoothControlAcitvity extends BaseActivity {
 
 				while (isTesting) {
 					final String info = ConvertData.bytesToHexString(data, false);
-					addLogText("发送：\r\n      " + info, Color.BLUE, info.length());
+//					addLogText("发送：\r\n      " + info, Color.BLUE, info.length());
 
 					runOnUiThread(new Runnable() {
 						@Override

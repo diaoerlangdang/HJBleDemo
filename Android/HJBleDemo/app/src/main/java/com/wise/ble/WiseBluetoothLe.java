@@ -335,14 +335,12 @@ public class WiseBluetoothLe extends BluetoothLe
 		int MaxLen = this.sendDataLenMax;
 
 		BluetoothGattCharacteristic characteristic = getBleCharacteristic(charact);
-
-		// 写类型
-		characteristic.setWriteType(bResponse ? BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT : BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
-
-
 		if (characteristic == null) {
 			return false;
 		}
+
+		// 写类型
+		characteristic.setWriteType(bResponse ? BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT : BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
 
 		mSendService = charact;
 
