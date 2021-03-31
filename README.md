@@ -10,6 +10,6 @@
 ```
 
 
-## android Demo下载地址
+## Demo体验下载地址
 
-![下载地址](https://github.com/diaoerlangdang/HJBleDemo/blob/master/Android/android_download.png)
+![下载地址](https://github.com/diaoerlangdang/HJBleDemo/blob/master/download.png)
