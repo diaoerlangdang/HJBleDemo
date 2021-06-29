@@ -3,50 +3,41 @@
     package="com.hongjia.hjbledemo">
 
     <uses-permission android:name="android.permission.BLUETOOTH" />
-    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
-    <!-- 6.0之后蓝牙还需要地理位置权限 -->
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" /> <!-- 6.0之后蓝牙还需要地理位置权限 -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-
-    <!-- 自行判断 -->
-    <uses-feature android:name="android.hardware.bluetooth.le" android:required="true" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" /> <!-- 自行判断 -->
+    <uses-feature
+        android:name="android.hardware.bluetooth.le"
+        android:required="true" />
 
     <application
-        android:name="HJBleApplication"
+        android:name=".HJBleApplication"
         android:allowBackup="true"
         android:icon="@mipmap/icon"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/icon"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".LaunchActivity" >
+        <activity android:name=".BluetoothDataActivity"></activity>
+        <activity android:name=".LaunchActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
         <activity
-            android:name="ScanBleActivity"
+            android:name=".ScanBleActivity"
             android:configChanges="orientation|keyboardHidden"
-            android:screenOrientation="portrait">
-        </activity>
-
+            android:screenOrientation="portrait"></activity>
         <activity
             android:name=".BluetoothControlAcitvity"
             android:configChanges="orientation|keyboardHidden"
-            android:screenOrientation="portrait">
-        </activity>
-
+            android:screenOrientation="portrait"></activity>
         <activity
             android:name=".SetActivity"
             android:configChanges="orientation|keyboardHidden"
-            android:screenOrientation="portrait">
-        </activity>
-
-
+            android:screenOrientation="portrait"></activity>
     </application>
-
 
 </manifest>

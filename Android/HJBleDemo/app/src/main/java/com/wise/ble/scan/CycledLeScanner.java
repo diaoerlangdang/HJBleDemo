@@ -8,6 +8,8 @@ import android.content.pm.PackageManager;
 import android.location.LocationManager;
 import android.os.Handler;
 import android.os.SystemClock;
+import android.provider.Settings;
+import android.text.TextUtils;
 
 import androidx.core.content.ContextCompat;
 
@@ -347,8 +349,13 @@ public class CycledLeScanner {
      * @return
      */
     public static boolean isGpsProviderEnabled(Context context){
-        LocationManager service = (LocationManager) context.getSystemService(context.LOCATION_SERVICE);
-        return service.isProviderEnabled(LocationManager.GPS_PROVIDER);
+        String provider = Settings.Secure.getString(context.getContentResolver(), Settings.Secure.LOCATION_PROVIDERS_ALLOWED);
+        if (TextUtils.isEmpty(provider)) return false;
+        return provider.contains("gps");
+
+
+//        LocationManager service = (LocationManager) context.getSystemService(context.LOCATION_SERVICE);
+//        return service.isProviderEnabled(LocationManager.GPS_PROVIDER);
     }
 
     /**

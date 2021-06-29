@@ -203,7 +203,7 @@ public class WiseBluetoothLe extends BluetoothLe
 	{
 		mBleCallBack = bleCallBack;
 
-		connectEvent.Init();
+		connectEvent.init();
 
 		if(!super.connectDevice(address, mGattCallback))
 			return false;
@@ -266,7 +266,7 @@ public class WiseBluetoothLe extends BluetoothLe
 			return false;
 		}
 
-		stateEvent.Init();
+		stateEvent.init();
 		if(!setCharacteristicNotification(characteristic, true))
 			return false;
 
@@ -297,7 +297,7 @@ public class WiseBluetoothLe extends BluetoothLe
 
 		readDataInfo = null;
 
-		readEvent.Init();
+		readEvent.init();
 
 		if(!mBluetoothGatt.readCharacteristic(characteristic))
 			return null;
@@ -349,7 +349,7 @@ public class WiseBluetoothLe extends BluetoothLe
 		byte[] temp;
 		for (int i = 0; i < nCount; i++)
 		{
-			sendEvent.Init();
+			sendEvent.init();
 
 			if( (i+1) != nCount)
 			{
@@ -402,7 +402,7 @@ public class WiseBluetoothLe extends BluetoothLe
 	 */
 	public byte[] sendReceive(WiseCharacteristic sendCharact, WiseCharacteristic recvCharact, byte[] data, int timeout)
 	{
-		recvEvent.Init();
+		recvEvent.init();
 
 		mSendReceiveService = recvCharact;
 
@@ -540,9 +540,8 @@ public class WiseBluetoothLe extends BluetoothLe
 					recvBuffer.write(recvTmp, 0, recvTmp.length);
 				}
 
-				if (recvEvent.getWaitStatus() == WaitEvent.Waitting &&
+				if ((recvEvent.getWaitStatus() == WaitEvent.Waitting || recvEvent.getWaitStatus() == WaitEvent.WillWaitting) &&
 						mSendReceiveService.isEqualBleGattCharacteristic(characteristic)) {
-
 					recvEvent.setSignal(WaitEvent.SUCCESS);
 				}
 				else if(mBleCallBack != null) {
@@ -585,66 +584,53 @@ public class WiseBluetoothLe extends BluetoothLe
 	private static class WaitEvent {
 		final static int ERROR_FAILED = 3;
 		final static int ERROR_TIME_OUT = 2;
+		final static int WillWaitting = 2;
 		final static int Waitting = 1;
 		final static int SUCCESS = 0;
 
-		private Object mSignal;
-		private boolean mFlag;
-		private int mResult;
+		private volatile int mResult = SUCCESS;
 
-		private MyThread myThread;
+		private volatile boolean ready = false; // 如果是true，则表示是被唤醒
 
-		WaitEvent() {
-			mSignal = new Object();
-			mFlag = true;
-			mResult = SUCCESS;
+		void init() {
+
+			// 防止等待之前先成功，所以在使用前先init，如果还没有waitSignal就调用setSignal，则会立即成功
+			mResult = WillWaitting;
+			ready = false;
 		}
 
-		void Init() {
-			mFlag = true;
-			mResult = SUCCESS;
-			if (myThread != null) {
-				myThread.stopThread();
-			}
-			Log.d(TAG, "Init Event");
+		public synchronized void setSignal(int result) {
+			ready = true;
+			mResult = result;
+			notify();
 		}
 
-		int waitSignal(int millis) {
-			if (!mFlag)
-				return mResult;
+		public synchronized int waitSignal(long mills) {
 
-			if (myThread != null) {
-				myThread.stopThread();
-			}
-			myThread = new MyThread();
-			myThread.startThread(millis);
-
-			synchronized (mSignal) {
+			// 根据时间来判断是否超时
+			long begin = System.currentTimeMillis();
+			long rest = mills;
+			if (rest == 0) {
 				try {
-					if (!mFlag) {
-						return mResult;
-					}
-
-					mResult = Waitting;
-					Log.d(TAG, "waitSignal ");
-					mSignal.wait();
-					Log.d(TAG, "waitSignal over");
+					wait();
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
-			}
-
-			return mResult;
-		}
-
-		void setSignal(int result) {
-			synchronized (mSignal) {
-				Log.d(TAG, "setSignal " + result );
-				mResult = result;
-				mFlag = false;
-				if (myThread != null)
-					myThread.stopThread();
-				mSignal.notify();
+				return mResult;
+			} else {
+				while (!ready && rest > 0) { // 如果被唤醒（ready为true），或超时（rest <= 0）则结束循环
+					try {
+						wait(rest);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+					rest = mills - (System.currentTimeMillis() - begin); // 计算剩余时间
+				}
+				// 超时
+				if (!ready) {
+					mResult = ERROR_TIME_OUT;
+				}
+				return mResult;
 			}
 		}
 
@@ -653,54 +639,6 @@ public class WiseBluetoothLe extends BluetoothLe
 			return mResult;
 		}
 
-
-		private void waitTimeOut() {
-			Log.d(TAG, "waitTimeOut");
-			setSignal(ERROR_TIME_OUT);
-		}
-
-		class MyThread extends Thread {
-			volatile boolean mThreadAlive = false;
-			volatile int mCount = 0;
-			volatile int mTotal = 0;
-
-			void startThread(int millis) {
-				mTotal = millis / 10;
-				mCount = 0;
-				mThreadAlive = true;
-				start();
-				Log.d(TAG, "runable start");
-			}
-
-			void stopThread() {
-				Log.d(TAG, "runable stop");
-				mThreadAlive = false;
-			}
-
-			@Override
-			public void run() {
-				while (true) {
-					//Log.d(TAG, "Thread Running");
-					try {
-						mCount++;
-						Thread.sleep(10);
-
-						if (!mThreadAlive) {
-							return;
-						}
-
-						if (mCount > mTotal)        //超时
-						{
-							waitTimeOut();
-							return;
-						}
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-				}
-			}
-
-		}
 	}
 
 }

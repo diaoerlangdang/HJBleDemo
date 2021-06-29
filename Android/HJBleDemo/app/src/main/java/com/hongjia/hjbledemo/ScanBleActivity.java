@@ -16,6 +16,8 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.provider.Settings;
+import android.text.TextUtils;
 import android.text.format.Time;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -130,7 +132,9 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
     protected void initView() {
         super.initView();
 
-        StatusBarCompat.setStatusBarColor(this, getResources().getColor(R.color.colorNavBackground, null), false);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            StatusBarCompat.setStatusBarColor(this, getResources().getColor(R.color.colorNavBackground, null), false);
+        }
 
         setTitle("扫描列表");
         topLeftBtn.setImageResource(R.mipmap.info);
@@ -296,6 +300,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
     // 连接蓝牙
     void connectBle(final BluetoothDevice device, final int sendDataLenMax, final boolean isConfig) {
 
+        loadingDialog.setMessage("正在连接中...");
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -334,6 +339,14 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
 
                 }
 
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+
+                        loadingDialog.setMessage("正在打开通知");
+                    }
+                });
+
 
                 // 打开配置通知
                 if(isConfig && !mble.openNotify(BleConfig.Ble_Config_Receive_Service))
@@ -358,25 +371,53 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
 
                 }
 
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+
+                        loadingDialog.setMessage("正在读取流控信息");
+                    }
+                });
+
+                // 是否为流控模式
+                boolean bFlowControl = false;
+
+                // 支持配置模式的设备，获取是否为流控模式
+                if (isConfig) {
+                    byte[] cmd = ConvertData.utf8ToBytes("<RD_UART_FC>");
+                    byte[] recv = mble.sendReceive(BleConfig.Ble_Config_Send_Service, BleConfig.Ble_Config_Receive_Service,cmd);
+                    if (recv != null) {
+                        String recvStr = ConvertData.bytesToUtf8(recv);
+                        if (recvStr.equals("<rd_uart_fc=1>")) {
+                            bFlowControl = true;
+                        } else {
+                            bFlowControl = false;
+                        }
+                    }
+
+                }
+
 
                 if(mble.openNotify(BleConfig.Ble_Data_Receive_Service))
                 {
                     mble.setSendDataLenMax(sendDataLenMax);
+
+                    final boolean flowControl = bFlowControl;
 
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
 
                             loadingDialog.dismiss();
-                            final Intent intent = new Intent(ScanBleActivity.this, BluetoothControlAcitvity.class);
-                            intent.putExtra(BluetoothControlAcitvity.EXTRAS_DEVICE_NAME, device.getName());
-                            intent.putExtra(BluetoothControlAcitvity.EXTRAS_DEVICE_ADDRESS, device.getAddress().toUpperCase());
-                            intent.putExtra(BluetoothControlAcitvity.EXTRAS_DEVICE_IS_CONFIG, isConfig);
+                            final Intent intent = new Intent(ScanBleActivity.this, BluetoothDataActivity.class);
+                            intent.putExtra(BluetoothDataActivity.EXTRAS_DEVICE_NAME, device.getName());
+                            intent.putExtra(BluetoothDataActivity.EXTRAS_DEVICE_ADDRESS, device.getAddress().toUpperCase());
+                            intent.putExtra(BluetoothDataActivity.EXTRAS_DEVICE_IS_CONFIG, isConfig);
+                            intent.putExtra(BluetoothDataActivity.EXTRAS_DEVICE_IS_FLOW_CONTROL, flowControl);
 
                             ScanBleActivity.this.startActivity(intent);
                         }
                     });
-                    return ;
                 }
                 else
                 {
@@ -390,10 +431,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
                             scanLeDevice(true);
                         }
                     });
-                    return ;
                 }
-
-
 
             }
         }).start();
@@ -425,7 +463,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
             scanLeDevice(false);
 
             if (errorCode == SCAN_FAILED_LOCATION_CLOSE){
-                Toast.makeText(ScanBleActivity.this, "位置已关闭，请先打开位置信息", Toast.LENGTH_LONG).show();
+                Toast.makeText(ScanBleActivity.this, "位置已关闭，请先打开位置信息！！！", Toast.LENGTH_LONG).show();
             }else if(errorCode == SCAN_FAILED_LOCATION_PERMISSION_FORBID){
                 Toast.makeText(ScanBleActivity.this, "你没有位置权限", Toast.LENGTH_LONG).show();
             }else{
@@ -520,7 +558,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
         if (Build.VERSION.SDK_INT >= 23){
             boolean hasPermission = EasyPermissions.hasPermissions(this, permissionList);
 
-            boolean bResult = isGpsProviderEnabled(this);
+            boolean bResult = isGpsProviderEnabled();
 
             if (!bResult){
 //                Toast.makeText(ScanBleActivity.this, "部分机型需要打开gps才能扫描到设备", Toast.LENGTH_SHORT).show();
@@ -537,9 +575,16 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
      * @param context
      * @return
      */
-    public static boolean isGpsProviderEnabled(Context context){
-        LocationManager service = (LocationManager) context.getSystemService(context.LOCATION_SERVICE);
-        return service.isProviderEnabled(LocationManager.GPS_PROVIDER);
+//    public static boolean isGpsProviderEnabled(Context context){
+//        LocationManager service = (LocationManager) context.getSystemService(context.LOCATION_SERVICE);
+//        return service.isProviderEnabled(LocationManager.GPS_PROVIDER);
+//    }
+
+    // 检测gps是否开启，避免部分手机使用isProviderEnabled函数总返回false的问题
+    private boolean isGpsProviderEnabled() {
+        String provider = Settings.Secure.getString(getContentResolver(), Settings.Secure.LOCATION_PROVIDERS_ALLOWED);
+        if (TextUtils.isEmpty(provider)) return false;
+        return provider.contains("gps");
     }
 
 

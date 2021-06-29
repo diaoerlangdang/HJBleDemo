@@ -14,6 +14,7 @@ import com.wise.wisekit.R;
  */
 public class LoadingDialog extends Dialog{
 
+    private TextView msgText;
 
     public LoadingDialog(Context context) {
         super(context);
@@ -21,6 +22,14 @@ public class LoadingDialog extends Dialog{
 
     public LoadingDialog(Context context, int themeResId) {
         super(context, themeResId);
+    }
+
+    public void setMsgText(TextView msgText) {
+        this.msgText = msgText;
+    }
+
+    public void setMessage(String text) {
+        this.msgText.setText(text);
     }
 
     public static class Builder{
@@ -95,6 +104,7 @@ public class LoadingDialog extends Dialog{
             View view=inflater.inflate(R.layout.dialog_loading,null);
             LoadingDialog loadingDailog=new LoadingDialog(context,R.style.LoadingDialogStyle);
             TextView msgText= (TextView) view.findViewById(R.id.tipTextView);
+            loadingDailog.setMsgText(msgText);
             if(isShowMessage){
                 msgText.setText(message);
             }else{

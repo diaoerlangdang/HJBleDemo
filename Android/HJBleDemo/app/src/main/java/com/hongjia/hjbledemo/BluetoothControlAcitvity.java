@@ -33,6 +33,7 @@ import java.util.TimerTask;
 import java.util.regex.Pattern;
 
 
+// 作废
 public class BluetoothControlAcitvity extends BaseActivity {
     private final static String TAG = BluetoothControlAcitvity.class.getSimpleName();
 
