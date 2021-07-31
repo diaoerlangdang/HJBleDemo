@@ -313,7 +313,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
 
                     mble.disconnectDevice();
                     try {
-                        Thread.sleep(500,0);//200ms
+                        Thread.sleep(200,0);//200ms
                     }
                     catch (Exception e){
 
@@ -332,17 +332,18 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
                     return ;
                 }
 
-                try {
-                    Thread.sleep(200,0);//200ms
-                }
-                catch (Exception e){
-
-                }
+//                try {
+//                    Thread.sleep(200,0);//200ms
+//                }
+//                catch (Exception e){
+//
+//                }
 
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
 
+                        Log.e("'test'", "'正在打开通知1'");
                         loadingDialog.setMessage("正在打开通知");
                     }
                 });
@@ -364,12 +365,12 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
                     return ;
                 }
 
-                try {
-                    Thread.sleep(200,0);//200ms
-                }
-                catch (Exception e){
-
-                }
+//                try {
+//                    Thread.sleep(200,0);//200ms
+//                }
+//                catch (Exception e){
+//
+//                }
 
                 runOnUiThread(new Runnable() {
                     @Override
