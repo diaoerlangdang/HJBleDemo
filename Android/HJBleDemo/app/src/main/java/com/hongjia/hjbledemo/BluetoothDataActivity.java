@@ -32,6 +32,11 @@ import com.wise.ble.WiseBluetoothLe;
 import com.wise.ble.WiseCharacteristic;
 import com.wise.wisekit.activity.BaseActivity;
 
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
@@ -271,43 +276,138 @@ public class BluetoothDataActivity extends BaseActivity {
                 long gapTime = HJBleApplication.shareInstance().testGapTime();
                 final int dataLen = HJBleApplication.shareInstance().testDataLen();
                 final boolean isBleConfig = HJBleApplication.shareInstance().isBleConfig();
+                // 是否使用文件测试
+                final boolean bUseFileTest = HJBleApplication.shareInstance().useFileTest();
+                // 文件路径
+                final String filePath = HJBleApplication.shareInstance().testFilePath();
 
-                final byte[] data = new byte[dataLen];
+                if (bUseFileTest) {
+                    FileInputStream fileInputStream = null;
+                    BufferedInputStream inputStream = null;
+                    try {
+                        File file = new File(filePath);// 成文件路径中获取文件
+                        if (!file.exists()) {
+                            setIsTesting(false);
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    Toast.makeText(BluetoothDataActivity.this, "测试文件不存在", Toast.LENGTH_SHORT).show();
+                                }
+                            });
+                            return;
+                        }
 
-                while (isTesting) {
+                        fileInputStream = new FileInputStream(file);
+                        inputStream = new BufferedInputStream(fileInputStream);
 
-                    // 蓝牙设备不繁忙时，可发送测试数据
-                    if (!bBusyBle) {
-                        final String info = ConvertData.bytesToHexString(data, false);
+                        byte[] inputBuffer = new byte[dataLen];
+                        int readCount;
+                        while ((readCount = inputStream.read(inputBuffer, 0, dataLen)) != -1) {
+                            if (bBusyBle) {
+                                setIsTesting(false);
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        Toast.makeText(BluetoothDataActivity.this, "蓝牙繁忙", Toast.LENGTH_SHORT).show();
+                                    }
+                                });
+                                fileInputStream.close();
+                                inputStream.close();
+                                return;
+                            }
+
+                            byte[] sendBytes = new byte[readCount];
+                            System.arraycopy(inputBuffer, 0, sendBytes, 0, readCount);
+
+                            final int sendLen = readCount;
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    if (!isBleConfig) {
+                                        addSendByteCount(sendLen);
+                                        sendCountBySecond += sendLen;
+                                    }
+                                }
+                            });
+
+                            if (!mble.sendData(mSendCharact, sendBytes)) {
+                                SendReceiveDataBean dataBean = new SendReceiveDataBean(SendReceiveDataBean.DataTypeFailed, "发送失败！");
+
+                                addDataInfoItem(dataBean);
+
+                                setIsTesting(false);
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        Toast.makeText(BluetoothDataActivity.this, "蓝牙繁忙", Toast.LENGTH_SHORT).show();
+                                    }
+                                });
+                                fileInputStream.close();
+                                inputStream.close();
+                                return;
+                            }
+
+                            for (int i = 0; i < gapTime / 10 && isTesting; i++) {
+                                try {
+                                    Thread.sleep(10);
+                                } catch (InterruptedException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        }
+
+                        fileInputStream.close();
+                        inputStream.close();
+                        setIsTesting(false);
+
+                    } catch (IOException e) {
+                        setIsTesting(false);
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(BluetoothDataActivity.this, "测试文件不存在", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
+
+                } else {
+                    final byte[] data = new byte[dataLen];
+
+                    while (isTesting) {
+
+                        // 蓝牙设备不繁忙时，可发送测试数据
+                        if (!bBusyBle) {
+                            final String info = ConvertData.bytesToHexString(data, false);
 //                    SendReceiveDataBean sendDataBean = new SendReceiveDataBean(SendReceiveDataBean.DataTypeSend, info);
 //
 //                    addDataInfoItem(sendDataBean);
 
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                if (!isBleConfig) {
-                                    addSendByteCount(dataLen);
-                                    sendCountBySecond += dataLen;
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    if (!isBleConfig) {
+                                        addSendByteCount(dataLen);
+                                        sendCountBySecond += dataLen;
+                                    }
                                 }
+                            });
+
+                            if (!mble.sendData(mSendCharact, data)) {
+                                SendReceiveDataBean dataBean = new SendReceiveDataBean(SendReceiveDataBean.DataTypeFailed, "发送失败！");
+
+                                addDataInfoItem(dataBean);
                             }
-                        });
-
-                        if (!mble.sendData(mSendCharact, data)) {
-                            SendReceiveDataBean dataBean = new SendReceiveDataBean(SendReceiveDataBean.DataTypeFailed, "发送失败！");
-
-                            addDataInfoItem(dataBean);
                         }
-                    }
 
-                    for (int i = 0; i < gapTime / 10 && isTesting; i++) {
-                        try {
-                            Thread.sleep(10);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
+                        for (int i = 0; i < gapTime / 10 && isTesting; i++) {
+                            try {
+                                Thread.sleep(10);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
                         }
-                    }
 
+                    }
                 }
 
             }
@@ -440,11 +540,17 @@ public class BluetoothDataActivity extends BaseActivity {
 
     void setIsTesting(boolean testing) {
         isTesting = testing;
-        if (isTesting) {
-            testBtn.setText("停止测试");
-        } else {
-            testBtn.setText("开始测试");
-        }
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (isTesting) {
+                    testBtn.setText("停止测试");
+                } else {
+                    testBtn.setText("开始测试");
+                }
+            }
+        });
+
     }
 
     void setButtonsState(boolean enable) {
@@ -555,8 +661,7 @@ public class BluetoothDataActivity extends BaseActivity {
                 SendReceiveDataBean dataBean = new SendReceiveDataBean(SendReceiveDataBean.DataTypeReceive, str);
 
                 addDataInfoItem(dataBean);
-            }
-            else if (characteristic.equals(BleConfig.Ble_Config_Receive_Service)) {
+            } else if (characteristic.equals(BleConfig.Ble_Config_Receive_Service)) {
                 String recvStr = ConvertData.bytesToUtf8(recvData);
                 // 蓝牙设备繁忙
                 if (recvStr.equals("<HJ_BLE_BUSY_STOP_SEND>")) {
@@ -600,20 +705,17 @@ public class BluetoothDataActivity extends BaseActivity {
 
 
     // Adapter for holding devices found through scanning.
-    private class SendReceiveDataAdapter extends BaseAdapter
-    {
+    private class SendReceiveDataAdapter extends BaseAdapter {
         private ArrayList<SendReceiveDataBean> mDataList;
         private LayoutInflater mInflator;
 
-        public SendReceiveDataAdapter(Context context)
-        {
+        public SendReceiveDataAdapter(Context context) {
             super();
             mDataList = new ArrayList<>();
             mInflator = LayoutInflater.from(context);
         }
 
-        public void addDataItem(SendReceiveDataBean dataInfo)
-        {
+        public void addDataItem(SendReceiveDataBean dataInfo) {
             mDataList.add(dataInfo);
 
         }
@@ -623,38 +725,31 @@ public class BluetoothDataActivity extends BaseActivity {
         }
 
         @Override
-        public int getCount()
-        {
+        public int getCount() {
             return mDataList.size();
         }
 
         @Override
-        public SendReceiveDataBean getItem(int i)
-        {
+        public SendReceiveDataBean getItem(int i) {
             return mDataList.get(i);
         }
 
         @Override
-        public long getItemId(int i)
-        {
+        public long getItemId(int i) {
             return i;
         }
 
         @Override
-        public View getView(int i, View view, ViewGroup viewGroup)
-        {
+        public View getView(int i, View view, ViewGroup viewGroup) {
             DataViewHolder viewHolder;
             // General ListView optimization code.
-            if (view == null)
-            {
+            if (view == null) {
                 view = mInflator.inflate(R.layout.send_receive_data_item, null);
                 viewHolder = new DataViewHolder();
                 viewHolder.dataTypeTv = view.findViewById(R.id.tv_data_type);
                 viewHolder.dataInfoTv = (TextView) view.findViewById(R.id.tv_data_info);
                 view.setTag(viewHolder);
-            }
-            else
-            {
+            } else {
                 viewHolder = (DataViewHolder) view.getTag();
             }
 
@@ -692,8 +787,7 @@ public class BluetoothDataActivity extends BaseActivity {
         }
     }
 
-    static class DataViewHolder
-    {
+    static class DataViewHolder {
         TextView dataTypeTv;
         TextView dataInfoTv;
     }

@@ -1,5 +1,7 @@
 package com.wise.ble;
 
+import static android.bluetooth.BluetoothDevice.TRANSPORT_LE;
+
 import java.util.List;
 import java.util.UUID;
 
@@ -14,6 +16,7 @@ import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.util.Log;
 
 public class BluetoothLe
@@ -186,7 +189,11 @@ public class BluetoothLe
         }
         // We want to directly connect to the device, so we are setting the autoConnect
         // parameter to false.
-        mBluetoothGatt = device.connectGatt(mContext, false, gattCallback);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            mBluetoothGatt = device.connectGatt(mContext, false, gattCallback, TRANSPORT_LE);
+        } else {
+            mBluetoothGatt = device.connectGatt(mContext, false, gattCallback);
+        }
         if(mBluetoothGatt == null)
             return false;
 

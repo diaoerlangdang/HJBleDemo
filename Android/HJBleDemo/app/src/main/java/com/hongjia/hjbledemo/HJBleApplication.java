@@ -42,6 +42,53 @@ public class HJBleApplication extends Application {
         isBleConfig = bleConfig;
     }
 
+    // 扫描过滤
+    public boolean isScanFilter() {
+        Boolean bFilter = (Boolean)SPUtils.get(getAppContext(), "isScanFilter", true);
+        return bFilter.booleanValue();
+    }
+
+    public void setScanFilter(boolean scanFilter) {
+
+        SPUtils.put(getAppContext(), "isScanFilter", scanFilter);
+    }
+
+    // 获取数据主服务
+    public String getDataMainService() {
+        String defaultId = BleConfig.Ble_Default_Data_Send_Service.getServiceID();
+
+        return (String) SPUtils.get(getAppContext(), "dataMainService", defaultId);
+    }
+
+    // 设置数据主服务
+    public void setDataMainService(String serviceId) {
+        SPUtils.put(getAppContext(), "dataMainService", serviceId);
+    }
+
+    // 获取数据通知服务
+    public String getDataNotifyService() {
+        String defaultId = BleConfig.Ble_Default_Data_Receive_Service.getCharacteristicID();
+
+        return (String)SPUtils.get(getAppContext(), "dataNotifyService", defaultId);
+    }
+
+    // 设置数据通知服务
+    public void setDataNotifyService(String serviceId) {
+        SPUtils.put(getAppContext(), "dataNotifyService", serviceId);
+    }
+
+    // 获取数据发送服务
+    public String getDataSendService() {
+        String defaultId = BleConfig.Ble_Default_Data_Send_Service.getCharacteristicID();
+
+        return (String)SPUtils.get(getAppContext(), "dataSendService", defaultId);
+    }
+
+    // 设置数据发送服务
+    public void setDataSendService(String serviceId) {
+        SPUtils.put(getAppContext(), "dataSendService", serviceId);
+    }
+
     // 是否为十六进制模式
     public boolean isBleHex() {
 
@@ -110,4 +157,27 @@ public class HJBleApplication extends Application {
 
         SPUtils.put(getAppContext(), "testGapTime", testGapTime);
     }
+
+    // 测试文件路径
+    public String testFilePath() {
+
+        return (String)SPUtils.get(getAppContext(), "testFilePath", "-");
+    }
+
+    public void setTestFilePath(String filePath) {
+
+        SPUtils.put(getAppContext(), "testFilePath", filePath);
+    }
+
+    // 是否使用文件测试
+    public boolean useFileTest() {
+
+        return  (Boolean)SPUtils.get(getAppContext(), "useFileTest", false);
+    }
+
+    public void setUseFileTest(boolean bUseFileTest) {
+
+        SPUtils.put(getAppContext(), "useFileTest", bUseFileTest);
+    }
+
 }

@@ -56,13 +56,13 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
         EasyPermissions.RationaleCallbacks {
 
     // 扫描是否过滤
-    private static final boolean SCAN_FILTER = true;
+    private boolean bScanFilter = HJBleApplication.shareInstance().isScanFilter();
 
     private static final int REQUEST_ENABLE_BT = 1;
     private static final int RC_PERM_CODE = 124;
 
     private String[] permissionList = {Manifest.permission.BLUETOOTH, Manifest.permission.BLUETOOTH_ADMIN,
-            Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION};
+            Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.WRITE_EXTERNAL_STORAGE};
 
     private boolean mScanning=true;
 
@@ -141,12 +141,16 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
         topLeftBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                AlertDialog.Builder ab=new AlertDialog.Builder(ScanBleActivity.this);  //(普通消息框)
 
-                ab.setTitle("版本信息");  //设置标题
-                ab.setMessage("V " + getVersionName(ScanBleActivity.this));//设置消息内容
-                ab.setNegativeButton("确定",null);//设置取消按钮
-                ab.show();//显示弹出框
+                final Intent intent = new Intent(ScanBleActivity.this, AppConfigSetActivity.class);
+                ScanBleActivity.this.startActivity(intent);
+
+//                AlertDialog.Builder ab=new AlertDialog.Builder(ScanBleActivity.this);  //(普通消息框)
+//
+//                ab.setTitle("版本信息");  //设置标题
+//                ab.setMessage("V " + getVersionName(ScanBleActivity.this));//设置消息内容
+//                ab.setNegativeButton("确定",null);//设置取消按钮
+//                ab.show();//显示弹出框
             }
         });
 
@@ -217,6 +221,8 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
     protected void onResume()
     {
         super.onResume();
+
+        bScanFilter = HJBleApplication.shareInstance().isScanFilter();
 
         //判断本地蓝牙是否已打开
         if(!mble.isOpened())
@@ -479,35 +485,33 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
 
             byte[] scanRecord = result.getScanRecord().getBytes();
 
+            if (scanRecord.length < 9) {
+                return;
+            }
+
+            // 获取前面9个字节数据
+            byte[] tempScan = new byte[9];
+            System.arraycopy(scanRecord, 0, tempScan, 0, 9);
+            String scanRecordStr = ConvertData.bytesToHexString(tempScan, false);
+
             boolean isEasy = false;
             boolean isConfig = false;
             int maxLen = 20;
 
             // 是否扫描过滤
-            if (SCAN_FILTER) {
+            if (bScanFilter) {
 
-                //02010603035869
-                if(scanRecord.length >= 7 && scanRecord[0] == 0x02 && scanRecord[1] == 0x01 &&
-                        scanRecord[2] == 0x06 && scanRecord[3] == 0x03 && scanRecord[4] == 0x03 &&
-                        scanRecord[5] == 0x58 && scanRecord[6] == 0x69) {
-
-
+                if (scanRecordStr.contains("5869") && scanRecord[3] == 0x03) {
                     isEasy = false;
                     maxLen = 20;
                     isConfig = false;
                 }
-                else if(scanRecord.length >= 7 && scanRecord[0] == 0x02 && scanRecord[1] == 0x01 &&
-                        scanRecord[2] == 0x06 && scanRecord[3] == 0x09 && scanRecord[4] == 0x03 &&
-                        scanRecord[5] == 0x58 && scanRecord[6] == 0x69) {
-
+                else if (scanRecordStr.contains("5869")) {
                     isEasy = false;
                     maxLen = 160;
                     isConfig = true;
                 }
-                else if(scanRecord.length >= 7 && scanRecord[0] == 0x02 && scanRecord[1] == 0x01 &&
-                        scanRecord[2] == 0x06 && scanRecord[3] == 0x09 && scanRecord[4] == 0x03 &&
-                        scanRecord[5] == 0x59 && scanRecord[6] == 0x69) {
-
+                else if (scanRecordStr.contains("5969")) {
                     isEasy = true;
                     maxLen = 160;
                     isConfig = true;
@@ -557,14 +561,18 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
     private boolean checkPermissions() {
 
         if (Build.VERSION.SDK_INT >= 23){
+
             boolean hasPermission = EasyPermissions.hasPermissions(this, permissionList);
 
-            boolean bResult = isGpsProviderEnabled();
+            if (Build.VERSION.SDK_INT < 31) {
+                boolean bResult = isGpsProviderEnabled();
 
-            if (!bResult){
+                if (!bResult){
 //                Toast.makeText(ScanBleActivity.this, "部分机型需要打开gps才能扫描到设备", Toast.LENGTH_SHORT).show();
-                return false;
+                    return false;
+                }
             }
+
             return hasPermission;
         }
         return true;

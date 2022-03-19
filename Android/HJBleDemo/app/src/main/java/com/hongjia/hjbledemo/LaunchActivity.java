@@ -19,7 +19,9 @@ public class LaunchActivity extends Activity {
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
 
-        StatusBarCompat.setStatusBarColor(this, Color.parseColor("#e6e6e6"), true);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            StatusBarCompat.setStatusBarColor(this, Color.parseColor("#e6e6e6"), true);
+        }
 
         getWindow().setFormat(PixelFormat.RGBA_8888);
 

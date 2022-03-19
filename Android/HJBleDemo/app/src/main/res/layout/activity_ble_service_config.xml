@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="15dp">
+
+    <LinearLayout
+        android:id="@+id/footer"
+        android:layout_width="match_parent"
+        android:layout_height="45dp"
+        android:layout_alignParentBottom="true"
+        android:weightSum="1"
+        android:gravity="center">
+
+        <Button
+            android:id="@+id/btn_recovery_default"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="0.5"
+            android:text="恢复默认"/>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:layout_above="@id/footer">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#666"
+            android:textSize="15sp"
+            android:text="主服务："/>
+
+        <EditText
+            android:id="@+id/et_main_service"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:textColor="#333"
+            android:textSize="15sp"
+            android:padding="5dp"
+            android:hint="请输入服务"
+            android:background="@drawable/edit_text_bg"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#666"
+            android:textSize="15sp"
+            android:layout_marginTop="15dp"
+            android:text="通知服务："/>
+
+        <EditText
+            android:id="@+id/et_notify_service"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:textColor="#333"
+            android:textSize="15sp"
+            android:padding="5dp"
+            android:hint="请输入服务"
+            android:background="@drawable/edit_text_bg"/>
+
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#666"
+            android:textSize="15sp"
+            android:layout_marginTop="15dp"
+            android:text="发送服务："/>
+
+        <EditText
+            android:id="@+id/et_send_service"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:textColor="#333"
+            android:textSize="15sp"
+            android:padding="5dp"
+            android:hint="请输入服务"
+            android:background="@drawable/edit_text_bg"/>
+
+        <TextView
+            android:layout_marginTop="15dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="12sp"
+            android:textColor="#f20c00"
+            android:text="* 输入的格式为xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx\n*两字节服务请输入格式为0000xxxx-0000-1000-8000-00805f9b34fb的数据，请将xxxx更换为对应的两字节服务"/>
+
+    </LinearLayout>
+
+</RelativeLayout>

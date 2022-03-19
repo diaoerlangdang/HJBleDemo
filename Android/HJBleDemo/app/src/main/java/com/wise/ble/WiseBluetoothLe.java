@@ -40,6 +40,8 @@ public class WiseBluetoothLe extends BluetoothLe
 
 	public final static int DEFALUT_BLE_SEND_DATA_LEN_MAX = 20;
 
+	private boolean bHighRate = false; // 高速率模式
+
 
 	private WaitEvent connectEvent = new WaitEvent();
 
@@ -221,6 +223,41 @@ public class WiseBluetoothLe extends BluetoothLe
 	}
 
 	/**
+	 * 开启高速率模式，请在连接成功后调用
+	 * @return 成功true，失败false
+	 */
+	public boolean openHighRate() {
+
+		if (mBluetoothGatt != null && mBluetoothGatt.requestConnectionPriority(BluetoothGatt.CONNECTION_PRIORITY_HIGH)) {
+			bHighRate = true;
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * 关闭高速率模式，请在连接成功后调用
+	 * @return 成功true，失败false
+	 */
+	public boolean closeHighRate() {
+		if (mBluetoothGatt != null && mBluetoothGatt.requestConnectionPriority(BluetoothGatt.CONNECTION_PRIORITY_BALANCED)) {
+			bHighRate = false;
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * 是否为高速率模式
+	 * @return true or false
+	 */
+	public boolean isbHighRate() {
+		return bHighRate;
+	}
+
+	/**
 	 * 断开设备连接
 	 */
 	public void disconnectDevice()
@@ -232,6 +269,7 @@ public class WiseBluetoothLe extends BluetoothLe
 		stateEvent.setSignal(WaitEvent.ERROR_FAILED);
 		sendEvent.setSignal(WaitEvent.ERROR_FAILED);
 		super.disconnectDevice();
+		super.disconnectLocalDevice();
 	}
 
 

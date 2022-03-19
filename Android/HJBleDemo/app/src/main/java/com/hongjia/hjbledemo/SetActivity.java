@@ -2,25 +2,38 @@ package com.hongjia.hjbledemo;
 
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.InputType;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.RelativeLayout;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.PopupMenu;
 
+import com.wise.ble.WiseBluetoothLe;
 import com.wise.wisekit.activity.BaseActivity;
+
+import java.io.File;
 
 public class SetActivity extends BaseActivity {
 
     // 是否支持配置
     public static final String EXTRAS_SET_IS_CONFIG = "DEVICE_IS_CONFIG";
+
+    private static final int SELECT_FILE_REQ = 1001;
+    private static final int SELECT_INIT_FILE_REQ = 1002;
+
+    // 高速模式
+    private Switch swithHighRate;
 
     // 选择模式
     private LinearLayout selectModeBtn;
@@ -40,6 +53,10 @@ public class SetActivity extends BaseActivity {
     // 下发数据时间间隙
     private RelativeLayout selecGapTimeBtn;
 
+    private RelativeLayout selectFilePathBtn;
+
+    private Switch switchUseFileTest;
+
     // 选择模式
     private TextView modeTxt;
     // 选择字符
@@ -57,6 +74,9 @@ public class SetActivity extends BaseActivity {
 
     // 下发数据时间间隙
     private TextView gapTimeTxt;
+
+    // 文件路径
+    private TextView filePathTxt;
 
     private boolean isConfig;
 
@@ -79,6 +99,24 @@ public class SetActivity extends BaseActivity {
 
         setTitle("设置");
 
+        swithHighRate = findViewById(R.id.switch_high_rate);
+        swithHighRate.setChecked(WiseBluetoothLe.getInstance(HJBleApplication.getAppContext()).isbHighRate());
+        swithHighRate.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                if (b) {
+                    if (!WiseBluetoothLe.getInstance(HJBleApplication.getAppContext()).openHighRate()) {
+                        swithHighRate.setChecked(false);
+                        Toast.makeText(SetActivity.this, "打开高速模式失败", Toast.LENGTH_LONG).show();
+                    }
+                } else {
+                    if (!WiseBluetoothLe.getInstance(HJBleApplication.getAppContext()).closeHighRate()) {
+                        swithHighRate.setChecked(true);
+                        Toast.makeText(SetActivity.this, "关闭高速模式失败", Toast.LENGTH_LONG).show();
+                    }
+                }
+            }
+        });
         modeTxt = findViewById(R.id.mode_txt);
         charTxt = findViewById(R.id.char_txt);
         returnTxt = findViewById(R.id.return_txt);
@@ -87,6 +125,16 @@ public class SetActivity extends BaseActivity {
         groupLenTxt = findViewById(R.id.group_len_txt);
         dataLenTxt = findViewById(R.id.data_len_txt);
         gapTimeTxt = findViewById(R.id.gap_time_txt);
+
+        filePathTxt = findViewById(R.id.file_path_txt);
+        switchUseFileTest = findViewById(R.id.switch_use_file_test);
+        switchUseFileTest.setChecked(HJBleApplication.shareInstance().useFileTest());
+        switchUseFileTest.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                HJBleApplication.shareInstance().setUseFileTest(isChecked);
+            }
+        });
 
         selectCharBtn = findViewById(R.id.select_char);
         selectCharBtn.setOnClickListener(new View.OnClickListener() {
@@ -186,6 +234,18 @@ public class SetActivity extends BaseActivity {
             }
         });
 
+        selectFilePathBtn = findViewById(R.id.file_path_layout);
+        selectFilePathBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                final Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+//                intent.setType("application/hj");
+                intent.setType("*/*");
+                intent.addCategory(Intent.CATEGORY_OPENABLE);
+                startActivityForResult(intent, SELECT_FILE_REQ);
+            }
+        });
+
         if (HJBleApplication.shareInstance().isBleConfig()) {
             modeTxt.setText("配置模式");
         }
@@ -217,6 +277,7 @@ public class SetActivity extends BaseActivity {
         groupLenTxt.setText("" + HJBleApplication.shareInstance().groupLen());
         dataLenTxt.setText("" + HJBleApplication.shareInstance().testDataLen());
         gapTimeTxt.setText("" + HJBleApplication.shareInstance().testGapTime());
+        filePathTxt.setText(HJBleApplication.shareInstance().testFilePath());
 
         // 不支持配置
         if (!isConfig) {
@@ -334,5 +395,50 @@ public class SetActivity extends BaseActivity {
             }
         });
         popupMenu.show();
+    }
+
+    @Override
+    protected void onActivityResult(final int requestCode, final int resultCode, final Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode != RESULT_OK)
+            return;
+
+        switch (requestCode) {
+            case SELECT_FILE_REQ: {
+                final Uri uri = data.getData();
+                final String path = FileInfoUtils.getPath(this, uri);
+                filePathTxt.setText(path);
+                HJBleApplication.shareInstance().setTestFilePath(path);
+                break;
+            }
+            case SELECT_INIT_FILE_REQ: {
+//                mInitFilePath = null;
+//                mInitFileStreamUri = null;
+//
+//                // and read new one
+//                final Uri uri = data.getData();
+//                /*
+//                 * The URI returned from application may be in 'file' or 'content' schema. 'File' schema allows us to create a File object and read details from if
+//                 * directly. Data from 'Content' schema must be read by Content Provider. To do that we are using a Loader.
+//                 */
+//                if (uri.getScheme().equals("file")) {
+//                    // the direct path to the file has been returned
+//                    mInitFilePath = uri.getPath();
+//                    mFileStatusView.setText(R.string.dfu_file_status_ok_with_init);
+//                } else if (uri.getScheme().equals("content")) {
+//                    // an Uri has been returned
+//                    mInitFileStreamUri = uri;
+//                    // if application returned Uri for streaming, let's us it. Does it works?
+//                    // FIXME both Uris works with Google Drive app. Why both? What's the difference? How about other apps like DropBox?
+//                    final Bundle extras = data.getExtras();
+//                    if (extras != null && extras.containsKey(Intent.EXTRA_STREAM))
+//                        mInitFileStreamUri = extras.getParcelable(Intent.EXTRA_STREAM);
+//                    mFileStatusView.setText(R.string.dfu_file_status_ok_with_init);
+//                }
+                break;
+            }
+            default:
+                break;
+        }
     }
 }

@@ -14,6 +14,30 @@
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
             android:textColor="@android:color/black"
+            android:text="高速模式："/>
+
+        <Switch
+            android:id="@+id/switch_high_rate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:switchMinWidth="20dp"
+            android:thumb="@drawable/switch_thumb"
+            android:track="@drawable/switch_track"/>
+
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="10dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:textColor="@android:color/black"
             android:text="当前字符："/>
 
         <LinearLayout
@@ -235,8 +259,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
-            android:textColor="@android:color/black"
-            android:text="下发数据时间间隙(ms)："/>
+            android:text="下发数据时间间隙(ms)："
+            android:textColor="@android:color/black" />
 
         <TextView
             android:id="@+id/gap_time_txt"
@@ -250,6 +274,59 @@
             android:textColor="@android:color/black"
             android:text="200"/>
 
+
+    </RelativeLayout>
+
+
+    <RelativeLayout
+        android:id="@+id/file_path_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="10dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:textColor="@android:color/black"
+            android:text="测试文件："/>
+
+        <TextView
+            android:id="@+id/file_path_txt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingTop="5dp"
+            android:paddingBottom="5dp"
+            android:paddingLeft="15dp"
+            android:paddingRight="15dp"
+            android:layout_alignParentEnd="true"
+            android:textColor="@android:color/black"
+            android:text="-"/>
+
+
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="10dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:textColor="@android:color/black"
+            android:text="是否使用文件测试："/>
+
+        <Switch
+            android:id="@+id/switch_use_file_test"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:switchMinWidth="20dp"
+            android:thumb="@drawable/switch_thumb"
+            android:track="@drawable/switch_track"/>
 
     </RelativeLayout>
 
