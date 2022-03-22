@@ -11,6 +11,7 @@ import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.icu.text.SimpleDateFormat;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -45,6 +46,7 @@ import com.wise.wisekit.dialog.LoadingDialog;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -647,7 +649,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
         int sendDataLenMax;
 
         // 时间
-        Time time;
+        Long timeStamp;
 
         @Override
         public int compareTo(HJBleScanDevice o) {
@@ -677,8 +679,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
 
             for (int i=0; i<mScanDevices.size(); i++) {
                 if (mScanDevices.get(i).device.getAddress().equals(scanDevice.device.getAddress())) {
-                    scanDevice.time = new Time();
-                    scanDevice.time.setToNow();
+                    scanDevice.timeStamp = new Date().getTime();
                     mScanDevices.set(i, scanDevice);
                     isAdd = false;
                     break;
@@ -686,8 +687,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
             }
 
             if (isAdd) {
-                scanDevice.time = new Time();
-                scanDevice.time.setToNow();
+                scanDevice.timeStamp = new Date().getTime();
                 mScanDevices.add(scanDevice);
             }
 
@@ -762,9 +762,9 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
 
             viewHolder.deviceAddress.setText("address:"+scanDevice.device.getAddress() + "     RSSI:"+scanDevice.rssi+"dB");
             viewHolder.deviceRecord.setText("broadcast:"+scanDevice.record);
-            String timeStr = "time: " + scanDevice.time.year + "-" + scanDevice.time.month + "-" + scanDevice.time.monthDay + " " +
-                    scanDevice.time.hour + ":" + scanDevice.time.minute + ":" + scanDevice.time.second;
-            viewHolder.deviceTime.setText(timeStr);
+
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            viewHolder.deviceTime.setText(sdf.format(scanDevice.timeStamp));
 
             if (!scanDevice.isEasy) {
 //                viewHolder.imageView.setVisibility(View.GONE);

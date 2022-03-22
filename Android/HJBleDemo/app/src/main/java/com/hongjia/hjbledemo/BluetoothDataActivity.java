@@ -3,6 +3,7 @@ package com.hongjia.hjbledemo;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
+import android.icu.text.SimpleDateFormat;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -748,12 +749,18 @@ public class BluetoothDataActivity extends BaseActivity {
                 viewHolder = new DataViewHolder();
                 viewHolder.dataTypeTv = view.findViewById(R.id.tv_data_type);
                 viewHolder.dataInfoTv = (TextView) view.findViewById(R.id.tv_data_info);
+                viewHolder.dataTimeTv = view.findViewById(R.id.tv_data_time);
                 view.setTag(viewHolder);
             } else {
                 viewHolder = (DataViewHolder) view.getTag();
             }
 
             SendReceiveDataBean dataInfo = mDataList.get(i);
+
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss SSS");
+            String timeStr = sdf.format(dataInfo.getTimeStamp());
+            viewHolder.dataTimeTv.setText(timeStr);
+
             switch (dataInfo.getDataType()) {
                 case SendReceiveDataBean.DataTypeSend: {
                     viewHolder.dataTypeTv.setTextColor(Color.BLUE);
@@ -778,7 +785,7 @@ public class BluetoothDataActivity extends BaseActivity {
 
                 default: {
                     viewHolder.dataTypeTv.setTextColor(Color.BLACK);
-                    viewHolder.dataTypeTv.setText("其他：");
+                    viewHolder.dataTypeTv.setText("其他：" + timeStr);
                     viewHolder.dataInfoTv.setText(dataInfo.getDataInfo());
                 }
             }
@@ -790,5 +797,7 @@ public class BluetoothDataActivity extends BaseActivity {
     static class DataViewHolder {
         TextView dataTypeTv;
         TextView dataInfoTv;
+        TextView dataTimeTv;
+
     }
 }
