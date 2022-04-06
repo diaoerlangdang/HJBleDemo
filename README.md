@@ -9,6 +9,9 @@
 
 ```
 
+## gitee地址
+https://gitee.com/wu_wise/HJBleDemo
+
 
 ## Demo体验下载地址
 
