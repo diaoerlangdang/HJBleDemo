@@ -43,17 +43,17 @@ public class WiseBluetoothLe extends BluetoothLe
 	private boolean bHighRate = false; // 高速率模式
 
 
-	private WaitEvent connectEvent = new WaitEvent();
+	private WiseWaitEvent connectEvent = new WiseWaitEvent();
 
-	private WaitEvent stateEvent = new WaitEvent();
+	private WiseWaitEvent stateEvent = new WiseWaitEvent();
 
-	private WaitEvent readEvent = new WaitEvent();
+	private WiseWaitEvent readEvent = new WiseWaitEvent();
 
-	private WaitEvent sendEvent = new WaitEvent();
+	private WiseWaitEvent sendEvent = new WiseWaitEvent();
 
-	private WaitEvent recvEvent = new WaitEvent();
+	private WiseWaitEvent recvEvent = new WiseWaitEvent();
 
-	private WaitEvent mtuEvent = new WaitEvent();
+	private WiseWaitEvent mtuEvent = new WiseWaitEvent();
 
 	private ByteArrayOutputStream recvBuffer = new ByteArrayOutputStream();
 
@@ -213,7 +213,7 @@ public class WiseBluetoothLe extends BluetoothLe
 		Log.d(TAG, "开始" + System.currentTimeMillis());
 		int result = connectEvent.waitSignal(RECV_TIME_OUT_MIDDLE);
 		Log.d(TAG, "结束" + System.currentTimeMillis());
-		if(WaitEvent.SUCCESS != result)
+		if(WiseWaitEvent.SUCCESS != result)
 		{
 			disconnectDevice();
 			return false;
@@ -264,10 +264,10 @@ public class WiseBluetoothLe extends BluetoothLe
 	{
 		mBleState = WISE_BLE_DISCONNECTED;
 		mBleCallBack = null;
-		connectEvent.setSignal(WaitEvent.ERROR_FAILED);
-		recvEvent.setSignal(WaitEvent.ERROR_FAILED);
-		stateEvent.setSignal(WaitEvent.ERROR_FAILED);
-		sendEvent.setSignal(WaitEvent.ERROR_FAILED);
+		connectEvent.setSignal(WiseWaitEvent.ERROR_FAILED);
+		recvEvent.setSignal(WiseWaitEvent.ERROR_FAILED);
+		stateEvent.setSignal(WiseWaitEvent.ERROR_FAILED);
+		sendEvent.setSignal(WiseWaitEvent.ERROR_FAILED);
 		super.disconnectDevice();
 		super.disconnectLocalDevice();
 	}
@@ -308,7 +308,7 @@ public class WiseBluetoothLe extends BluetoothLe
 		if(!setCharacteristicNotification(characteristic, true))
 			return false;
 
-		if(WaitEvent.SUCCESS != stateEvent.waitSignal(RECV_TIME_OUT_MIDDLE))
+		if(WiseWaitEvent.SUCCESS != stateEvent.waitSignal(RECV_TIME_OUT_MIDDLE))
 			return false;
 
 		return true;
@@ -340,7 +340,7 @@ public class WiseBluetoothLe extends BluetoothLe
 		if(!mBluetoothGatt.readCharacteristic(characteristic))
 			return null;
 
-		if(WaitEvent.SUCCESS != readEvent.waitSignal(RECV_TIME_OUT_MIDDLE))
+		if(WiseWaitEvent.SUCCESS != readEvent.waitSignal(RECV_TIME_OUT_MIDDLE))
 			return null;
 
 
@@ -407,7 +407,7 @@ public class WiseBluetoothLe extends BluetoothLe
 			if(!mBluetoothGatt.writeCharacteristic(characteristic))
 				return false;
 
-			if(WaitEvent.SUCCESS != sendEvent.waitSignal(RECV_TIME_OUT_MIDDLE))
+			if(WiseWaitEvent.SUCCESS != sendEvent.waitSignal(RECV_TIME_OUT_MIDDLE))
 				return false;
 		}
 
@@ -446,7 +446,7 @@ public class WiseBluetoothLe extends BluetoothLe
 
 		if (sendData(sendCharact, data)) {
 
-			if(WaitEvent.SUCCESS == recvEvent.waitSignal(timeout)) {
+			if(WiseWaitEvent.SUCCESS == recvEvent.waitSignal(timeout)) {
 				byte[] tmp = recvBuffer.toByteArray();
 				recvBuffer.reset();
 				return tmp;
@@ -519,7 +519,7 @@ public class WiseBluetoothLe extends BluetoothLe
 		{
 			if(status == BluetoothGatt.GATT_SUCCESS)
 				mBleState = WISE_BLE_CONNECTED;
-			int result = (status == BluetoothGatt.GATT_SUCCESS) ? WaitEvent.SUCCESS : WaitEvent.ERROR_FAILED;
+			int result = (status == BluetoothGatt.GATT_SUCCESS) ? WiseWaitEvent.SUCCESS : WiseWaitEvent.ERROR_FAILED;
 			connectEvent.setSignal(result);
 		}
 
@@ -527,7 +527,7 @@ public class WiseBluetoothLe extends BluetoothLe
 		public void onCharacteristicRead(BluetoothGatt gatt,
 										 BluetoothGattCharacteristic characteristic, int status)
 		{
-			int result = (status == BluetoothGatt.GATT_SUCCESS) ? WaitEvent.SUCCESS : WaitEvent.ERROR_FAILED;
+			int result = (status == BluetoothGatt.GATT_SUCCESS) ? WiseWaitEvent.SUCCESS : WiseWaitEvent.ERROR_FAILED;
 
 			if (status == BluetoothGatt.GATT_SUCCESS)
 			{
@@ -549,7 +549,7 @@ public class WiseBluetoothLe extends BluetoothLe
 		{
 			if (mSendService.isEqualBleGattCharacteristic(characteristic))
 			{
-				int result = (status == BluetoothGatt.GATT_SUCCESS) ? WaitEvent.SUCCESS : WaitEvent.ERROR_FAILED;
+				int result = (status == BluetoothGatt.GATT_SUCCESS) ? WiseWaitEvent.SUCCESS : WiseWaitEvent.ERROR_FAILED;
 				sendEvent.setSignal(result);
 			}
 
@@ -578,9 +578,9 @@ public class WiseBluetoothLe extends BluetoothLe
 					recvBuffer.write(recvTmp, 0, recvTmp.length);
 				}
 
-				if ((recvEvent.getWaitStatus() == WaitEvent.Waitting || recvEvent.getWaitStatus() == WaitEvent.WillWaitting) &&
+				if ((recvEvent.getWaitStatus() == WiseWaitEvent.Waitting || recvEvent.getWaitStatus() == WiseWaitEvent.WillWaitting) &&
 						mSendReceiveService.isEqualBleGattCharacteristic(characteristic)) {
-					recvEvent.setSignal(WaitEvent.SUCCESS);
+					recvEvent.setSignal(WiseWaitEvent.SUCCESS);
 				}
 				else if(mBleCallBack != null) {
 
@@ -604,12 +604,12 @@ public class WiseBluetoothLe extends BluetoothLe
 				if(ConvertData.cmpBytes(descriptor.getValue(), BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE) ||
 						ConvertData.cmpBytes(descriptor.getValue(), BluetoothGattDescriptor.ENABLE_INDICATION_VALUE))
 				{
-					stateEvent.setSignal(WaitEvent.SUCCESS);
+					stateEvent.setSignal(WiseWaitEvent.SUCCESS);
 				}
 			}
 			else
 			{
-				stateEvent.setSignal(WaitEvent.ERROR_FAILED);
+				stateEvent.setSignal(WiseWaitEvent.ERROR_FAILED);
 			}
 		}
 
@@ -619,64 +619,6 @@ public class WiseBluetoothLe extends BluetoothLe
 		}
 	};
 
-	private static class WaitEvent {
-		final static int ERROR_FAILED = 3;
-		final static int ERROR_TIME_OUT = 2;
-		final static int WillWaitting = 2;
-		final static int Waitting = 1;
-		final static int SUCCESS = 0;
 
-		private volatile int mResult = SUCCESS;
-
-		private volatile boolean ready = false; // 如果是true，则表示是被唤醒
-
-		void init() {
-
-			// 防止等待之前先成功，所以在使用前先init，如果还没有waitSignal就调用setSignal，则会立即成功
-			mResult = WillWaitting;
-			ready = false;
-		}
-
-		public synchronized void setSignal(int result) {
-			ready = true;
-			mResult = result;
-			notify();
-		}
-
-		public synchronized int waitSignal(long mills) {
-
-			// 根据时间来判断是否超时
-			long begin = System.currentTimeMillis();
-			long rest = mills;
-			if (rest == 0) {
-				try {
-					wait();
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-				return mResult;
-			} else {
-				while (!ready && rest > 0) { // 如果被唤醒（ready为true），或超时（rest <= 0）则结束循环
-					try {
-						wait(rest);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-					rest = mills - (System.currentTimeMillis() - begin); // 计算剩余时间
-				}
-				// 超时
-				if (!ready) {
-					mResult = ERROR_TIME_OUT;
-				}
-				return mResult;
-			}
-		}
-
-		//获取等待状态
-		int getWaitStatus() {
-			return mResult;
-		}
-
-	}
 
 }

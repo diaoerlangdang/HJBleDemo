@@ -3,7 +3,7 @@ package com.hongjia.hjbledemo;
 import android.app.Application;
 import android.content.Context;
 
-import com.wise.ble.WiseBluetoothLe;
+import com.clj.fastble.BleManager;
 import com.wise.wisekit.utils.SPUtils;
 
 public class HJBleApplication extends Application {
@@ -26,7 +26,13 @@ public class HJBleApplication extends Application {
 
         instance = this;
 
-        WiseBluetoothLe.getInstance(getAppContext());
+        BleManager.getInstance().init(this);
+
+        BleManager.getInstance()
+                .enableLog(true)
+                .setReConnectCount(1, 5000)
+                .setConnectOverTime(5000)
+                .setOperateTimeout(5000);
 
     }
 

@@ -25,73 +25,73 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:layout_above="@id/footer">
+        android:layout_above="@id/footer"
+        android:orientation="vertical">
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:text="主服务："
             android:textColor="#666"
-            android:textSize="15sp"
-            android:text="主服务："/>
+            android:textSize="15sp" />
 
         <EditText
             android:id="@+id/et_main_service"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="5dp"
-            android:textColor="#333"
-            android:textSize="15sp"
-            android:padding="5dp"
+            android:background="@drawable/edit_text_bg"
             android:hint="请输入服务"
-            android:background="@drawable/edit_text_bg"/>
+            android:padding="5dp"
+            android:textColor="#333"
+            android:textSize="15sp" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="#666"
-            android:textSize="15sp"
             android:layout_marginTop="15dp"
-            android:text="通知服务："/>
+            android:text="通知服务："
+            android:textColor="#666"
+            android:textSize="15sp" />
 
         <EditText
             android:id="@+id/et_notify_service"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="5dp"
-            android:textColor="#333"
-            android:textSize="15sp"
-            android:padding="5dp"
+            android:background="@drawable/edit_text_bg"
             android:hint="请输入服务"
-            android:background="@drawable/edit_text_bg"/>
+            android:padding="5dp"
+            android:textColor="#333"
+            android:textSize="15sp" />
 
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="#666"
-            android:textSize="15sp"
             android:layout_marginTop="15dp"
-            android:text="发送服务："/>
+            android:text="发送服务："
+            android:textColor="#666"
+            android:textSize="15sp" />
 
         <EditText
             android:id="@+id/et_send_service"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="5dp"
-            android:textColor="#333"
-            android:textSize="15sp"
-            android:padding="5dp"
+            android:background="@drawable/edit_text_bg"
             android:hint="请输入服务"
-            android:background="@drawable/edit_text_bg"/>
+            android:padding="5dp"
+            android:textColor="#333"
+            android:textSize="15sp" />
 
         <TextView
-            android:layout_marginTop="15dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textSize="12sp"
+            android:layout_marginTop="15dp"
+            android:text="* 输入的格式为xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx\n*两字节服务请输入格式为0000xxxx-0000-1000-8000-00805f9b34fb的数据，请将xxxx更换为对应的两字节服务"
             android:textColor="#f20c00"
-            android:text="* 输入的格式为xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx\n*两字节服务请输入格式为0000xxxx-0000-1000-8000-00805f9b34fb的数据，请将xxxx更换为对应的两字节服务"/>
+            android:textSize="12sp" />
 
     </LinearLayout>
 

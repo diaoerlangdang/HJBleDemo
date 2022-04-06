@@ -1,5 +1,8 @@
 package com.hongjia.hjbledemo;
 
+import android.bluetooth.BluetoothGatt;
+import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattService;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
@@ -28,9 +31,16 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 
+import com.clj.fastble.BleManager;
+import com.clj.fastble.callback.BleGattCallback;
+import com.clj.fastble.callback.BleNotifyCallback;
+import com.clj.fastble.callback.BleWriteCallback;
+import com.clj.fastble.data.BleDevice;
+import com.clj.fastble.exception.BleException;
 import com.wise.ble.ConvertData;
 import com.wise.ble.WiseBluetoothLe;
 import com.wise.ble.WiseCharacteristic;
+import com.wise.ble.WiseWaitEvent;
 import com.wise.wisekit.activity.BaseActivity;
 
 import java.io.BufferedInputStream;
@@ -42,14 +52,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.UUID;
 import java.util.regex.Pattern;
 
 public class BluetoothDataActivity extends BaseActivity {
 
     private final static String TAG = BluetoothDataActivity.class.getSimpleName();
 
-    public static final String EXTRAS_DEVICE_NAME = "DEVICE_NAME";
-    public static final String EXTRAS_DEVICE_ADDRESS = "DEVICE_ADDRESS";
+    public static final String EXTRAS_DEVICE = "DEVICE";
     // 是否支持配置
     public static final String EXTRAS_DEVICE_IS_CONFIG = "DEVICE_IS_CONFIG";
     // 是否为流控信息
@@ -58,14 +68,16 @@ public class BluetoothDataActivity extends BaseActivity {
     private List<SendReceiveDataBean> mDataList = new ArrayList<>();
     private String mDeviceName;
     private String mDeviceAddress;
+    private BleDevice mBleDevice;
     private boolean isConfig;
-    private WiseBluetoothLe mble;
     private Context context;
     private EditText sendEdit;
     private TextView testBtn;
     private Button sendBt;
     private ListView dataListView;
     private SendReceiveDataAdapter mDataAdapter;
+
+    private WiseWaitEvent sendEvent = new WiseWaitEvent();
 
     private Handler mHandler;
     private ScrollView scrollView;
@@ -127,8 +139,9 @@ public class BluetoothDataActivity extends BaseActivity {
     protected void onCreate(Bundle savedInstanceState) {
 
         final Intent intent = getIntent();
-        mDeviceName = intent.getStringExtra(EXTRAS_DEVICE_NAME);
-        mDeviceAddress = intent.getStringExtra(EXTRAS_DEVICE_ADDRESS);
+        mBleDevice = intent.getParcelableExtra(EXTRAS_DEVICE);
+        mDeviceName = mBleDevice.getName();
+        mDeviceAddress = mBleDevice.getMac().toUpperCase();
         isConfig = intent.getBooleanExtra(EXTRAS_DEVICE_IS_CONFIG, false);
         bFlowControl = intent.getBooleanExtra(EXTRAS_DEVICE_IS_FLOW_CONTROL, false);
 
@@ -143,6 +156,7 @@ public class BluetoothDataActivity extends BaseActivity {
                 final Intent intent = new Intent(BluetoothDataActivity.this, SetActivity.class);
 
                 intent.putExtra(SetActivity.EXTRAS_SET_IS_CONFIG, isConfig);
+                intent.putExtra(SetActivity.EXTRAS_DEVICE, mBleDevice);
 
                 BluetoothDataActivity.this.startActivity(intent);
             }
@@ -166,8 +180,30 @@ public class BluetoothDataActivity extends BaseActivity {
             }
         };
 
-        mble = WiseBluetoothLe.getInstance(getApplicationContext());    //获取蓝牙实例
-        mble.mBleCallBack = bleCallBack;
+        BleManager.getInstance().getBleBluetooth(mBleDevice).addConnectGattCallback(new BleGattCallback() {
+            @Override
+            public void onStartConnect() {
+
+            }
+
+            @Override
+            public void onConnectFail(BleDevice bleDevice, BleException e) {
+
+            }
+
+            @Override
+            public void onConnectSuccess(BleDevice bleDevice, BluetoothGatt bluetoothGatt, int i) {
+
+            }
+
+            @Override
+            public void onDisConnected(boolean b, BleDevice bleDevice, BluetoothGatt bluetoothGatt, int i) {
+                SendReceiveDataBean dataBean = new SendReceiveDataBean(SendReceiveDataBean.DataTypeOther, "蓝牙已断开");
+
+                addDataInfoItem(dataBean);
+                finish();
+            }
+        });
 
         mHandler = new Handler(new Handler.Callback() {
             @Override
@@ -268,6 +304,29 @@ public class BluetoothDataActivity extends BaseActivity {
 
     }
 
+    private boolean sendDataSynchronization(BleManager bleManager, BleDevice bleDevice, WiseCharacteristic characteristic, byte[] data) {
+        sendEvent.init();
+        bleManager.write(bleDevice, characteristic.getServiceID(), characteristic.getCharacteristicID(), data, new BleWriteCallback() {
+            @Override
+            public void onWriteSuccess(int i, int i1, byte[] bytes) {
+                sendEvent.setSignal(WiseWaitEvent.SUCCESS);
+            }
+
+            @Override
+            public void onWriteFailure(BleException e) {
+                sendEvent.setSignal(WiseWaitEvent.ERROR_FAILED);
+            }
+        });
+
+        int result = sendEvent.waitSignal(5000);
+        bleManager.getBleBluetooth(bleDevice).removeWriteCallback(characteristic.getCharacteristicID());
+        if(WiseWaitEvent.SUCCESS != result) {
+            return false;
+        }
+
+        return true;
+    }
+
     void startTest() {
         setIsTesting(true);
 
@@ -331,7 +390,7 @@ public class BluetoothDataActivity extends BaseActivity {
                                 }
                             });
 
-                            if (!mble.sendData(mSendCharact, sendBytes)) {
+                            if (!sendDataSynchronization(BleManager.getInstance(), mBleDevice, mSendCharact, sendBytes)) {
                                 SendReceiveDataBean dataBean = new SendReceiveDataBean(SendReceiveDataBean.DataTypeFailed, "发送失败！");
 
                                 addDataInfoItem(dataBean);
@@ -345,8 +404,8 @@ public class BluetoothDataActivity extends BaseActivity {
                                 });
                                 fileInputStream.close();
                                 inputStream.close();
-                                return;
                             }
+
 
                             for (int i = 0; i < gapTime / 10 && isTesting; i++) {
                                 try {
@@ -393,7 +452,7 @@ public class BluetoothDataActivity extends BaseActivity {
                                 }
                             });
 
-                            if (!mble.sendData(mSendCharact, data)) {
+                            if (!sendDataSynchronization(BleManager.getInstance(), mBleDevice, mSendCharact, data)) {
                                 SendReceiveDataBean dataBean = new SendReceiveDataBean(SendReceiveDataBean.DataTypeFailed, "发送失败！");
 
                                 addDataInfoItem(dataBean);
@@ -497,7 +556,7 @@ public class BluetoothDataActivity extends BaseActivity {
             mSendCharact = BleConfig.Ble_Config_Send_Service;
             // 接收服务
             mReceiveCharact = BleConfig.Ble_Config_Receive_Service;
-            mble.setSendDataLenMax(HJBleApplication.shareInstance().groupLen());
+            BleManager.getInstance().setSplitWriteNum(HJBleApplication.shareInstance().groupLen());
 
             setTitle(mDeviceName + "-配置");
 
@@ -527,7 +586,81 @@ public class BluetoothDataActivity extends BaseActivity {
             sendEdit.setHint("请输入字符数据");
         }
 
-        mble.setWriteTypeResponse(HJBleApplication.shareInstance().isWriteTypeResponse());
+        writeTypeBle(mSendCharact, HJBleApplication.shareInstance().isWriteTypeResponse());
+
+        FastBleListener.getInstance().setNotifyBleCallback(BleConfig.Ble_Config_Receive_Service.getCharacteristicID(), new BleNotifyCallback() {
+            @Override
+            public void onNotifySuccess() {
+
+            }
+
+            @Override
+            public void onNotifyFailure(BleException e) {
+
+            }
+
+            @Override
+            public void onCharacteristicChanged(byte[] bytes) {
+                String recvStr = ConvertData.bytesToUtf8(bytes);
+                // 蓝牙设备繁忙
+                if (recvStr.equals("<HJ_BLE_BUSY_STOP_SEND>")) {
+                    SendReceiveDataBean dataBean = new SendReceiveDataBean(SendReceiveDataBean.DataTypeOther, "蓝牙设备繁忙");
+
+                    addDataInfoItem(dataBean);
+                    bBusyBle = true;
+                } else if (recvStr.equals("<HJ_BLE_IDLE_START_SEND>")) {
+                    SendReceiveDataBean dataBean = new SendReceiveDataBean(SendReceiveDataBean.DataTypeOther, "蓝牙设备空闲");
+
+                    addDataInfoItem(dataBean);
+                    bBusyBle = false;
+                }
+            }
+        });
+
+        FastBleListener.getInstance().setNotifyBleCallback(mReceiveCharact.getCharacteristicID(), new BleNotifyCallback() {
+            @Override
+            public void onNotifySuccess() {
+
+            }
+
+            @Override
+            public void onNotifyFailure(BleException e) {
+
+            }
+
+            @Override
+            public void onCharacteristicChanged(byte[] bytes) {
+                // 不是配置模式
+                if (!HJBleApplication.shareInstance().isBleConfig()) {
+                    final int len = bytes.length;
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            addReceiveByteCount(len);
+                            recCountBySecond += len;
+                        }
+                    });
+                }
+
+                String str = "";
+                if (HJBleApplication.shareInstance().isBleHex()) {
+                    str = ConvertData.bytesToHexString(bytes, false);
+                } else {
+                    str = ConvertData.bytesToUtf8(bytes);
+                }
+                SendReceiveDataBean dataBean = new SendReceiveDataBean(SendReceiveDataBean.DataTypeReceive, str);
+
+                addDataInfoItem(dataBean);
+            }
+        });
+    }
+
+    public void writeTypeBle(WiseCharacteristic chara,  boolean bRespone){
+        BluetoothGattService service= BleManager.getInstance().getBluetoothGatt(mBleDevice).getService(UUID.fromString(chara.getServiceID()));
+        BluetoothGattCharacteristic characteristic = service.getCharacteristic(UUID.fromString(chara.getCharacteristicID()));
+
+        //设置写入类型，WRITE_TYPE_DEFAULT：需要设备回应  WRITE_TYPE_NO_RESPONSE  不需要设备回应
+        characteristic.setWriteType(bRespone ? BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT : BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
     }
 
     @Override
@@ -613,73 +746,24 @@ public class BluetoothDataActivity extends BaseActivity {
             @Override
             public void run() {
 
-                if (!mble.sendData(mSendCharact, bytes)) {
-                    SendReceiveDataBean dataBean = new SendReceiveDataBean(SendReceiveDataBean.DataTypeFailed, "发送失败！");
+                BleManager.getInstance().write(mBleDevice, mSendCharact.getServiceID(), mSendCharact.getCharacteristicID(), bytes, new BleWriteCallback() {
+                    @Override
+                    public void onWriteSuccess(int i, int i1, byte[] bytes) {
 
-                    addDataInfoItem(dataBean);
-                }
+                    }
+
+                    @Override
+                    public void onWriteFailure(BleException e) {
+                        SendReceiveDataBean dataBean = new SendReceiveDataBean(SendReceiveDataBean.DataTypeFailed, "发送失败！");
+
+                        addDataInfoItem(dataBean);
+                    }
+                });
+
             }
         }).start();
 
     }
-
-    WiseBluetoothLe.OnWiseBluetoothCallBack bleCallBack = new WiseBluetoothLe.OnWiseBluetoothCallBack() {
-        @Override
-        public void OnWiseBluetoothState(int state) {
-
-            if (state == WiseBluetoothLe.WISE_BLE_DISCONNECTED) {
-                SendReceiveDataBean dataBean = new SendReceiveDataBean(SendReceiveDataBean.DataTypeOther, "蓝牙已断开");
-
-                addDataInfoItem(dataBean);
-                finish();
-            }
-
-        }
-
-        @Override
-        public void OnReceiveData(WiseCharacteristic characteristic, byte[] recvData) {
-
-            if (characteristic.equals(mReceiveCharact)) {
-
-                // 不是配置模式
-                if (!HJBleApplication.shareInstance().isBleConfig()) {
-                    final int len = recvData.length;
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            addReceiveByteCount(len);
-                            recCountBySecond += len;
-                        }
-                    });
-                }
-
-                String str = "";
-                if (HJBleApplication.shareInstance().isBleHex()) {
-                    str = ConvertData.bytesToHexString(recvData, false);
-                } else {
-                    str = ConvertData.bytesToUtf8(recvData);
-                }
-                SendReceiveDataBean dataBean = new SendReceiveDataBean(SendReceiveDataBean.DataTypeReceive, str);
-
-                addDataInfoItem(dataBean);
-            } else if (characteristic.equals(BleConfig.Ble_Config_Receive_Service)) {
-                String recvStr = ConvertData.bytesToUtf8(recvData);
-                // 蓝牙设备繁忙
-                if (recvStr.equals("<HJ_BLE_BUSY_STOP_SEND>")) {
-                    SendReceiveDataBean dataBean = new SendReceiveDataBean(SendReceiveDataBean.DataTypeOther, "蓝牙设备繁忙");
-
-                    addDataInfoItem(dataBean);
-                    bBusyBle = true;
-                } else if (recvStr.equals("<HJ_BLE_IDLE_START_SEND>")) {
-                    SendReceiveDataBean dataBean = new SendReceiveDataBean(SendReceiveDataBean.DataTypeOther, "蓝牙设备空闲");
-
-                    addDataInfoItem(dataBean);
-                    bBusyBle = false;
-                }
-            }
-
-        }
-    };
 
 
     @Override
@@ -698,10 +782,7 @@ public class BluetoothDataActivity extends BaseActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        mble.disconnectDevice();
-        Log.d(TAG, "destroy");
-        mble.disconnectLocalDevice();
-        Log.d(TAG, "销毁");
+//        BleManager.getInstance().disconnect(mBleDevice);
     }
 
 

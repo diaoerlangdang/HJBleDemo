@@ -3,6 +3,7 @@ package com.wise.ble.scan;
 import android.Manifest;
 import android.annotation.TargetApi;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.location.LocationManager;
@@ -13,7 +14,6 @@ import android.text.TextUtils;
 
 import androidx.core.content.ContextCompat;
 
-import com.wise.ble.WiseBluetoothLe;
 import com.wise.ble.scan.ScanOverListener;
 import com.wise.ble.scan.bluetoothcompat.BluetoothLeScannerCompat;
 import com.wise.ble.scan.bluetoothcompat.ScanCallbackCompat;
@@ -60,7 +60,6 @@ public class CycledLeScanner {
     private boolean isSetScanSetting = false;
     private ScanSettingsCompat scanSettings;
     private final List<ScanFilterCompat> scanFilterCompats = new CopyOnWriteArrayList<>();
-    private WiseBluetoothLe wiseBle;
 
     public CycledLeScanner(Context context, long scanPeriod, long betweenScanPeriod, boolean backgroundFlag, ScanCallbackCompat callbackCompat){
         this.mContext = context;
@@ -68,7 +67,6 @@ public class CycledLeScanner {
         this.betweenScanPeriod = betweenScanPeriod;
         this.scanCallbackCompat = callbackCompat;
         this.mBackgroundFlag = backgroundFlag;
-        wiseBle = WiseBluetoothLe.getInstance(context);
     }
 
     /**
@@ -184,18 +182,18 @@ public class CycledLeScanner {
     public boolean isPauseScan() {
         return isPauseScan;
     }
-
     /**
      * start or stop scan
      * @param enable true-start scan right now，false-stop scan
      */
     private void scanLeDevice(boolean enable) {
-        BluetoothAdapter mAdapter = wiseBle.getBluetoothAdapter();
-        if (!wiseBle.isOpened()){
+
+        final BluetoothManager manager = (BluetoothManager) this.mContext.getSystemService(Context.BLUETOOTH_SERVICE);
+        final BluetoothAdapter mAdapter = manager.getAdapter();
+        if (mAdapter == null || !mAdapter.isEnabled()){
             Logger.e("ScanDevice: Scanning fail! BluetoothAdapter is null");
             return;
         }
-
 
         if (enable) {
             //is delay scan
@@ -275,8 +273,11 @@ public class CycledLeScanner {
 
     private void stopScan(){
         if (mScanning) {
-            BluetoothAdapter mAdapter = wiseBle.getBluetoothAdapter();
-            if (mAdapter != null && wiseBle.isOpened()) {
+
+            final BluetoothManager manager = (BluetoothManager) this.mContext.getSystemService(Context.BLUETOOTH_SERVICE);
+            final BluetoothAdapter mAdapter = manager.getAdapter();
+
+            if (mAdapter != null && mAdapter.isEnabled()) {
                 try {
                     BluetoothLeScannerCompat.stopScan(mAdapter, scanCallbackCompat);
                     lastScanEndTime = SystemClock.elapsedRealtime();

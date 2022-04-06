@@ -33,10 +33,6 @@
             android:configChanges="orientation|keyboardHidden"
             android:screenOrientation="portrait" />
         <activity
-            android:name=".BluetoothControlAcitvity"
-            android:configChanges="orientation|keyboardHidden"
-            android:screenOrientation="portrait" />
-        <activity
             android:name=".SetActivity"
             android:configChanges="orientation|keyboardHidden"
             android:screenOrientation="portrait" />

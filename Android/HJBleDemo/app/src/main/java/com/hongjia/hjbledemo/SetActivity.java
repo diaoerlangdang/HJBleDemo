@@ -1,8 +1,10 @@
 package com.hongjia.hjbledemo;
 
+import android.bluetooth.BluetoothGatt;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.InputType;
 import android.view.MenuItem;
@@ -19,6 +21,8 @@ import android.widget.Toast;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.PopupMenu;
 
+import com.clj.fastble.BleManager;
+import com.clj.fastble.data.BleDevice;
 import com.wise.ble.WiseBluetoothLe;
 import com.wise.wisekit.activity.BaseActivity;
 
@@ -28,6 +32,8 @@ public class SetActivity extends BaseActivity {
 
     // 是否支持配置
     public static final String EXTRAS_SET_IS_CONFIG = "DEVICE_IS_CONFIG";
+
+    public static final String EXTRAS_DEVICE = "DEVICE";
 
     private static final int SELECT_FILE_REQ = 1001;
     private static final int SELECT_INIT_FILE_REQ = 1002;
@@ -80,6 +86,8 @@ public class SetActivity extends BaseActivity {
 
     private boolean isConfig;
 
+    private BleDevice mBleDevice;
+
     @Override
     protected int getPageLayoutId() {
         return R.layout.activity_set;
@@ -96,27 +104,39 @@ public class SetActivity extends BaseActivity {
 
         final Intent intent = getIntent();
         isConfig = intent.getBooleanExtra(EXTRAS_SET_IS_CONFIG, false);
+        mBleDevice = intent.getParcelableExtra(EXTRAS_DEVICE);
 
         setTitle("设置");
 
         swithHighRate = findViewById(R.id.switch_high_rate);
-        swithHighRate.setChecked(WiseBluetoothLe.getInstance(HJBleApplication.getAppContext()).isbHighRate());
-        swithHighRate.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                if (b) {
-                    if (!WiseBluetoothLe.getInstance(HJBleApplication.getAppContext()).openHighRate()) {
-                        swithHighRate.setChecked(false);
-                        Toast.makeText(SetActivity.this, "打开高速模式失败", Toast.LENGTH_LONG).show();
-                    }
-                } else {
-                    if (!WiseBluetoothLe.getInstance(HJBleApplication.getAppContext()).closeHighRate()) {
-                        swithHighRate.setChecked(true);
-                        Toast.makeText(SetActivity.this, "关闭高速模式失败", Toast.LENGTH_LONG).show();
+        if (Build.VERSION.SDK_INT >= 21) {
+            boolean a = FastBleListener.getInstance().getHighRate(mBleDevice.getMac());
+            swithHighRate.setChecked(FastBleListener.getInstance().getHighRate(mBleDevice.getMac()));
+            swithHighRate.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                    if (b) {
+                        if (!BleManager.getInstance().requestConnectionPriority(mBleDevice, BluetoothGatt.CONNECTION_PRIORITY_HIGH)) {
+                            FastBleListener.getInstance().setHighRate(mBleDevice.getMac(), false);
+                            swithHighRate.setChecked(false);
+                            Toast.makeText(SetActivity.this, "打开高速模式失败", Toast.LENGTH_LONG).show();
+                        } else {
+                            FastBleListener.getInstance().setHighRate(mBleDevice.getMac(), true);
+                        }
+                    } else {
+                        if (!BleManager.getInstance().requestConnectionPriority(mBleDevice, BluetoothGatt.CONNECTION_PRIORITY_BALANCED)) {
+                            FastBleListener.getInstance().setHighRate(mBleDevice.getMac(), true);
+                            swithHighRate.setChecked(true);
+                            Toast.makeText(SetActivity.this, "关闭高速模式失败", Toast.LENGTH_LONG).show();
+                        } else {
+                            FastBleListener.getInstance().setHighRate(mBleDevice.getMac(), false);
+                        }
                     }
                 }
-            }
-        });
+            });
+        } else {
+            swithHighRate.setVisibility(View.GONE);
+        }
         modeTxt = findViewById(R.id.mode_txt);
         charTxt = findViewById(R.id.char_txt);
         returnTxt = findViewById(R.id.return_txt);

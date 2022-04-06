@@ -24,6 +24,11 @@ android {
         // but continue the build even when errors are found:
         abortOnError false
     }
+
+    compileOptions {
+        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_1_8
+    }
 }
 
 dependencies {
@@ -38,5 +43,6 @@ dependencies {
 //    implementation 'com.blakequ.androidblemanager:bluetooth-manager-lib:2.1.5'
     implementation 'pub.devrel:easypermissions:2.0.0'
     implementation 'com.githang:status-bar-compat:0.7'
+    implementation 'com.github.Jasonchenlijian:FastBle:2.4.0'
     api project(path: ':wiseKit')
 }
