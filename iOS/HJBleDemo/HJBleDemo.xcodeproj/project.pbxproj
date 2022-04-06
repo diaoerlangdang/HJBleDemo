@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		5DFB04F727F4816D00E5D8B7 /* AppConfigSetViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DFB04F627F4816D00E5D8B7 /* AppConfigSetViewController.m */; };
+		5DFB04FA27F4908100E5D8B7 /* BleServiceConfigViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DFB04F927F4908100E5D8B7 /* BleServiceConfigViewController.m */; };
 		688F055A08CABB3B305CAD24 /* Pods_HJBleDemo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C86EE3FBCA8D96FE7A24D198 /* Pods_HJBleDemo.framework */; };
 		E944B39122E73A79007A358B /* SetViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = E944B39022E73A78007A358B /* SetViewController.m */; };
 		E944B39922E74340007A358B /* PopoverAction.m in Sources */ = {isa = PBXBuildFile; fileRef = E944B39622E74340007A358B /* PopoverAction.m */; };
@@ -47,6 +49,11 @@
 
 /* Begin PBXFileReference section */
 		1117F08FFA5E0EA3524D2163 /* Pods-HJBleDemo.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-HJBleDemo.release.xcconfig"; path = "Target Support Files/Pods-HJBleDemo/Pods-HJBleDemo.release.xcconfig"; sourceTree = "<group>"; };
+		5D08C6A126FEE3C300CB14CC /* HJBleDemo.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = HJBleDemo.entitlements; sourceTree = "<group>"; };
+		5DFB04F527F4816D00E5D8B7 /* AppConfigSetViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppConfigSetViewController.h; sourceTree = "<group>"; };
+		5DFB04F627F4816D00E5D8B7 /* AppConfigSetViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppConfigSetViewController.m; sourceTree = "<group>"; };
+		5DFB04F827F4908100E5D8B7 /* BleServiceConfigViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BleServiceConfigViewController.h; sourceTree = "<group>"; };
+		5DFB04F927F4908100E5D8B7 /* BleServiceConfigViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = BleServiceConfigViewController.m; sourceTree = "<group>"; };
 		C86EE3FBCA8D96FE7A24D198 /* Pods_HJBleDemo.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_HJBleDemo.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		E944B38F22E73A78007A358B /* SetViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SetViewController.h; sourceTree = "<group>"; };
 		E944B39022E73A78007A358B /* SetViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SetViewController.m; sourceTree = "<group>"; };
@@ -178,6 +185,7 @@
 		E9E118AF22E49B5F00657309 /* HJBleDemo */ = {
 			isa = PBXGroup;
 			children = (
+				5D08C6A126FEE3C300CB14CC /* HJBleDemo.entitlements */,
 				E9E1190B22E49FE700657309 /* config */,
 				E9E118D822E49E6C00657309 /* 3rdparth */,
 				E9E118C822E49E6B00657309 /* Home */,
@@ -210,6 +218,10 @@
 				E9E118CC22E49E6B00657309 /* BleViewController.m */,
 				E944B38F22E73A78007A358B /* SetViewController.h */,
 				E944B39022E73A78007A358B /* SetViewController.m */,
+				5DFB04F527F4816D00E5D8B7 /* AppConfigSetViewController.h */,
+				5DFB04F627F4816D00E5D8B7 /* AppConfigSetViewController.m */,
+				5DFB04F827F4908100E5D8B7 /* BleServiceConfigViewController.h */,
+				5DFB04F927F4908100E5D8B7 /* BleServiceConfigViewController.m */,
 			);
 			path = controller;
 			sourceTree = "<group>";
@@ -336,7 +348,7 @@
 		E9E118A522E49B5F00657309 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 1020;
+				LastUpgradeCheck = 1240;
 				ORGANIZATIONNAME = wuruizhi;
 				TargetAttributes = {
 					E9E118AC22E49B5F00657309 = {
@@ -448,7 +460,9 @@
 				E9E118F922E49E6C00657309 /* XHMessageTextView.m in Sources */,
 				E9E118C022E49B6000657309 /* main.m in Sources */,
 				E9E118F722E49E6C00657309 /* HJBleScanData.m in Sources */,
+				5DFB04FA27F4908100E5D8B7 /* BleServiceConfigViewController.m in Sources */,
 				E9E118FB22E49E6C00657309 /* DXFaceView.m in Sources */,
+				5DFB04F727F4816D00E5D8B7 /* AppConfigSetViewController.m in Sources */,
 				E9E118B222E49B5F00657309 /* AppDelegate.m in Sources */,
 				E9E118FA22E49E6C00657309 /* FacialView.m in Sources */,
 				E9E1190A22E49E6C00657309 /* DXMessageToolBar.m in Sources */,
@@ -497,6 +511,7 @@
 				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
 				CLANG_WARN_STRICT_PROTOTYPES = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
@@ -556,6 +571,7 @@
 				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
 				CLANG_WARN_STRICT_PROTOTYPES = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
@@ -588,18 +604,20 @@
 			baseConfigurationReference = F7D9B5BDF994AC2421779CE9 /* Pods-HJBleDemo.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = HJBleDemo/HJBleDemo.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = HGKNXNFB8W;
 				INFOPLIST_FILE = HJBleDemo/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 3.2.0;
+				MARKETING_VERSION = 4.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.hongjia.HJBle;
 				PRODUCT_NAME = HJBle;
+				SUPPORTS_MACCATALYST = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
@@ -609,18 +627,20 @@
 			baseConfigurationReference = 1117F08FFA5E0EA3524D2163 /* Pods-HJBleDemo.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = HJBleDemo/HJBleDemo.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = HGKNXNFB8W;
 				INFOPLIST_FILE = HJBleDemo/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 3.2.0;
+				MARKETING_VERSION = 4.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.hongjia.HJBle;
 				PRODUCT_NAME = HJBle;
+				SUPPORTS_MACCATALYST = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;

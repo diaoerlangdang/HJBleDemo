@@ -2,7 +2,7 @@ platform :ios, '8.0'
 use_frameworks!
 inhibit_all_warnings!
 
-source 'https://github.com/CocoaPods/Specs.git' #为github的基础源仓库，必须添加
+#source 'https://github.com/CocoaPods/Specs.git' #为github的基础源仓库，必须添加
 
 target 'HJBleDemo' do
     pod 'Masonry','~> 1.1.0'
