@@ -614,7 +614,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 4.0.1;
+				MARKETING_VERSION = 4.0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.hongjia.HJBle;
 				PRODUCT_NAME = HJBle;
 				SUPPORTS_MACCATALYST = YES;
@@ -637,7 +637,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 4.0.1;
+				MARKETING_VERSION = 4.0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.hongjia.HJBle;
 				PRODUCT_NAME = HJBle;
 				SUPPORTS_MACCATALYST = YES;

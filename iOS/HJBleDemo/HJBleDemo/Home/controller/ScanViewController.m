@@ -168,6 +168,14 @@
             // 是否为流控模式
             self.selectedScanData.bFlowControl = false;
             
+            // 是否支持配置模式判断
+            CBCharacteristicProperties properties = [self.ble getCharacteristicProperties:self.selectedScanData.peripheral characteristic:[HJConfigInfo shareInstance].configReceiveService];
+            if ((properties & CBCharacteristicPropertyNotify) &&  ((properties & CBCharacteristicPropertyWrite) || (properties & CBCharacteristicPropertyWriteWithoutResponse))) {
+                self.selectedScanData.isConfig = true;
+            } else {
+                self.selectedScanData.isConfig = false;
+            }
+            
             // 打开配置通知
             if (self.selectedScanData.isConfig) {
                 

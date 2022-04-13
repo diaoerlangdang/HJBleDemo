@@ -6,6 +6,8 @@ import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
+import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattService;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -60,6 +62,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import pub.devrel.easypermissions.AfterPermissionGranted;
@@ -438,6 +441,33 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
         return null;
     }
 
+    boolean isSupportConfigService(BleManager bleManager, BleDevice bleDevice) {
+        List<BluetoothGattService> services = bleManager.getBluetoothGattServices(bleDevice);
+
+        BluetoothGattService configService = null;
+        for (BluetoothGattService service: services) {
+            if (service.getUuid().toString().equals(BleConfig.Ble_Config_Receive_Service.getServiceID())) {
+                configService = service;
+                break;
+            }
+        }
+        if (configService == null) {
+            return false;
+        }
+
+        BluetoothGattCharacteristic charact = configService.getCharacteristic(UUID.fromString(BleConfig.Ble_Config_Receive_Service.getCharacteristicID()));
+        if (charact == null) {
+            return false;
+        }
+
+        int property = charact.getProperties();
+        if ((property & BluetoothGattCharacteristic.PROPERTY_NOTIFY) > 0 && ((property & BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE) > 0 || (property & BluetoothGattCharacteristic.PROPERTY_WRITE) > 0)) {
+            return true;
+        }
+
+        return false;
+    }
+
 
     // 连接蓝牙
     void connectBle(final HJBleScanDevice scanDevice) {
@@ -491,6 +521,8 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
                         loadingDialog.setMessage("正在打开通知");
                     }
                 });
+
+                scanDevice.isConfig = isSupportConfigService(bleManager, scanDevice.device);
 
 
                 // 打开配置通知
