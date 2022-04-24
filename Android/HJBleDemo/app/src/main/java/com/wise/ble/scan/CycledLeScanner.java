@@ -352,9 +352,10 @@ public class CycledLeScanner {
      * @return
      */
     public static boolean isGpsProviderEnabled(Context context){
-        String provider = Settings.Secure.getString(context.getContentResolver(), Settings.Secure.LOCATION_PROVIDERS_ALLOWED);
-        if (TextUtils.isEmpty(provider)) return false;
-        return provider.contains("gps");
+        return true;
+//         String provider = Settings.Secure.getString(context.getContentResolver(), Settings.Secure.LOCATION_PROVIDERS_ALLOWED);
+//         if (TextUtils.isEmpty(provider)) return false;
+//         return provider.contains("gps");
 
 
 //        LocationManager service = (LocationManager) context.getSystemService(context.LOCATION_SERVICE);
