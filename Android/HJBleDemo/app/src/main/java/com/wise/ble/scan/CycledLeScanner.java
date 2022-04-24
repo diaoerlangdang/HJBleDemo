@@ -218,8 +218,6 @@ public class CycledLeScanner {
                         if (android.os.Build.VERSION.SDK_INT >= 23 && android.os.Build.VERSION.SDK_INT < 31 && !isGpsProviderEnabled(mContext)){
                             Logger.e("If SDK>=23, current SDK=" + android.os.Build.VERSION.SDK_INT+", Location info not open and can not scan any device!");
                             scanCallbackCompat.onScanFailed(ScanCallbackCompat.SCAN_FAILED_LOCATION_CLOSE);
-                        } else if (android.os.Build.VERSION.SDK_INT >= 31) {
-                            scanCallbackCompat.onScanFailed(ScanCallbackCompat.SCAN_FAILED_LOCATION_CLOSE);
                         } else {
                             Logger.i("ScanDevice: Start scan...");
                             BluetoothLeScannerCompat.startScan(mAdapter, scanFilterCompats, getScanSettings(), scanCallbackCompat);
