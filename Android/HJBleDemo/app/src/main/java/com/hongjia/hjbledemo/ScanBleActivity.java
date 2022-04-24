@@ -756,9 +756,10 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
 
     // 检测gps是否开启，避免部分手机使用isProviderEnabled函数总返回false的问题
     private boolean isGpsProviderEnabled() {
-        String provider = Settings.Secure.getString(getContentResolver(), Settings.Secure.LOCATION_PROVIDERS_ALLOWED);
-        if (TextUtils.isEmpty(provider)) return false;
-        return provider.contains("gps");
+//         String provider = Settings.Secure.getString(getContentResolver(), Settings.Secure.LOCATION_PROVIDERS_ALLOWED);
+//         if (TextUtils.isEmpty(provider)) return false;
+//         return provider.contains("gps");
+            return true;
     }
 
 
