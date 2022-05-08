@@ -115,9 +115,9 @@ public class BluetoothDataActivity extends BaseActivity {
     private int sendCountBySecond = 0;
 
     // 发送服务
-    private WiseCharacteristic mSendCharact = BleConfig.Ble_Data_Send_Service;
+    private WiseCharacteristic mSendCharact = BleConfig.Ble_Data_Send_Service();
     // 接收服务
-    private WiseCharacteristic mReceiveCharact = BleConfig.Ble_Data_Receive_Service;
+    private WiseCharacteristic mReceiveCharact = BleConfig.Ble_Data_Receive_Service();
 
     private Timer timer;
 
@@ -567,9 +567,9 @@ public class BluetoothDataActivity extends BaseActivity {
             setIsTesting(false);
         } else {
             // 发送服务
-            mSendCharact = BleConfig.Ble_Data_Send_Service;
+            mSendCharact = BleConfig.Ble_Data_Send_Service();
             // 接收服务
-            mReceiveCharact = BleConfig.Ble_Data_Receive_Service;
+            mReceiveCharact = BleConfig.Ble_Data_Receive_Service();
 
             setTitle(mDeviceName + "-数据");
 

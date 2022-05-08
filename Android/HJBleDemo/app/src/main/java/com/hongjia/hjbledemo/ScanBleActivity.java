@@ -577,7 +577,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
                 }
 
 
-                if(openNotifyBleSynchronization(bleManager, scanDevice.device, BleConfig.Ble_Data_Receive_Service))
+                if(openNotifyBleSynchronization(bleManager, scanDevice.device, BleConfig.Ble_Data_Receive_Service()))
                 {
                     bleManager.setSplitWriteNum(scanDevice.sendDataLenMax);
 
