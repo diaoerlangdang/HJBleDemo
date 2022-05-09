@@ -225,7 +225,7 @@
             }
             else {
                 [self.ble disconnect:self.selectedScanData.peripheral];
-                [self.view makeToast:@"连接超时"];
+                [self.view makeToast:@"打开通知失败"];
             }
         });
     });    

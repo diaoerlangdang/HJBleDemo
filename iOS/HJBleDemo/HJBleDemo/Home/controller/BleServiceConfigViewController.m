@@ -167,9 +167,9 @@
         return;
     }
     
-    [HJConfigInfo shareInstance].dataMainService = mainService;
-    [HJConfigInfo shareInstance].dataSendSubService = sendService;
-    [HJConfigInfo shareInstance].dataReceiveSubService = notifyService;
+    [HJConfigInfo shareInstance].dataMainService = [mainService uppercaseString];
+    [HJConfigInfo shareInstance].dataSendSubService = [sendService uppercaseString];
+    [HJConfigInfo shareInstance].dataReceiveSubService = [notifyService uppercaseString];
     
     [self.navigationController.view makeToast:@"保存成功"];
     
