@@ -1,12 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools"
     package="com.hongjia.hjbledemo">
 
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.BLUETOOTH" />
-    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" /> <!-- 6.0之后蓝牙还需要地理位置权限 -->
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+
+<!--    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30"/>-->
+<!--    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30"/>-->
+<!--    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation" tools:targetApi="s" />-->
+
+    <!-- 6.0之后蓝牙还需要地理位置权限 -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" /> <!-- 自行判断 -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-feature
         android:name="android.hardware.bluetooth.le"
         android:required="true" />

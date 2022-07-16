@@ -39,6 +39,7 @@ import android.widget.Toast;
 
 import com.clj.fastble.BleManager;
 import com.clj.fastble.callback.BleGattCallback;
+import com.clj.fastble.callback.BleMtuChangedCallback;
 import com.clj.fastble.callback.BleNotifyCallback;
 import com.clj.fastble.callback.BleWriteCallback;
 import com.clj.fastble.data.BleDevice;
@@ -97,12 +98,17 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
 
     private WiseWaitEvent connectEvent = new WiseWaitEvent();
     private WiseWaitEvent stateEvent = new WiseWaitEvent();
+    private WiseWaitEvent mtuEvent = new WiseWaitEvent();
     private WiseWaitEvent sendEvent = new WiseWaitEvent();
     private WiseWaitEvent recvEvent = new WiseWaitEvent();
+
+    // mtu
+    private int mtuLength = 23;
 
     private ByteArrayOutputStream recvBuffer = new ByteArrayOutputStream();
 
     private BleDevice selectBleDevice;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -468,6 +474,35 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
         return false;
     }
 
+    /**
+     * 设置mtu
+     * @param len 想要设置的mtu
+     * @return 真实mtu
+     */
+    int requestMtu(BleManager bleManager, BleDevice bleDevice, int len) {
+        mtuEvent.init();
+        mtuLength = 23;
+        bleManager.setMtu(bleDevice, len, new BleMtuChangedCallback() {
+            @Override
+            public void onSetMTUFailure(BleException e) {
+                mtuEvent.setSignal(WiseWaitEvent.ERROR_FAILED);
+            }
+
+            @Override
+            public void onMtuChanged(int i) {
+                mtuLength = i;
+                mtuEvent.setSignal(WiseWaitEvent.SUCCESS);
+            }
+        });
+
+        int result = mtuEvent.waitSignal(5000);
+        if(WiseWaitEvent.SUCCESS != result) {
+            return mtuLength;
+        }else {
+            return mtuLength;
+        }
+    }
+
 
     // 连接蓝牙
     void connectBle(final HJBleScanDevice scanDevice) {
@@ -478,7 +513,6 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
             public void run() {
 
                 BleManager bleManager = BleManager.getInstance();
-
 
                 int i;
                 for (i = 0; i < 5; i++)
@@ -556,6 +590,9 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
                     }
                 });
 
+                // 设置mtu
+                int mtuLen = requestMtu(bleManager, scanDevice.device, 512) - 3;
+
                 // 是否为流控模式
                 boolean bFlowControl = false;
 
@@ -579,7 +616,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
 
                 if(openNotifyBleSynchronization(bleManager, scanDevice.device, BleConfig.Ble_Data_Receive_Service()))
                 {
-                    bleManager.setSplitWriteNum(scanDevice.sendDataLenMax);
+                    bleManager.setSplitWriteNum(mtuLen);
 
                     runOnUiThread(new Runnable() {
                         @Override
@@ -661,24 +698,28 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
 
             boolean isEasy = false;
             boolean isConfig = false;
-            int maxLen = 20;
+//            int maxLen = 20;
+            boolean bMtu = false;
 
             // 是否扫描过滤
             if (bScanFilter) {
 
                 if (scanRecordStr.contains("5869") && scanRecord[3] == 0x03) {
                     isEasy = false;
-                    maxLen = 20;
+                    bMtu = false;
+//                    maxLen = 20;
                     isConfig = false;
                 }
                 else if (scanRecordStr.contains("5869")) {
                     isEasy = false;
-                    maxLen = 160;
+                    bMtu = true;
+//                    maxLen = 160;
                     isConfig = true;
                 }
                 else if (scanRecordStr.contains("5969")) {
                     isEasy = true;
-                    maxLen = 160;
+                    bMtu = true;
+//                    maxLen = 160;
                     isConfig = true;
                 }
                 else {
@@ -694,7 +735,8 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
             scanDevice.record = ConvertData.bytesToHexString(scanRecord, false);
             scanDevice.isEasy = isEasy;
             scanDevice.isConfig = isConfig;
-            scanDevice.sendDataLenMax = maxLen;
+            scanDevice.bMtu = bMtu;
+//            scanDevice.sendDataLenMax = maxLen;
             mLeDeviceListAdapter.addDevice(scanDevice);
             mLeDeviceListAdapter.notifyDataSetChanged();
         }
@@ -811,6 +853,8 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
         boolean isConfig;
         // 最大发送数据长度
         int sendDataLenMax;
+        // 是否需要获取mtu
+        boolean bMtu;
         //
         boolean bFlowControl;
 
