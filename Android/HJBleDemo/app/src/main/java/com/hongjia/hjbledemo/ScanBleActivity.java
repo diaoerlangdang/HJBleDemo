@@ -81,6 +81,9 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
     private String[] permissionList = {Manifest.permission.BLUETOOTH, Manifest.permission.BLUETOOTH_ADMIN,
             Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.WRITE_EXTERNAL_STORAGE};
 
+    // android 12 以上版本
+    private String[] permissionListHigher = {Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.WRITE_EXTERNAL_STORAGE};
+
     private boolean mScanning=true;
 
     private ListView mListView = null;
@@ -257,13 +260,6 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
 
         bScanFilter = HJBleApplication.shareInstance().isScanFilter();
 
-        //判断本地蓝牙是否已打开
-        if(!BleManager.getInstance().isBlueEnable())
-        {
-            Intent openIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            startActivityForResult(openIntent, REQUEST_ENABLE_BT);
-        }
-
         mLeDeviceListAdapter.clear();
         mLeDeviceListAdapter.notifyDataSetChanged();
 
@@ -276,7 +272,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
                 this,
                 "请求位置权限",
                 RC_PERM_CODE,
-                permissionList);
+                android.os.Build.VERSION.SDK_INT < 31 ? permissionList : permissionListHigher);
 
         startTimer();
     }
@@ -769,7 +765,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
 
         if (Build.VERSION.SDK_INT >= 23){
 
-            boolean hasPermission = EasyPermissions.hasPermissions(this, permissionList);
+            boolean hasPermission = EasyPermissions.hasPermissions(this, android.os.Build.VERSION.SDK_INT < 31 ? permissionList : permissionListHigher);
 
             if (Build.VERSION.SDK_INT < 31) {
                 boolean bResult = isGpsProviderEnabled();
@@ -808,6 +804,12 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
     @AfterPermissionGranted(RC_PERM_CODE)
     public void onPermissionsSuccess() {
         if (checkPermissions()) {
+            //判断本地蓝牙是否已打开
+            if(!BleManager.getInstance().isBlueEnable())
+            {
+                Intent openIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+                startActivityForResult(openIntent, REQUEST_ENABLE_BT);
+            }
             scanLeDevice(true);
         }
 
