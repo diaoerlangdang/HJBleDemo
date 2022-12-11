@@ -203,6 +203,10 @@
                 
             }
             
+            NSUInteger sendDataMaxLen = [self.selectedScanData.peripheral maximumWriteValueLengthForType:CBCharacteristicWriteWithoutResponse];
+            self.selectedScanData.sendDataLenMax = sendDataMaxLen;
+            
+            
             bResult = [self.ble synchronizedOpenNofity:self.selectedScanData.peripheral characteristic:[HJConfigInfo shareInstance].dataReceiveService time:5000];
         }
         else {
@@ -328,12 +332,12 @@
             
             isEasy = false;
             isConfig = false;
-            sendDataLenMax = 20;
+//            sendDataLenMax = 20;
         }
         else if (arr.count == 4) {
             
             isConfig = true;
-            sendDataLenMax = 160;
+//            sendDataLenMax = 160;
             
             CBUUID *serviceUUID1 = arr[0];
             // 不支持简易模式
