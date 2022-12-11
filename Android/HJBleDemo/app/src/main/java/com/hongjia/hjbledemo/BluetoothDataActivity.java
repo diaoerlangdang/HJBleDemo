@@ -65,6 +65,9 @@ public class BluetoothDataActivity extends BaseActivity {
     // 是否为流控信息
     public static final String EXTRAS_DEVICE_IS_FLOW_CONTROL = "DEVICE_IS_FLOW_CONTROL";
 
+    // 最大的分包数据
+    public static final String EXTRAS_DEVICE_GROUP_LEN_MAX = "DEVICE_GROUP_LEN_MAX";
+
     private List<SendReceiveDataBean> mDataList = new ArrayList<>();
     private String mDeviceName;
     private String mDeviceAddress;
@@ -84,6 +87,8 @@ public class BluetoothDataActivity extends BaseActivity {
     private boolean isTesting = false; // 是否正在测试
     private static final int MSG_DATA_CHANGE = 0x11;
     private LinearLayout bottomLayout; //底部
+
+    private int groupLenMax = 20;
 
     // 更新速率
     private static final int MSG_UPDATE_RATE = 0x12;
@@ -144,6 +149,7 @@ public class BluetoothDataActivity extends BaseActivity {
         mDeviceAddress = mBleDevice.getMac().toUpperCase();
         isConfig = intent.getBooleanExtra(EXTRAS_DEVICE_IS_CONFIG, false);
         bFlowControl = intent.getBooleanExtra(EXTRAS_DEVICE_IS_FLOW_CONTROL, false);
+        groupLenMax = intent.getIntExtra(EXTRAS_DEVICE_GROUP_LEN_MAX, 20);
 
         super.onCreate(savedInstanceState);
 
@@ -551,12 +557,13 @@ public class BluetoothDataActivity extends BaseActivity {
     protected void onResume() {
         super.onResume();
 
+        BleManager.getInstance().setSplitWriteNum(HJBleApplication.shareInstance().getGroupLen());
+
         if (HJBleApplication.shareInstance().isBleConfig()) {
             // 发送服务
             mSendCharact = BleConfig.Ble_Config_Send_Service;
             // 接收服务
             mReceiveCharact = BleConfig.Ble_Config_Receive_Service;
-            BleManager.getInstance().setSplitWriteNum(HJBleApplication.shareInstance().groupLen());
 
             setTitle(mDeviceName + "-配置");
 

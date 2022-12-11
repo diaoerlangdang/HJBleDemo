@@ -26,7 +26,7 @@
         android:roundIcon="@mipmap/icon"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".BleServiceConfigActivity"></activity>
+        <activity android:name=".BleServiceConfigActivity" />
         <activity android:name=".BluetoothDataActivity" />
         <activity android:name=".LaunchActivity" android:exported="true">
             <intent-filter>

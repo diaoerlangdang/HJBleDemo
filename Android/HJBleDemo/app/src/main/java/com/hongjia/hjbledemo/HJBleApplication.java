@@ -15,6 +15,9 @@ public class HJBleApplication extends Application {
     // 是否为配置模式
     private boolean isBleConfig = false;
 
+    // 分组长度
+    private int groupLen = 20;
+
     //获取应用的context
     public static Context getAppContext() {
         return instance.getApplicationContext();
@@ -132,14 +135,13 @@ public class HJBleApplication extends Application {
     }
 
     // 每包数据长度
-    public int groupLen() {
-
-        return (Integer)SPUtils.get(getAppContext(), "groupLen", 20);
+    public int getGroupLen() {
+        return groupLen;
     }
 
     public void setGroupLen(int groupLen) {
 
-        SPUtils.put(getAppContext(), "groupLen", groupLen);
+        this.groupLen = groupLen;
     }
 
     // 每次下发测试数据长度

@@ -588,6 +588,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
 
                 // 设置mtu
                 int mtuLen = requestMtu(bleManager, scanDevice.device, 512) - 3;
+                scanDevice.mtuLen = mtuLen;
 
                 // 是否为流控模式
                 boolean bFlowControl = false;
@@ -857,6 +858,8 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
         int sendDataLenMax;
         // 是否需要获取mtu
         boolean bMtu;
+        // 减过3了
+        int mtuLen;
         //
         boolean bFlowControl;
 
@@ -988,10 +991,12 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
                     public void onClick(View v) {
                         int pos = ((Integer)v.getTag()).intValue();
                         HJBleScanDevice scanDevice = mScanDevices.get(pos);
+                        HJBleApplication.shareInstance().setGroupLen(scanDevice.mtuLen);
 
                         final Intent intent = new Intent(ScanBleActivity.this, BluetoothDataActivity.class);
                         intent.putExtra(BluetoothDataActivity.EXTRAS_DEVICE_IS_CONFIG, scanDevice.isConfig);
                         intent.putExtra(BluetoothDataActivity.EXTRAS_DEVICE_IS_FLOW_CONTROL, scanDevice.bFlowControl);
+                        intent.putExtra(BluetoothDataActivity.EXTRAS_DEVICE_GROUP_LEN_MAX, scanDevice.mtuLen);
 
                         intent.putExtra(BluetoothDataActivity.EXTRAS_DEVICE, scanDevice.device);
 

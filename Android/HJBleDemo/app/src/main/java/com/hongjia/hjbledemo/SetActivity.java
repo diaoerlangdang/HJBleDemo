@@ -294,7 +294,7 @@ public class SetActivity extends BaseActivity {
             writeTypeTxt.setText("否");
         }
 
-        groupLenTxt.setText("" + HJBleApplication.shareInstance().groupLen());
+        groupLenTxt.setText("" + HJBleApplication.shareInstance().getGroupLen());
         dataLenTxt.setText("" + HJBleApplication.shareInstance().testDataLen());
         gapTimeTxt.setText("" + HJBleApplication.shareInstance().testGapTime());
         filePathTxt.setText(HJBleApplication.shareInstance().testFilePath());
