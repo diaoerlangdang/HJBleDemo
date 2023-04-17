@@ -3,10 +3,12 @@ package com.hongjia.hjbledemo;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.icu.text.SimpleDateFormat;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -48,6 +50,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
@@ -345,14 +348,13 @@ public class BluetoothDataActivity extends BaseActivity {
                 // 是否使用文件测试
                 final boolean bUseFileTest = HJBleApplication.shareInstance().useFileTest();
                 // 文件路径
-                final String filePath = HJBleApplication.shareInstance().testFilePath();
+//                final String filePath = HJBleApplication.shareInstance().testFilePath();
 
                 if (bUseFileTest) {
-                    FileInputStream fileInputStream = null;
-                    BufferedInputStream inputStream = null;
                     try {
-                        File file = new File(filePath);// 成文件路径中获取文件
-                        if (!file.exists()) {
+                        Uri uri = HJBleApplication.shareInstance().getTestFileUri();
+//                        File file = new File(filePath);// 成文件路径中获取文件
+                        if (uri == null) {
                             setIsTesting(false);
                             runOnUiThread(new Runnable() {
                                 @Override
@@ -363,8 +365,12 @@ public class BluetoothDataActivity extends BaseActivity {
                             return;
                         }
 
-                        fileInputStream = new FileInputStream(file);
-                        inputStream = new BufferedInputStream(fileInputStream);
+                        ContentResolver contentResolver = getContentResolver();
+                        InputStream fileInputStream = contentResolver.openInputStream(uri);
+//                        InputStream fileInputStream = getContentResolver().openInputStream(uri);
+
+//                        fileInputStream = new FileInputStream(file);
+                        BufferedInputStream inputStream = new BufferedInputStream(fileInputStream);
 
                         byte[] inputBuffer = new byte[dataLen];
                         int readCount;

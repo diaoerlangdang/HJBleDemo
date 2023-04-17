@@ -2,6 +2,8 @@ package com.hongjia.hjbledemo;
 
 import android.app.Application;
 import android.content.Context;
+import android.net.Uri;
+import android.text.TextUtils;
 
 import com.clj.fastble.BleManager;
 import com.wise.wisekit.utils.SPUtils;
@@ -18,10 +20,14 @@ public class HJBleApplication extends Application {
     // 分组长度
     private int groupLen = 20;
 
+    // 测试文件uri
+    private Uri testFileUri;
+
     //获取应用的context
     public static Context getAppContext() {
         return instance.getApplicationContext();
     }
+
 
     @Override
     public void onCreate() {
@@ -175,6 +181,18 @@ public class HJBleApplication extends Application {
     public void setTestFilePath(String filePath) {
 
         SPUtils.put(getAppContext(), "testFilePath", filePath);
+    }
+
+    public Uri getTestFileUri() {
+        String tmp = (String)SPUtils.get(getAppContext(), "testFilePath", "");
+        if (TextUtils.isEmpty(tmp)) return  null;
+
+        return Uri.parse(tmp);
+    }
+
+    public void setTestFileUri(Uri testFileUri) {
+        SPUtils.put(getAppContext(), "testFilePath", testFileUri.toString());
+//        this.testFileUri = testFileUri;
     }
 
     // 是否使用文件测试

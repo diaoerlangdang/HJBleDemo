@@ -3,9 +3,11 @@ package com.hongjia.hjbledemo;
 import android.bluetooth.BluetoothGatt;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.OpenableColumns;
 import android.text.InputType;
 import android.view.MenuItem;
 import android.view.View;
@@ -258,7 +260,7 @@ public class SetActivity extends BaseActivity {
         selectFilePathBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                final Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                final Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
 //                intent.setType("application/hj");
                 intent.setType("*/*");
                 intent.addCategory(Intent.CATEGORY_OPENABLE);
@@ -297,7 +299,7 @@ public class SetActivity extends BaseActivity {
         groupLenTxt.setText("" + HJBleApplication.shareInstance().getGroupLen());
         dataLenTxt.setText("" + HJBleApplication.shareInstance().testDataLen());
         gapTimeTxt.setText("" + HJBleApplication.shareInstance().testGapTime());
-        filePathTxt.setText(HJBleApplication.shareInstance().testFilePath());
+        filePathTxt.setText(getFileName(HJBleApplication.shareInstance().getTestFileUri()));
 
         // 不支持配置
         if (!isConfig) {
@@ -426,9 +428,13 @@ public class SetActivity extends BaseActivity {
         switch (requestCode) {
             case SELECT_FILE_REQ: {
                 final Uri uri = data.getData();
-                final String path = FileInfoUtils.getPath(this, uri);
-                filePathTxt.setText(path);
-                HJBleApplication.shareInstance().setTestFilePath(path);
+//                final String path = FileInfoUtils.getPath(this, uri);
+                String fileName = getFileName(uri);
+                filePathTxt.setText(fileName);
+                // 可使关机后也可以持续使用
+                getContentResolver().takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+//                HJBleApplication.shareInstance().setTestFilePath(fileName);
+                HJBleApplication.shareInstance().setTestFileUri(uri);
                 break;
             }
             case SELECT_INIT_FILE_REQ: {
@@ -460,5 +466,28 @@ public class SetActivity extends BaseActivity {
             default:
                 break;
         }
+    }
+
+    public String getFileName(Uri uri) {
+        if (uri == null) return  "-";
+        String result = null;
+        if (uri.getScheme().equals("content")) {
+            Cursor cursor = getContentResolver().query(uri, null, null, null, null);
+            try {
+                if (cursor != null && cursor.moveToFirst()) {
+                    result = cursor.getString(cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME));
+                }
+            } finally {
+                cursor.close();
+            }
+        }
+        if (result == null) {
+            result = uri.getPath();
+            int cut = result.lastIndexOf('/');
+            if (cut != -1) {
+                result = result.substring(cut + 1);
+            }
+        }
+        return result != null ? result : "-";
     }
 }
