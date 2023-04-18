@@ -118,6 +118,8 @@ public class BluetoothDataActivity extends BaseActivity {
     // 流控
     private TextView tvFlowControl;
 
+    private TextView readVersionBtn;
+
     private int recCountBySecond = 0;
 
     private int sendCountBySecond = 0;
@@ -249,6 +251,7 @@ public class BluetoothDataActivity extends BaseActivity {
         receiveRateTV = findViewById(R.id.receive_rate_tv);
         tvFlowControl = findViewById(R.id.tv_flow_control);
         tvFlowControl.setText(bFlowControl ? getResources().getString(R.string.flow_control_enable): getResources().getString(R.string.flow_control_disable));
+        readVersionBtn = findViewById(R.id.read_version_btn);
 
         scrollView = findViewById(R.id.scroll);
         sendBt = findViewById(R.id.send);
@@ -275,6 +278,8 @@ public class BluetoothDataActivity extends BaseActivity {
             }
         });
 
+
+
         // 清屏
         findViewById(R.id.clear_log).setOnClickListener(new View.OnClickListener() {
             @Override
@@ -299,6 +304,20 @@ public class BluetoothDataActivity extends BaseActivity {
                 preSendData(sendString);
             }
         });
+
+        readVersionBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String sendString = "<RD_SOFT_VERSION>";
+                SendReceiveDataBean dataBean = new SendReceiveDataBean(SendReceiveDataBean.DataTypeSend, sendString);
+
+                addDataInfoItem(dataBean);
+
+                byte[] tmpBytes = ConvertData.hexStringToBytes(sendString);
+                sendBleData(tmpBytes);
+            }
+        });
+
     }
 
     // 添加数据
@@ -503,7 +522,7 @@ public class BluetoothDataActivity extends BaseActivity {
 
     private void setReceiveByteCount(int count) {
         receiveByteCount = count;
-        receiveByteCountTV.setText(String.format(String.format(getResources().getString(R.string.receive_byte_format)), count));
+        receiveByteCountTV.setText(String.format(getResources().getString(R.string.receive_byte_format), count));
     }
 
     private void addReceiveByteCount(int count) {
@@ -578,6 +597,8 @@ public class BluetoothDataActivity extends BaseActivity {
             stopTimer();
 
             setIsTesting(false);
+
+            readVersionBtn.setVisibility(View.VISIBLE);
         } else {
             // 发送服务
             mSendCharact = BleConfig.Ble_Data_Send_Service();
@@ -587,6 +608,8 @@ public class BluetoothDataActivity extends BaseActivity {
             setTitle(mDeviceName + getResources().getString(R.string.data_title_data_suffix));
 
             dataBytesLayout.setVisibility(View.VISIBLE);
+
+            readVersionBtn.setVisibility(View.GONE);
 
             startTimer();
         }

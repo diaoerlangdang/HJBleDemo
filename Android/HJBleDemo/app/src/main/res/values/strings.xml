@@ -92,5 +92,6 @@
     <string name="data_type_title_receive">接收：</string>
     <string name="data_type_title_other">其他：</string>
     <string name="data_type_title_failed">失败：</string>
+    <string name="read_soft_version_btn">读取版本号</string>
 
 </resources>
