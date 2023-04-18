@@ -158,7 +158,7 @@ public class BluetoothDataActivity extends BaseActivity {
 
         topLeftBtn.setVisibility(View.VISIBLE);
 
-        setRightText("设置");
+        setRightText(getResources().getString(R.string.setting_title));
         rightTitleTxt.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -207,7 +207,7 @@ public class BluetoothDataActivity extends BaseActivity {
 
             @Override
             public void onDisConnected(boolean b, BleDevice bleDevice, BluetoothGatt bluetoothGatt, int i) {
-                SendReceiveDataBean dataBean = new SendReceiveDataBean(SendReceiveDataBean.DataTypeOther, "蓝牙已断开");
+                SendReceiveDataBean dataBean = new SendReceiveDataBean(SendReceiveDataBean.DataTypeOther, getResources().getString(R.string.ble_disconnected));
 
                 addDataInfoItem(dataBean);
                 finish();
@@ -248,7 +248,7 @@ public class BluetoothDataActivity extends BaseActivity {
         receiveByteCountTV = findViewById(R.id.receive_byte_count_tv);
         receiveRateTV = findViewById(R.id.receive_rate_tv);
         tvFlowControl = findViewById(R.id.tv_flow_control);
-        tvFlowControl.setText(bFlowControl ? "串口流控：使能" : "串口流控：禁止");
+        tvFlowControl.setText(bFlowControl ? getResources().getString(R.string.flow_control_enable): getResources().getString(R.string.flow_control_disable));
 
         scrollView = findViewById(R.id.scroll);
         sendBt = findViewById(R.id.send);
@@ -359,7 +359,7 @@ public class BluetoothDataActivity extends BaseActivity {
                             runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
-                                    Toast.makeText(BluetoothDataActivity.this, "测试文件不存在", Toast.LENGTH_SHORT).show();
+                                    Toast.makeText(BluetoothDataActivity.this, getResources().getString(R.string.test_file_not_exist), Toast.LENGTH_SHORT).show();
                                 }
                             });
                             return;
@@ -380,7 +380,7 @@ public class BluetoothDataActivity extends BaseActivity {
                                 runOnUiThread(new Runnable() {
                                     @Override
                                     public void run() {
-                                        Toast.makeText(BluetoothDataActivity.this, "蓝牙繁忙", Toast.LENGTH_SHORT).show();
+                                        Toast.makeText(BluetoothDataActivity.this, getResources().getString(R.string.ble_busy), Toast.LENGTH_SHORT).show();
                                     }
                                 });
                                 fileInputStream.close();
@@ -403,7 +403,7 @@ public class BluetoothDataActivity extends BaseActivity {
                             });
 
                             if (!sendDataSynchronization(BleManager.getInstance(), mBleDevice, mSendCharact, sendBytes)) {
-                                SendReceiveDataBean dataBean = new SendReceiveDataBean(SendReceiveDataBean.DataTypeFailed, "发送失败！");
+                                SendReceiveDataBean dataBean = new SendReceiveDataBean(SendReceiveDataBean.DataTypeFailed, getResources().getString(R.string.send_failure));
 
                                 addDataInfoItem(dataBean);
 
@@ -411,7 +411,7 @@ public class BluetoothDataActivity extends BaseActivity {
                                 runOnUiThread(new Runnable() {
                                     @Override
                                     public void run() {
-                                        Toast.makeText(BluetoothDataActivity.this, "蓝牙繁忙", Toast.LENGTH_SHORT).show();
+                                        Toast.makeText(BluetoothDataActivity.this, getResources().getString(R.string.ble_busy), Toast.LENGTH_SHORT).show();
                                     }
                                 });
                                 fileInputStream.close();
@@ -437,7 +437,7 @@ public class BluetoothDataActivity extends BaseActivity {
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                Toast.makeText(BluetoothDataActivity.this, "测试文件不存在", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(BluetoothDataActivity.this, getResources().getString(R.string.test_file_not_exist), Toast.LENGTH_SHORT).show();
                             }
                         });
                     }
@@ -465,7 +465,7 @@ public class BluetoothDataActivity extends BaseActivity {
                             });
 
                             if (!sendDataSynchronization(BleManager.getInstance(), mBleDevice, mSendCharact, data)) {
-                                SendReceiveDataBean dataBean = new SendReceiveDataBean(SendReceiveDataBean.DataTypeFailed, "发送失败！");
+                                SendReceiveDataBean dataBean = new SendReceiveDataBean(SendReceiveDataBean.DataTypeFailed, getResources().getString(R.string.send_failure));
 
                                 addDataInfoItem(dataBean);
                             }
@@ -494,7 +494,7 @@ public class BluetoothDataActivity extends BaseActivity {
 
     private void setSendByteCount(int count) {
         sendByteCount = count;
-        sendByteCountTV.setText(String.format("发送字节数：%d Byte", count));
+        sendByteCountTV.setText(String.format(getResources().getString(R.string.send_byte_format), count));
     }
 
     private void addSendByteCount(int count) {
@@ -503,7 +503,7 @@ public class BluetoothDataActivity extends BaseActivity {
 
     private void setReceiveByteCount(int count) {
         receiveByteCount = count;
-        receiveByteCountTV.setText(String.format("接收字节数：%d Byte", count));
+        receiveByteCountTV.setText(String.format(String.format(getResources().getString(R.string.receive_byte_format)), count));
     }
 
     private void addReceiveByteCount(int count) {
@@ -512,12 +512,12 @@ public class BluetoothDataActivity extends BaseActivity {
 
     // 显示接收速率
     private void showRecCountBySecond(int count) {
-        receiveRateTV.setText(String.format("接收速率：%d B/s", count));
+        receiveRateTV.setText(String.format(getResources().getString(R.string.receive_rate_format), count));
     }
 
     // 显示发送速率
     private void showSendCountBySecond(int count) {
-        sendRateTV.setText(String.format("发送速率：%d B/s", count));
+        sendRateTV.setText(String.format(getResources().getString(R.string.send_rate_format), count));
     }
 
     // 开始定时器
@@ -571,7 +571,7 @@ public class BluetoothDataActivity extends BaseActivity {
             // 接收服务
             mReceiveCharact = BleConfig.Ble_Config_Receive_Service;
 
-            setTitle(mDeviceName + "-配置");
+            setTitle(mDeviceName + getResources().getString(R.string.data_title_config_suffix));
 
             dataBytesLayout.setVisibility(View.GONE);
 
@@ -584,7 +584,7 @@ public class BluetoothDataActivity extends BaseActivity {
             // 接收服务
             mReceiveCharact = BleConfig.Ble_Data_Receive_Service();
 
-            setTitle(mDeviceName + "-数据");
+            setTitle(mDeviceName + getResources().getString(R.string.data_title_data_suffix));
 
             dataBytesLayout.setVisibility(View.VISIBLE);
 
@@ -593,10 +593,10 @@ public class BluetoothDataActivity extends BaseActivity {
 
         if (HJBleApplication.shareInstance().isBleHex()) {
             sendEdit.setText("");
-            sendEdit.setHint("请输入十六进制数据");
+            sendEdit.setHint(getResources().getString(R.string.please_input_hex_data));
         } else {
             sendEdit.setText("");
-            sendEdit.setHint("请输入字符数据");
+            sendEdit.setHint(getResources().getString(R.string.please_input_character_data));
         }
 
         writeTypeBle(mSendCharact, HJBleApplication.shareInstance().isWriteTypeResponse());
@@ -617,12 +617,12 @@ public class BluetoothDataActivity extends BaseActivity {
                 String recvStr = ConvertData.bytesToUtf8(bytes);
                 // 蓝牙设备繁忙
                 if (recvStr.equals("<HJ_BLE_BUSY_STOP_SEND>")) {
-                    SendReceiveDataBean dataBean = new SendReceiveDataBean(SendReceiveDataBean.DataTypeOther, "蓝牙设备繁忙");
+                    SendReceiveDataBean dataBean = new SendReceiveDataBean(SendReceiveDataBean.DataTypeOther, getResources().getString(R.string.ble_busy));
 
                     addDataInfoItem(dataBean);
                     bBusyBle = true;
                 } else if (recvStr.equals("<HJ_BLE_IDLE_START_SEND>")) {
-                    SendReceiveDataBean dataBean = new SendReceiveDataBean(SendReceiveDataBean.DataTypeOther, "蓝牙设备空闲");
+                    SendReceiveDataBean dataBean = new SendReceiveDataBean(SendReceiveDataBean.DataTypeOther, getResources().getString(R.string.ble_idle));
 
                     addDataInfoItem(dataBean);
                     bBusyBle = false;
@@ -691,9 +691,9 @@ public class BluetoothDataActivity extends BaseActivity {
             @Override
             public void run() {
                 if (isTesting) {
-                    testBtn.setText("停止测试");
+                    testBtn.setText(getResources().getString(R.string.stop_test_btn));
                 } else {
-                    testBtn.setText("开始测试");
+                    testBtn.setText(getResources().getString(R.string.start_test_btn));
                 }
             }
         });
@@ -711,14 +711,14 @@ public class BluetoothDataActivity extends BaseActivity {
         if (HJBleApplication.shareInstance().isBleHex()) {
 
             if (sendString.length() % 2 != 0) {
-                Toast.makeText(BluetoothDataActivity.this, "Hex长度应为2的倍数", Toast.LENGTH_SHORT).show();
+                Toast.makeText(BluetoothDataActivity.this, getResources().getString(R.string.hex_len_error), Toast.LENGTH_SHORT).show();
                 return;
             }
 
             String pattern = "^[A-Fa-f0-9]+$";
 
             if (!Pattern.matches(pattern, sendString)) {
-                Toast.makeText(BluetoothDataActivity.this, "输入格式错误", Toast.LENGTH_SHORT).show();
+                Toast.makeText(BluetoothDataActivity.this, getResources().getString(R.string.input_format_error), Toast.LENGTH_SHORT).show();
                 return;
             }
 
@@ -767,7 +767,7 @@ public class BluetoothDataActivity extends BaseActivity {
 
                     @Override
                     public void onWriteFailure(BleException e) {
-                        SendReceiveDataBean dataBean = new SendReceiveDataBean(SendReceiveDataBean.DataTypeFailed, "发送失败！");
+                        SendReceiveDataBean dataBean = new SendReceiveDataBean(SendReceiveDataBean.DataTypeFailed, getResources().getString(R.string.send_failure));
 
                         addDataInfoItem(dataBean);
                     }
@@ -858,28 +858,28 @@ public class BluetoothDataActivity extends BaseActivity {
             switch (dataInfo.getDataType()) {
                 case SendReceiveDataBean.DataTypeSend: {
                     viewHolder.dataTypeTv.setTextColor(Color.BLUE);
-                    viewHolder.dataTypeTv.setText("发送：");
+                    viewHolder.dataTypeTv.setText(getResources().getString(R.string.data_type_title_send));
                     viewHolder.dataInfoTv.setText(dataInfo.getDataInfo());
                 }
                 break;
 
                 case SendReceiveDataBean.DataTypeReceive: {
                     viewHolder.dataTypeTv.setTextColor(Color.rgb(0xf5, 0x82, 0x20));
-                    viewHolder.dataTypeTv.setText("接收：");
+                    viewHolder.dataTypeTv.setText(getResources().getString(R.string.data_type_title_receive));
                     viewHolder.dataInfoTv.setText(dataInfo.getDataInfo());
                 }
                 break;
 
                 case SendReceiveDataBean.DataTypeFailed: {
                     viewHolder.dataTypeTv.setTextColor(Color.RED);
-                    viewHolder.dataTypeTv.setText("失败：");
+                    viewHolder.dataTypeTv.setText(getResources().getString(R.string.data_type_title_failed));
                     viewHolder.dataInfoTv.setText(dataInfo.getDataInfo());
                 }
                 break;
 
                 default: {
                     viewHolder.dataTypeTv.setTextColor(Color.BLACK);
-                    viewHolder.dataTypeTv.setText("其他：" + timeStr);
+                    viewHolder.dataTypeTv.setText(getResources().getString(R.string.data_type_title_other) + timeStr);
                     viewHolder.dataInfoTv.setText(dataInfo.getDataInfo());
                 }
             }

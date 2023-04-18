@@ -108,7 +108,7 @@ public class SetActivity extends BaseActivity {
         isConfig = intent.getBooleanExtra(EXTRAS_SET_IS_CONFIG, false);
         mBleDevice = intent.getParcelableExtra(EXTRAS_DEVICE);
 
-        setTitle("设置");
+        setTitle(getResources().getString(R.string.setting_title));
 
         swithHighRate = findViewById(R.id.switch_high_rate);
         if (Build.VERSION.SDK_INT >= 21) {
@@ -121,7 +121,7 @@ public class SetActivity extends BaseActivity {
                         if (!BleManager.getInstance().requestConnectionPriority(mBleDevice, BluetoothGatt.CONNECTION_PRIORITY_HIGH)) {
                             FastBleListener.getInstance().setHighRate(mBleDevice.getMac(), false);
                             swithHighRate.setChecked(false);
-                            Toast.makeText(SetActivity.this, "打开高速模式失败", Toast.LENGTH_LONG).show();
+                            Toast.makeText(SetActivity.this, getResources().getString(R.string.failed_to_enable_high_speed_mode), Toast.LENGTH_LONG).show();
                         } else {
                             FastBleListener.getInstance().setHighRate(mBleDevice.getMac(), true);
                         }
@@ -129,7 +129,7 @@ public class SetActivity extends BaseActivity {
                         if (!BleManager.getInstance().requestConnectionPriority(mBleDevice, BluetoothGatt.CONNECTION_PRIORITY_BALANCED)) {
                             FastBleListener.getInstance().setHighRate(mBleDevice.getMac(), true);
                             swithHighRate.setChecked(true);
-                            Toast.makeText(SetActivity.this, "关闭高速模式失败", Toast.LENGTH_LONG).show();
+                            Toast.makeText(SetActivity.this, getResources().getString(R.string.failed_to_disable_high_speed_mode), Toast.LENGTH_LONG).show();
                         } else {
                             FastBleListener.getInstance().setHighRate(mBleDevice.getMac(), false);
                         }
@@ -198,9 +198,9 @@ public class SetActivity extends BaseActivity {
                 inputServer.setInputType(InputType.TYPE_CLASS_NUMBER);
                 inputServer.setText(groupLenTxt.getText());
                 AlertDialog.Builder builder = new AlertDialog.Builder(SetActivity.this);
-                builder.setTitle("设置每包数据长度").setView(inputServer)
-                        .setNegativeButton("取消", null);
-                builder.setPositiveButton("确定", new DialogInterface.OnClickListener() {
+                builder.setTitle(getResources().getString(R.string.data_length_of_each_packet_title)).setView(inputServer)
+                        .setNegativeButton(getResources().getString(R.string.cancel_btn), null);
+                builder.setPositiveButton(getResources().getString(R.string.sure_btn), new DialogInterface.OnClickListener() {
 
                     public void onClick(DialogInterface dialog, int which) {
                         String info = inputServer.getText().toString();
@@ -220,9 +220,9 @@ public class SetActivity extends BaseActivity {
                 inputServer.setInputType(InputType.TYPE_CLASS_NUMBER);
                 inputServer.setText(dataLenTxt.getText());
                 AlertDialog.Builder builder = new AlertDialog.Builder(SetActivity.this);
-                builder.setTitle("设置每次下发测试数据长度").setView(inputServer)
-                        .setNegativeButton("取消", null);
-                builder.setPositiveButton("确定", new DialogInterface.OnClickListener() {
+                builder.setTitle(getResources().getString(R.string.length_of_test_data_to_be_delivered_each_time)).setView(inputServer)
+                        .setNegativeButton(getResources().getString(R.string.cancel_btn), null);
+                builder.setPositiveButton(getResources().getString(R.string.sure_btn), new DialogInterface.OnClickListener() {
 
                     public void onClick(DialogInterface dialog, int which) {
                         String info = inputServer.getText().toString();
@@ -242,9 +242,9 @@ public class SetActivity extends BaseActivity {
                 inputServer.setInputType(InputType.TYPE_CLASS_NUMBER);
                 inputServer.setText(gapTimeTxt.getText());
                 AlertDialog.Builder builder = new AlertDialog.Builder(SetActivity.this);
-                builder.setTitle("设置下发数据时间间隙(ms)").setView(inputServer)
-                        .setNegativeButton("取消", null);
-                builder.setPositiveButton("确定", new DialogInterface.OnClickListener() {
+                builder.setTitle(getResources().getString(R.string.data_delivery_interval)).setView(inputServer)
+                        .setNegativeButton(getResources().getString(R.string.cancel_btn), null);
+                builder.setPositiveButton(getResources().getString(R.string.sure_btn), new DialogInterface.OnClickListener() {
 
                     public void onClick(DialogInterface dialog, int which) {
                         String info = inputServer.getText().toString();
@@ -269,10 +269,10 @@ public class SetActivity extends BaseActivity {
         });
 
         if (HJBleApplication.shareInstance().isBleConfig()) {
-            modeTxt.setText("配置模式");
+            modeTxt.setText(getResources().getString(R.string.config_mode));
         }
         else {
-            modeTxt.setText("数据模式");
+            modeTxt.setText(getResources().getString(R.string.data_mode));
         }
 
         if (HJBleApplication.shareInstance().isBleHex()) {
@@ -283,17 +283,17 @@ public class SetActivity extends BaseActivity {
         }
 
         if (HJBleApplication.shareInstance().isAddReturn()) {
-            returnTxt.setText("是");
+            returnTxt.setText(getResources().getString(R.string.yes));
         }
         else {
-            returnTxt.setText("否");
+            returnTxt.setText(getResources().getString(R.string.no));
         }
 
         if (HJBleApplication.shareInstance().isWriteTypeResponse()) {
-            writeTypeTxt.setText("是");
+            writeTypeTxt.setText(getResources().getString(R.string.yes));
         }
         else {
-            writeTypeTxt.setText("否");
+            writeTypeTxt.setText(getResources().getString(R.string.no));
         }
 
         groupLenTxt.setText("" + HJBleApplication.shareInstance().getGroupLen());
@@ -320,11 +320,11 @@ public class SetActivity extends BaseActivity {
             public boolean onMenuItemClick(MenuItem menuItem) {
                 switch (menuItem.getItemId()){
                     case R.id.data_mode:
-                        modeTxt.setText("数据模式");
+                        modeTxt.setText(getResources().getString(R.string.data_mode));
                         HJBleApplication.shareInstance().setBleConfig(false);
                         return true;
                     case R.id.config_mode:
-                        modeTxt.setText("配置模式");
+                        modeTxt.setText(getResources().getString(R.string.config_mode));
                         HJBleApplication.shareInstance().setBleConfig(true);
                         return true;
 
@@ -374,11 +374,11 @@ public class SetActivity extends BaseActivity {
             public boolean onMenuItemClick(MenuItem menuItem) {
                 switch (menuItem.getItemId()){
                     case R.id.yes:
-                        returnTxt.setText("是");
+                        returnTxt.setText(getResources().getString(R.string.yes));
                         HJBleApplication.shareInstance().setAddReturn(true);
                         return true;
                     case R.id.no:
-                        returnTxt.setText("否");
+                        returnTxt.setText(getResources().getString(R.string.no));
                         HJBleApplication.shareInstance().setAddReturn(false);
                         return true;
 
@@ -401,11 +401,11 @@ public class SetActivity extends BaseActivity {
             public boolean onMenuItemClick(MenuItem menuItem) {
                 switch (menuItem.getItemId()){
                     case R.id.yes:
-                        writeTypeTxt.setText("是");
+                        writeTypeTxt.setText(getResources().getString(R.string.yes));
                         HJBleApplication.shareInstance().setWriteTypeResponse(true);
                         return true;
                     case R.id.no:
-                        writeTypeTxt.setText("否");
+                        writeTypeTxt.setText(getResources().getString(R.string.no));
                         HJBleApplication.shareInstance().setWriteTypeResponse(false);
                         return true;
 

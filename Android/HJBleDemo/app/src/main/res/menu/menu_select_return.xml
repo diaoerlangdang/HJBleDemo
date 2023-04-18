@@ -5,11 +5,11 @@
     <item
         android:id="@+id/yes"
         android:orderInCategory="100"
-        android:title="是"
+        android:title="@string/yes"
         app:showAsAction="never" />
     <item
         android:id="@+id/no"
         android:orderInCategory="100"
-        android:title="否"
+        android:title="@string/no"
         app:showAsAction="never" />
 </menu>

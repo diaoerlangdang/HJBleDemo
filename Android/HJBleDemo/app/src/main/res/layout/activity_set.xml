@@ -14,7 +14,7 @@
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
             android:textColor="@android:color/black"
-            android:text="高速模式："/>
+            android:text="@string/high_speed_mode"/>
 
         <Switch
             android:id="@+id/switch_high_rate"
@@ -38,7 +38,7 @@
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
             android:textColor="@android:color/black"
-            android:text="当前字符："/>
+            android:text="@string/current_character"/>
 
         <LinearLayout
             android:id="@+id/select_char"
@@ -78,7 +78,7 @@
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
             android:textColor="@android:color/black"
-            android:text="当前模式："/>
+            android:text="@string/current_mode"/>
 
         <LinearLayout
             android:id="@+id/select_mode"
@@ -95,7 +95,7 @@
                 android:layout_height="wrap_content"
                 android:textColor="@android:color/white"
                 android:paddingRight="5dp"
-                android:text="数据模式"/>
+                android:text="@string/data_mode"/>
 
             <ImageView
                 android:layout_width="wrap_content"
@@ -118,7 +118,7 @@
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
             android:textColor="@android:color/black"
-            android:text="是否添加回车："/>
+            android:text="@string/add_return"/>
 
         <LinearLayout
             android:id="@+id/select_return"
@@ -138,7 +138,7 @@
                 android:layout_height="wrap_content"
                 android:textColor="@android:color/white"
                 android:paddingEnd="5dp"
-                android:text="否"/>
+                android:text="@string/no"/>
 
             <ImageView
                 android:layout_width="wrap_content"
@@ -161,7 +161,7 @@
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
             android:textColor="@android:color/black"
-            android:text="是否为Response："/>
+            android:text="@string/response_mode"/>
 
         <LinearLayout
             android:id="@+id/select_write_type"
@@ -181,7 +181,7 @@
                 android:layout_height="wrap_content"
                 android:textColor="@android:color/white"
                 android:paddingRight="5dp"
-                android:text="是"/>
+                android:text="@string/yes"/>
 
             <ImageView
                 android:layout_width="wrap_content"
@@ -204,7 +204,7 @@
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
             android:textColor="@android:color/black"
-            android:text="每包数据长度："/>
+            android:text="@string/data_length_of_each_packet_title"/>
 
         <TextView
             android:id="@+id/group_len_txt"
@@ -232,7 +232,7 @@
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
             android:textColor="@android:color/black"
-            android:text="每次下发测试数据长度："/>
+            android:text="@string/length_of_test_data_to_be_delivered_each_time"/>
 
         <TextView
             android:id="@+id/data_len_txt"
@@ -259,7 +259,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
-            android:text="下发数据时间间隙(ms)："
+            android:text="@string/data_delivery_interval"
             android:textColor="@android:color/black" />
 
         <TextView
@@ -289,7 +289,7 @@
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
             android:textColor="@android:color/black"
-            android:text="测试文件："/>
+            android:text="@string/test_file"/>
 
         <TextView
             android:id="@+id/file_path_txt"
@@ -316,7 +316,7 @@
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
             android:textColor="@android:color/black"
-            android:text="是否使用文件测试："/>
+            android:text="@string/use_file_test"/>
 
         <Switch
             android:id="@+id/switch_use_file_test"

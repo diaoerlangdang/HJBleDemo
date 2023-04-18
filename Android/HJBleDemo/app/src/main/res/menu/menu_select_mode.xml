@@ -5,11 +5,11 @@
     <item
         android:id="@+id/data_mode"
         android:orderInCategory="100"
-        android:title="数据模式"
+        android:title="@string/data_mode"
         app:showAsAction="never" />
     <item
         android:id="@+id/config_mode"
         android:orderInCategory="100"
-        android:title="配置模式"
+        android:title="@string/config_mode"
         app:showAsAction="never" />
 </menu>

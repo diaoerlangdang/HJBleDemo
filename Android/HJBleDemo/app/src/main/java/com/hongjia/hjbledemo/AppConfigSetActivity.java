@@ -34,7 +34,7 @@ public class AppConfigSetActivity extends BaseActivity {
     protected void initView() {
         super.initView();
 
-        setTitle("软件设置");
+        setTitle(getResources().getString(R.string.software_setup));
 
         switchFilter = findViewById(R.id.switch_filter);
         switchFilter.setChecked(HJBleApplication.shareInstance().isScanFilter());

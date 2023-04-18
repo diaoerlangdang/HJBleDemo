@@ -19,7 +19,7 @@
             android:textColor="#666"
             android:textSize="15sp"
             android:layout_centerVertical="true"
-            android:text="扫描过滤"/>
+            android:text="@string/scanning_filtering"/>
 
         <Switch
             android:id="@+id/switch_filter"
@@ -48,7 +48,7 @@
             android:textColor="#666"
             android:textSize="15sp"
             android:layout_centerVertical="true"
-            android:text="数据服务"/>
+            android:text="@string/data_service"/>
 
         <ImageView
             android:layout_width="wrap_content"
@@ -73,7 +73,7 @@
             android:textColor="#666"
             android:textSize="15sp"
             android:layout_centerVertical="true"
-            android:text="版本信息"/>
+            android:text="@string/version_info"/>
 
         <TextView
             android:id="@+id/tv_version"

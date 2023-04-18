@@ -16,7 +16,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textColor="@android:color/black"
-            android:text="我的设备"
+            android:text="@string/device_list_title"
             android:paddingLeft="15dp"
             android:paddingTop="15dp"
             android:paddingBottom="15dp"/>

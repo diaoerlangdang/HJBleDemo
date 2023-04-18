@@ -120,7 +120,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
         //判断本设备是否支持蓝牙ble，并连接本地蓝牙设备
         if(!BleManager.getInstance().isSupportBle())
         {
-            Toast.makeText(this, "不支持BLE",Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getResources().getString(R.string.ble_not_supported),Toast.LENGTH_SHORT).show();
             finish();
             return ;
         }
@@ -167,7 +167,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
             StatusBarCompat.setStatusBarColor(this, getResources().getColor(R.color.colorNavBackground, null), false);
         }
 
-        setTitle("扫描列表");
+        setTitle(getResources().getString(R.string.scan_list_title));
         topLeftBtn.setImageResource(R.mipmap.info);
         topLeftBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -185,7 +185,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
             }
         });
 
-        setRightText("停止扫描");
+        setRightText(getResources().getString(R.string.stop_scan));
         rightTitleTxt.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -206,7 +206,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
         LoadingDialog.Builder loadBuilder=new LoadingDialog.Builder(this)
                 .setCancelable(true)
                 .setShowMessage(true)
-                .setMessage("正在连接中...")
+                .setMessage(getResources().getString(R.string.ble_connecting))
                 .setCancelOutside(false)
                 .setOnCancelListener(new DialogInterface.OnCancelListener() {
                     @Override
@@ -264,12 +264,12 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
 
         if (!checkPermissions()) {
 
-            Toast.makeText(this, "请打开位置信息", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getResources().getString(R.string.please_open_location), Toast.LENGTH_SHORT).show();
         }
 
         EasyPermissions.requestPermissions(
                 this,
-                "请求位置权限",
+                getResources().getString(R.string.request_location_permission),
                 RC_PERM_CODE,
                 android.os.Build.VERSION.SDK_INT < 31 ? permissionList : permissionListHigher);
 
@@ -502,7 +502,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
     // 连接蓝牙
     void connectBle(final HJBleScanDevice scanDevice) {
 
-        loadingDialog.setMessage("正在连接中...");
+        loadingDialog.setMessage(getResources().getString(R.string.ble_connecting));
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -527,7 +527,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            Toast.makeText(ScanBleActivity.this,"连接失败",Toast.LENGTH_SHORT).show();
+                            Toast.makeText(ScanBleActivity.this,getResources().getString(R.string.ble_connect_failed),Toast.LENGTH_SHORT).show();
                             loadingDialog.dismiss();
                             scanLeDevice(true);
                         }
@@ -547,7 +547,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
                     public void run() {
 
                         Log.e("'test'", "'正在打开通知1'");
-                        loadingDialog.setMessage("正在打开通知");
+                        loadingDialog.setMessage(getResources().getString(R.string.ble_opening_notification));
                     }
                 });
 
@@ -562,7 +562,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            Toast.makeText(ScanBleActivity.this,"连接失败",Toast.LENGTH_SHORT).show();
+                            Toast.makeText(ScanBleActivity.this,getResources().getString(R.string.ble_connect_failed),Toast.LENGTH_SHORT).show();
                             loadingDialog.dismiss();
                             scanLeDevice(true);
                         }
@@ -581,7 +581,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
                     @Override
                     public void run() {
 
-                        loadingDialog.setMessage("正在读取流控信息");
+                        loadingDialog.setMessage(getResources().getString(R.string.reading_flow_control));
                     }
                 });
 
@@ -631,7 +631,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            Toast.makeText(ScanBleActivity.this,"连接失败",Toast.LENGTH_SHORT).show();
+                            Toast.makeText(ScanBleActivity.this,getResources().getString(R.string.ble_connect_failed),Toast.LENGTH_SHORT).show();
                             loadingDialog.dismiss();
                             scanLeDevice(true);
                         }
@@ -668,11 +668,11 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
             scanLeDevice(false);
 
             if (errorCode == SCAN_FAILED_LOCATION_CLOSE){
-                Toast.makeText(ScanBleActivity.this, "位置已关闭，请先打开位置信息！！！", Toast.LENGTH_LONG).show();
+                Toast.makeText(ScanBleActivity.this, getResources().getString(R.string.location_is_closed), Toast.LENGTH_LONG).show();
             }else if(errorCode == SCAN_FAILED_LOCATION_PERMISSION_FORBID){
-                Toast.makeText(ScanBleActivity.this, "你没有位置权限", Toast.LENGTH_LONG).show();
+                Toast.makeText(ScanBleActivity.this, getResources().getString(R.string.no_location_permission), Toast.LENGTH_LONG).show();
             }else{
-                Toast.makeText(ScanBleActivity.this, "未知错误", Toast.LENGTH_LONG).show();
+                Toast.makeText(ScanBleActivity.this, getResources().getString(R.string.unknown_error), Toast.LENGTH_LONG).show();
             }
 
         }
@@ -746,7 +746,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
             mScanning = true;
             scanManager.startScanNow();	//开始蓝牙扫描
 
-            setRightText("停止扫描");
+            setRightText(getResources().getString(R.string.stop_scan));
             scanProgress.setVisibility(View.VISIBLE);
         }
         else
@@ -755,7 +755,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
             mScanning = false;
             scanManager.stopCycleScan();	//停止蓝牙扫描
 
-            setRightText("开始扫描");
+            setRightText(getResources().getString(R.string.start_scan));
             scanProgress.setVisibility(View.INVISIBLE);
         }
     }
@@ -1013,15 +1013,15 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
             if (deviceName != null && deviceName.length() > 0)
                 viewHolder.deviceName.setText(deviceName);
             else
-                viewHolder.deviceName.setText("未知设备");
+                viewHolder.deviceName.setText(getResources().getString(R.string.unknow_device));
 
             viewHolder.connectBtn.setTag(i);
             viewHolder.detailbtn.setTag(i);
             if (BleManager.getInstance().isConnected(scanDevice.device.getMac())) {
-                viewHolder.connectBtn.setText("断开");
+                viewHolder.connectBtn.setText(getResources().getString(R.string.device_disconnect));
                 viewHolder.detailbtn.setVisibility(View.VISIBLE);
             } else {
-                viewHolder.connectBtn.setText("连接");
+                viewHolder.connectBtn.setText(getResources().getString(R.string.device_connect));
                 viewHolder.detailbtn.setVisibility(View.GONE);
             }
 

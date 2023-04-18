@@ -1,0 +1,94 @@
+<resources>
+    <string name="app_name">HJBle</string>
+    <string name="scan_list_title">Scan List</string>
+    <string name="start_scan">Start Scan</string>
+    <string name="stop_scan">Stop Scan</string>
+    <string name="device_list_title">Device List</string>
+    <string name="device_connect">Connect</string>
+    <string name="device_disconnect">Disconnect</string>
+    <string name="device_enter">Enter</string>
+    <string name="unknow_device">Unknow Device</string>
+    <string name="please_open_location">Please open the location information</string>
+    <string name="request_location_permission">Request location permission</string>
+    <string name="ble_not_supported">BLE not supported</string>
+    <string name="ble_connecting">Connecting...</string>
+    <string name="ble_connect_failed">Connection failure</string>
+    <string name="ble_opening_notification">Opening notification</string>
+    <string name="reading_flow_control">Reading flow control information</string>
+    <string name="location_is_closed">Location is closed, please open the location information first</string>
+    <string name="no_location_permission">No location permission</string>
+    <string name="unknown_error">Unknown error</string>
+
+    <!--    软件设置-->
+    <string name="software_setup">Software setup</string>
+    <string name="scanning_filtering">Scanning filtering</string>
+    <string name="data_service">Data service</string>
+    <string name="version_info">Version information</string>
+
+    <!--    服务设置-->
+    <string name="service_setup">Service setup</string>
+    <string name="save_btn">Save</string>
+    <string name="master_service_error">Master service format is incorrect</string>
+    <string name="notify_service_error">Notification service is incorrect</string>
+    <string name="send_service_error">Sending service is incorrect</string>
+    <string name="save_success">Save successfully</string>
+    <string name="restore_default">Restore default</string>
+    <string name="please_enter_service_placeholder">Please enter service</string>
+    <string name="master_service_title">Master service:</string>
+    <string name="notify_service_title">Notification service:</string>
+    <string name="send_service_title">Sending service:</string>
+    <string name="service_edit_tips">* Input the data in the format of xxxxxxxx-xxxx-xxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx\ n* two-byte service Input the data in the format of 0000xxxx-0000-1000-8000-00805f9b34fb and replace xxxx with the corresponding two-byte service</string>
+
+    <!--    设置-->
+    <string name="setting_title">Setting</string>
+    <string name="sure_btn">Sure</string>
+    <string name="cancel_btn">Cancel</string>
+    <string name="failed_to_enable_high_speed_mode">Failed to enable high speed mode</string>
+    <string name="failed_to_disable_high_speed_mode">Failed to disable high speed mode</string>
+    <string name="data_length_of_each_packet_title">Data length of each packet</string>
+    <string name="length_of_test_data_to_be_delivered_each_time">Length of test data to be delivered each time</string>
+    <string name="data_delivery_interval">Data delivery interval (ms)</string>
+    <string name="config_mode">Configuration mode</string>
+    <string name="data_mode">Data mode</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+    <string name="high_speed_mode">High speed mode</string>
+    <string name="current_character">Current character</string>
+    <string name="current_mode">Current mode</string>
+    <string name="add_return">Add Return</string>
+    <string name="response_mode">Response mode</string>
+    <string name="test_file">Test file</string>
+    <string name="use_file_test">Use file test</string>
+
+    <!-- 发送数据   -->
+    <string name="data_title_data_suffix">-Data</string>
+    <string name="data_title_config_suffix">-Config</string>
+    <string name="send_byte_default">Sent bytes：0 Byte</string>
+    <string name="receive_byte_default">Received bytes：0 Byte</string>
+    <string name="send_byte_format">Sent bytes：%d Byte</string>
+    <string name="receive_byte_format">Received bytes：%d Byte</string>
+    <string name="send_rate_default">Sent rate：0 B/s</string>
+    <string name="receive_rate_default">Received rate：0 B/s</string>
+    <string name="send_rate_format">Sent rate：%d B/s</string>
+    <string name="receive_rate_format">Received rate：%d B/s</string>
+    <string name="log_title">Log：</string>
+    <string name="flow_control_disable">Flow control：disable</string>
+    <string name="flow_control_enable">Flow control：enable</string>
+    <string name="start_test_btn">Start test</string>
+    <string name="stop_test_btn">Stop test</string>
+    <string name="clear_data_btn">Clear Data</string>
+    <string name="please_input_hex_data">Please input hex data</string>
+    <string name="please_input_character_data">Please input character data</string>
+    <string name="send_data_btn">Send</string>
+    <string name="ble_disconnected">BLE disconnected</string>
+    <string name="test_file_not_exist">The test file does not exist</string>
+    <string name="ble_busy">BLE busy</string>
+    <string name="ble_idle">BLE idle</string>
+    <string name="send_failure">Send failure</string>
+    <string name="hex_len_error">The length of Hex must be a multiple of 2</string>
+    <string name="input_format_error">Input format error</string>
+    <string name="data_type_title_send">Send：</string>
+    <string name="data_type_title_receive">Receive：</string>
+    <string name="data_type_title_other">Other：</string>
+    <string name="data_type_title_failed">Failed：</string>
+</resources>

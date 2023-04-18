@@ -38,27 +38,27 @@ public class BleServiceConfigActivity extends BaseActivity {
     protected void initView() {
         super.initView();
 
-        setTitle("服务设置");
+        setTitle(getResources().getString(R.string.service_setup));
 
-        setRightText("保存");
+        setRightText(getResources().getString(R.string.save_btn));
         rightTitleTxt.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 String mainService = etMainService.getText().toString();
                 if (!verifyServiceUUID(mainService)) {
-                    Toast.makeText(BleServiceConfigActivity.this, "主服务格式不正确", Toast.LENGTH_LONG).show();
+                    Toast.makeText(BleServiceConfigActivity.this, getResources().getString(R.string.master_service_error), Toast.LENGTH_LONG).show();
                     return;
                 }
 
                 String notifyService = etNotifyService.getText().toString();
                 if (!verifyServiceUUID(notifyService)) {
-                    Toast.makeText(BleServiceConfigActivity.this, "通知服务格式不正确", Toast.LENGTH_LONG).show();
+                    Toast.makeText(BleServiceConfigActivity.this, getResources().getString(R.string.notify_service_error), Toast.LENGTH_LONG).show();
                     return;
                 }
 
                 String sendService = etSendService.getText().toString();
                 if (!verifyServiceUUID(sendService)) {
-                    Toast.makeText(BleServiceConfigActivity.this, "发送服务格式不正确", Toast.LENGTH_LONG).show();
+                    Toast.makeText(BleServiceConfigActivity.this, getResources().getString(R.string.send_service_error), Toast.LENGTH_LONG).show();
                     return;
                 }
 
@@ -66,7 +66,7 @@ public class BleServiceConfigActivity extends BaseActivity {
                 HJBleApplication.shareInstance().setDataNotifyService(notifyService);
                 HJBleApplication.shareInstance().setDataSendService(sendService);
 
-                Toast.makeText(HJBleApplication.shareInstance().getApplicationContext(), "保存成功", Toast.LENGTH_LONG).show();
+                Toast.makeText(HJBleApplication.shareInstance().getApplicationContext(), getResources().getString(R.string.save_success), Toast.LENGTH_LONG).show();
                 finish();
 
             }

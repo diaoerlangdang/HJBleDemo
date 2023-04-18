@@ -1,3 +1,96 @@
 <resources>
     <string name="app_name">HJBle</string>
+    <string name="scan_list_title">扫描列表</string>
+    <string name="start_scan">开始扫描</string>
+    <string name="stop_scan">停止扫描</string>
+    <string name="device_list_title">我的设备</string>
+    <string name="device_connect">连接</string>
+    <string name="device_disconnect">断开</string>
+    <string name="device_enter">进入</string>
+    <string name="please_open_location">请打开位置信息</string>
+    <string name="request_location_permission">请求位置权限</string>
+    <string name="unknow_device">未知设备</string>
+    <string name="ble_not_supported">不支持BLE</string>
+    <string name="ble_connecting">正在连接中...</string>
+    <string name="ble_connect_failed">连接失败</string>
+    <string name="ble_opening_notification">正在打开通知</string>
+    <string name="reading_flow_control">正在读取流控信息</string>
+    <string name="location_is_closed">位置已关闭，请先打开位置信息</string>
+    <string name="no_location_permission">没有位置权限</string>
+    <string name="unknown_error">未知错误</string>
+
+    <!--    软件设置-->
+    <string name="software_setup">软件设置</string>
+    <string name="scanning_filtering">扫描过滤</string>
+    <string name="data_service">数据服务</string>
+    <string name="version_info">版本信息</string>
+
+    <!--    服务设置-->
+    <string name="service_setup">服务设置</string>
+    <string name="save_btn">保存</string>
+    <string name="master_service_error">主服务格式不正确</string>
+    <string name="notify_service_error">通知服务格式不正确</string>
+    <string name="send_service_error">发送服务格式不正确</string>
+    <string name="save_success">保存成功</string>
+    <string name="restore_default">恢复默认</string>
+    <string name="please_enter_service_placeholder">请输入服务</string>
+    <string name="master_service_title">主服务：</string>
+    <string name="notify_service_title">通知服务：</string>
+    <string name="send_service_title">发送服务：</string>
+    <string name="service_edit_tips">* 输入的格式为xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx\n*两字节服务请输入格式为0000xxxx-0000-1000-8000-00805f9b34fb的数据，请将xxxx更换为对应的两字节服务</string>
+
+
+    <!--    设置-->
+    <string name="setting_title">设置</string>
+    <string name="sure_btn">确定</string>
+    <string name="cancel_btn">取消</string>
+    <string name="failed_to_enable_high_speed_mode">打开高速模式失败</string>
+    <string name="failed_to_disable_high_speed_mode">关闭高速模式失败</string>
+    <string name="data_length_of_each_packet_title">每包数据长度</string>
+    <string name="length_of_test_data_to_be_delivered_each_time">每次下发测试数据长度</string>
+    <string name="data_delivery_interval">下发数据时间间隙(ms)</string>
+    <string name="config_mode">配置模式</string>
+    <string name="data_mode">数据模式</string>
+    <string name="yes">是</string>
+    <string name="no">否</string>
+    <string name="high_speed_mode">高速模式</string>
+    <string name="current_character">当前字符</string>
+    <string name="current_mode">当前模式</string>
+    <string name="add_return">添加回车</string>
+    <string name="response_mode">Response模式</string>
+    <string name="test_file">测试文件</string>
+    <string name="use_file_test">使用文件测试</string>
+
+    <!-- 发送数据   -->
+    <string name="data_title_data_suffix">-数据</string>
+    <string name="data_title_config_suffix">-配置</string>
+    <string name="send_byte_default">发送字节：0 Byte</string>
+    <string name="receive_byte_default">接收字节：0 Byte</string>
+    <string name="send_byte_format">发送字节：%d Byte</string>
+    <string name="receive_byte_format">接收字节：%d Byte</string>
+    <string name="send_rate_default">发送速率：0 B/s</string>
+    <string name="receive_rate_default">接收速率：0 B/s</string>
+    <string name="send_rate_format">发送速率：%d B/s</string>
+    <string name="receive_rate_format">接收速率：%d B/s</string>
+    <string name="log_title">日志：</string>
+    <string name="flow_control_disable">串口流控：禁止</string>
+    <string name="flow_control_enable">串口流控：使能</string>
+    <string name="start_test_btn">开始测试</string>
+    <string name="stop_test_btn">停止测试</string>
+    <string name="clear_data_btn">清屏</string>
+    <string name="please_input_hex_data">请输入十六进制数据</string>
+    <string name="please_input_character_data">请输入字符数据</string>
+    <string name="send_data_btn">发送</string>
+    <string name="ble_disconnected">蓝牙已断开</string>
+    <string name="test_file_not_exist">测试文件不存在</string>
+    <string name="ble_busy">蓝牙繁忙</string>
+    <string name="ble_idle">蓝牙空闲</string>
+    <string name="send_failure">发送失败</string>
+    <string name="hex_len_error">Hex长度应为2的倍数</string>
+    <string name="input_format_error">输入格式错误</string>
+    <string name="data_type_title_send">发送：</string>
+    <string name="data_type_title_receive">接收：</string>
+    <string name="data_type_title_other">其他：</string>
+    <string name="data_type_title_failed">失败：</string>
+
 </resources>

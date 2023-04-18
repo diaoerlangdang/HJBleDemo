@@ -18,7 +18,7 @@
             android:layout_width="0dp"
             android:layout_height="40dp"
             android:layout_weight="0.5"
-            android:text="恢复默认"/>
+            android:text="@string/restore_default"/>
 
     </LinearLayout>
 
@@ -31,7 +31,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="主服务："
+            android:text="@string/master_service_title"
             android:textColor="#666"
             android:textSize="15sp" />
 
@@ -41,7 +41,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="5dp"
             android:background="@drawable/edit_text_bg"
-            android:hint="请输入服务"
+            android:hint="@string/please_enter_service_placeholder"
             android:padding="5dp"
             android:textColor="#333"
             android:textSize="15sp" />
@@ -50,7 +50,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="15dp"
-            android:text="通知服务："
+            android:text="@string/notify_service_title"
             android:textColor="#666"
             android:textSize="15sp" />
 
@@ -60,7 +60,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="5dp"
             android:background="@drawable/edit_text_bg"
-            android:hint="请输入服务"
+            android:hint="@string/please_enter_service_placeholder"
             android:padding="5dp"
             android:textColor="#333"
             android:textSize="15sp" />
@@ -70,7 +70,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="15dp"
-            android:text="发送服务："
+            android:text="@string/send_service_title"
             android:textColor="#666"
             android:textSize="15sp" />
 
@@ -80,7 +80,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="5dp"
             android:background="@drawable/edit_text_bg"
-            android:hint="请输入服务"
+            android:hint="@string/please_enter_service_placeholder"
             android:padding="5dp"
             android:textColor="#333"
             android:textSize="15sp" />
@@ -89,7 +89,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="15dp"
-            android:text="* 输入的格式为xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx\n*两字节服务请输入格式为0000xxxx-0000-1000-8000-00805f9b34fb的数据，请将xxxx更换为对应的两字节服务"
+            android:text="@string/service_edit_tips"
             android:textColor="#f20c00"
             android:textSize="12sp" />
 
