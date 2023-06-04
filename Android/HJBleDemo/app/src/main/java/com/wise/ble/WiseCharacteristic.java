@@ -14,8 +14,8 @@ public class WiseCharacteristic {
     }
 
     public WiseCharacteristic(String serviceID, String characteristicID) {
-        this.serviceID = serviceID;
-        this.characteristicID = characteristicID;
+        this.serviceID = serviceID.toLowerCase();
+        this.characteristicID = characteristicID.toLowerCase();
     }
 
     /**
