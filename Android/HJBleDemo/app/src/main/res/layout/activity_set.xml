@@ -330,4 +330,28 @@
 
     </RelativeLayout>
 
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="10dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:textColor="@android:color/black"
+            android:text="@string/save_log"/>
+
+        <Switch
+            android:id="@+id/switch_save_log"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:switchMinWidth="20dp"
+            android:thumb="@drawable/switch_thumb"
+            android:track="@drawable/switch_track"/>
+
+    </RelativeLayout>
+
 </LinearLayout>

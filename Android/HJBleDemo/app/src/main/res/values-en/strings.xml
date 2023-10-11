@@ -59,6 +59,7 @@
     <string name="response_mode">Response mode</string>
     <string name="test_file">Test file</string>
     <string name="use_file_test">Use file test</string>
+    <string name="save_log">Save Log</string>
 
     <!-- 发送数据   -->
     <string name="data_title_data_suffix">-Data</string>

@@ -10,6 +10,7 @@ import android.graphics.Color;
 import android.icu.text.SimpleDateFormat;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.text.Spannable;
@@ -52,6 +53,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -139,6 +141,9 @@ public class BluetoothDataActivity extends BaseActivity {
     // 是否为流控模式
     private boolean bFlowControl = false;
 
+    private String fileNameSend = "";
+    private String fileNameReceive = "";
+
 
     @Override
     protected int getPageLayoutId() {
@@ -157,6 +162,9 @@ public class BluetoothDataActivity extends BaseActivity {
         groupLenMax = intent.getIntExtra(EXTRAS_DEVICE_GROUP_LEN_MAX, 20);
 
         super.onCreate(savedInstanceState);
+
+        fileNameSend = getSendFileName();
+        fileNameReceive = getReceiveFileName();
 
         topLeftBtn.setVisibility(View.VISIBLE);
 
@@ -684,6 +692,8 @@ public class BluetoothDataActivity extends BaseActivity {
                 } else {
                     str = ConvertData.bytesToUtf8(bytes);
                 }
+
+                writeFile(str, false);
                 SendReceiveDataBean dataBean = new SendReceiveDataBean(SendReceiveDataBean.DataTypeReceive, str);
 
                 addDataInfoItem(dataBean);
@@ -763,6 +773,8 @@ public class BluetoothDataActivity extends BaseActivity {
             return;
         }
 
+        writeFile(sendString + "\r\n", true);
+
         SendReceiveDataBean dataBean = new SendReceiveDataBean(SendReceiveDataBean.DataTypeSend, sendString);
 
         addDataInfoItem(dataBean);
@@ -819,6 +831,39 @@ public class BluetoothDataActivity extends BaseActivity {
     protected void onDestroy() {
         super.onDestroy();
 //        BleManager.getInstance().disconnect(mBleDevice);
+    }
+
+    private void writeFile(String content, boolean bSend) {
+
+        // 是否保存日志
+        if (!HJBleApplication.shareInstance().isSaveLog()) {
+            return;
+        }
+
+        if (bSend) {
+            // 写文件
+            FileInfoUtils.appendDataToDownloadFile(fileNameSend, content);
+        }
+        else {
+            // 写文件
+            FileInfoUtils.appendDataToDownloadFile(fileNameReceive, content);
+        }
+    }
+
+
+
+    private String getSendFileName() {
+        // 获取当前时间
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
+        String currentTime = dateFormat.format(new Date());
+        return "hjble_send_" + this.mDeviceAddress.replace(":","") + "_" + currentTime + ".txt";
+    }
+
+    private String getReceiveFileName() {
+        // 获取当前时间
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
+        String currentTime = dateFormat.format(new Date());
+        return "hjble_receive_" + this.mDeviceAddress.replace(":","") + "_" + currentTime + ".txt";
     }
 
 

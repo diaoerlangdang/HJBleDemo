@@ -11,6 +11,10 @@ import android.os.Environment;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+
 public class FileInfoUtils {
     /**
      * Android 4.4往后版本 ，其中区别在 8.0download目录报错修改，华为手机uri获取不到路径处理。
@@ -180,6 +184,17 @@ public class FileInfoUtils {
             }
         }
         return data;
+    }
+
+    // 最近内容到download下的文件内
+    public static void appendDataToDownloadFile(String filePath, String data) {
+        try {
+            PrintWriter writer = new PrintWriter(new FileWriter(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS) + "/" + filePath, true));
+            writer.print(data);
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
 }

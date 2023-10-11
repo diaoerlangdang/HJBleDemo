@@ -60,6 +60,7 @@
     <string name="response_mode">Response模式</string>
     <string name="test_file">测试文件</string>
     <string name="use_file_test">使用文件测试</string>
+    <string name="save_log">保存日志</string>
 
     <!-- 发送数据   -->
     <string name="data_title_data_suffix">-数据</string>

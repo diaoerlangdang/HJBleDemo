@@ -57,6 +57,17 @@ public class HJBleApplication extends Application {
         isBleConfig = bleConfig;
     }
 
+    // 是否存储日志
+    public boolean isSaveLog() {
+        Boolean isSaveLog = (Boolean)SPUtils.get(getAppContext(), "isSaveLog", false);
+        return isSaveLog.booleanValue();
+    }
+
+    public void setSaveLog(boolean isSaveLog) {
+
+        SPUtils.put(getAppContext(), "isSaveLog", isSaveLog);
+    }
+
     // 扫描过滤
     public boolean isScanFilter() {
         Boolean bFilter = (Boolean)SPUtils.get(getAppContext(), "isScanFilter", true);

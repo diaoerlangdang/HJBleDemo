@@ -64,6 +64,7 @@ public class SetActivity extends BaseActivity {
     private RelativeLayout selectFilePathBtn;
 
     private Switch switchUseFileTest;
+    private Switch switchSaveLog;
 
     // 选择模式
     private TextView modeTxt;
@@ -155,6 +156,14 @@ public class SetActivity extends BaseActivity {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 HJBleApplication.shareInstance().setUseFileTest(isChecked);
+            }
+        });
+        switchSaveLog = findViewById(R.id.switch_save_log);
+        switchSaveLog.setChecked(HJBleApplication.shareInstance().isSaveLog());
+        switchSaveLog.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                HJBleApplication.shareInstance().setSaveLog(isChecked);
             }
         });
 
