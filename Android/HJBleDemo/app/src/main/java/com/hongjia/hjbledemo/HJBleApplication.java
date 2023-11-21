@@ -79,16 +79,28 @@ public class HJBleApplication extends Application {
         SPUtils.put(getAppContext(), "isScanFilter", scanFilter);
     }
 
-    // 获取数据主服务
-    public String getDataMainService() {
+    // 获取数据通知主服务
+    public String getDataNotifyMainService() {
         String defaultId = BleConfig.Ble_Default_Data_Send_Service.getServiceID();
 
-        return (String) SPUtils.get(getAppContext(), "dataMainService", defaultId);
+        return (String) SPUtils.get(getAppContext(), "dataNotifyMainService", defaultId);
     }
 
-    // 设置数据主服务
-    public void setDataMainService(String serviceId) {
-        SPUtils.put(getAppContext(), "dataMainService", serviceId);
+    // 设置数据通知主服务
+    public void setDataNotifyMainService(String serviceId) {
+        SPUtils.put(getAppContext(), "dataNotifyMainService", serviceId);
+    }
+
+    // 获取数据发送主服务
+    public String getDataSendMainService() {
+        String defaultId = BleConfig.Ble_Default_Data_Send_Service.getServiceID();
+
+        return (String) SPUtils.get(getAppContext(), "dataSendMainService", defaultId);
+    }
+
+    // 设置数据发送主服务
+    public void setDataSendMainService(String serviceId) {
+        SPUtils.put(getAppContext(), "dataSendMainService", serviceId);
     }
 
     // 获取数据通知服务

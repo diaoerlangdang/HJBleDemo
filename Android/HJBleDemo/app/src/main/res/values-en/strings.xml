@@ -34,8 +34,9 @@
     <string name="save_success">Save successfully</string>
     <string name="restore_default">Restore default</string>
     <string name="please_enter_service_placeholder">Please enter service</string>
-    <string name="master_service_title">Master service:</string>
+    <string name="notify_master_service_title">Notification Master service:</string>
     <string name="notify_service_title">Notification service:</string>
+    <string name="send_master_service_title">Sending Master service:</string>
     <string name="send_service_title">Sending service:</string>
     <string name="service_edit_tips">* Input the data in the format of xxxxxxxx-xxxx-xxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx\ n* two-byte service Input the data in the format of 0000xxxx-0000-1000-8000-00805f9b34fb and replace xxxx with the corresponding two-byte service</string>
 

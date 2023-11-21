@@ -705,6 +705,13 @@ public class BluetoothDataActivity extends BaseActivity {
         BluetoothGattService service= BleManager.getInstance().getBluetoothGatt(mBleDevice).getService(UUID.fromString(chara.getServiceID()));
         BluetoothGattCharacteristic characteristic = service.getCharacteristic(UUID.fromString(chara.getCharacteristicID()));
 
+        if (characteristic == null) {
+            SendReceiveDataBean dataBean = new SendReceiveDataBean(SendReceiveDataBean.DataTypeOther, chara.getServiceID() + "  " + chara.getCharacteristicID()+"该服务不存在");
+
+            addDataInfoItem(dataBean);
+            return;
+        }
+
         //设置写入类型，WRITE_TYPE_DEFAULT：需要设备回应  WRITE_TYPE_NO_RESPONSE  不需要设备回应
         characteristic.setWriteType(bRespone ? BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT : BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
     }

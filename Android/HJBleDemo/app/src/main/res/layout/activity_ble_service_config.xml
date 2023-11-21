@@ -31,12 +31,12 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/master_service_title"
+            android:text="@string/notify_master_service_title"
             android:textColor="#666"
             android:textSize="15sp" />
 
         <EditText
-            android:id="@+id/et_main_service"
+            android:id="@+id/et_notify_main_service"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="5dp"
@@ -56,6 +56,25 @@
 
         <EditText
             android:id="@+id/et_notify_service"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:background="@drawable/edit_text_bg"
+            android:hint="@string/please_enter_service_placeholder"
+            android:padding="5dp"
+            android:textColor="#333"
+            android:textSize="15sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="15dp"
+            android:text="@string/send_master_service_title"
+            android:textColor="#666"
+            android:textSize="15sp" />
+
+        <EditText
+            android:id="@+id/et_send_main_service"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="5dp"

@@ -19,12 +19,12 @@ public class BleConfig {
 
     // 蓝牙数据发送服务
     public static WiseCharacteristic Ble_Data_Send_Service() {
-        return new WiseCharacteristic(HJBleApplication.shareInstance().getDataMainService(), HJBleApplication.shareInstance().getDataSendService());
+        return new WiseCharacteristic(HJBleApplication.shareInstance().getDataSendMainService(), HJBleApplication.shareInstance().getDataSendService());
     }
 
     // 蓝牙数据接收服务
     public static WiseCharacteristic Ble_Data_Receive_Service() {
-        return new WiseCharacteristic(HJBleApplication.shareInstance().getDataMainService(),  HJBleApplication.shareInstance().getDataNotifyService());
+        return new WiseCharacteristic(HJBleApplication.shareInstance().getDataNotifyMainService(),  HJBleApplication.shareInstance().getDataNotifyService());
     }
 
 

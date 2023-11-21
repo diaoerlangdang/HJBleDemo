@@ -34,8 +34,9 @@
     <string name="save_success">保存成功</string>
     <string name="restore_default">恢复默认</string>
     <string name="please_enter_service_placeholder">请输入服务</string>
-    <string name="master_service_title">主服务：</string>
+    <string name="notify_master_service_title">通知主服务：</string>
     <string name="notify_service_title">通知服务：</string>
+    <string name="send_master_service_title">发送主服务：</string>
     <string name="send_service_title">发送服务：</string>
     <string name="service_edit_tips">* 输入的格式为xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx\n*两字节服务请输入格式为0000xxxx-0000-1000-8000-00805f9b34fb的数据，请将xxxx更换为对应的两字节服务</string>
 

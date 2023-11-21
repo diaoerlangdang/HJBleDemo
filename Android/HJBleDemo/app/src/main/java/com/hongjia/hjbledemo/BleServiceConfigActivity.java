@@ -14,10 +14,12 @@ import java.util.regex.Pattern;
 
 public class BleServiceConfigActivity extends BaseActivity {
 
-    // 主服务
-    EditText etMainService;
+    // 通知主服务
+    EditText etNotifyMainService;
     // 通知服务
     EditText etNotifyService;
+    // 发送主服务
+    EditText etSendMainService;
     // 发送服务
     EditText etSendService;
 
@@ -44,8 +46,8 @@ public class BleServiceConfigActivity extends BaseActivity {
         rightTitleTxt.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                String mainService = etMainService.getText().toString();
-                if (!verifyServiceUUID(mainService)) {
+                String notifyMainService = etNotifyMainService.getText().toString();
+                if (!verifyServiceUUID(notifyMainService)) {
                     Toast.makeText(BleServiceConfigActivity.this, getResources().getString(R.string.master_service_error), Toast.LENGTH_LONG).show();
                     return;
                 }
@@ -56,13 +58,20 @@ public class BleServiceConfigActivity extends BaseActivity {
                     return;
                 }
 
+                String sendMainService = etSendMainService.getText().toString();
+                if (!verifyServiceUUID(sendMainService)) {
+                    Toast.makeText(BleServiceConfigActivity.this, getResources().getString(R.string.master_service_error), Toast.LENGTH_LONG).show();
+                    return;
+                }
+
                 String sendService = etSendService.getText().toString();
                 if (!verifyServiceUUID(sendService)) {
                     Toast.makeText(BleServiceConfigActivity.this, getResources().getString(R.string.send_service_error), Toast.LENGTH_LONG).show();
                     return;
                 }
 
-                HJBleApplication.shareInstance().setDataMainService(mainService);
+                HJBleApplication.shareInstance().setDataNotifyMainService(notifyMainService);
+                HJBleApplication.shareInstance().setDataSendMainService(sendMainService);
                 HJBleApplication.shareInstance().setDataNotifyService(notifyService);
                 HJBleApplication.shareInstance().setDataSendService(sendService);
 
@@ -72,8 +81,9 @@ public class BleServiceConfigActivity extends BaseActivity {
             }
         });
 
-        etMainService = findViewById(R.id.et_main_service);
+        etNotifyMainService = findViewById(R.id.et_notify_main_service);
         etNotifyService = findViewById(R.id.et_notify_service);
+        etSendMainService = findViewById(R.id.et_send_main_service);
         etSendService = findViewById(R.id.et_send_service);
 
         btnRecoveryDetault = findViewById(R.id.btn_recovery_default);
@@ -81,7 +91,8 @@ public class BleServiceConfigActivity extends BaseActivity {
             @Override
             public void onClick(View view) {
 
-                HJBleApplication.shareInstance().setDataMainService(BleConfig.Ble_Default_Data_Send_Service.getServiceID());
+                HJBleApplication.shareInstance().setDataSendMainService(BleConfig.Ble_Default_Data_Send_Service.getServiceID());
+                HJBleApplication.shareInstance().setDataNotifyMainService(BleConfig.Ble_Default_Data_Receive_Service.getServiceID());
                 HJBleApplication.shareInstance().setDataNotifyService(BleConfig.Ble_Default_Data_Receive_Service.getCharacteristicID());
                 HJBleApplication.shareInstance().setDataSendService(BleConfig.Ble_Default_Data_Send_Service.getCharacteristicID());
 
@@ -103,7 +114,8 @@ public class BleServiceConfigActivity extends BaseActivity {
 
     // 更新数据
     public void updateData() {
-        etMainService.setText(HJBleApplication.shareInstance().getDataMainService());
+        etNotifyMainService.setText(HJBleApplication.shareInstance().getDataNotifyMainService());
+        etSendMainService.setText(HJBleApplication.shareInstance().getDataSendMainService());
         etNotifyService.setText(HJBleApplication.shareInstance().getDataNotifyService());
         etSendService.setText(HJBleApplication.shareInstance().getDataSendService());
     }
