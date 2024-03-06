@@ -2,9 +2,7 @@ package com.hongjia.hjbledemo;
 
 import android.Manifest;
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
@@ -14,20 +12,15 @@ import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
-import android.icu.text.SimpleDateFormat;
-import android.location.LocationManager;
+import java.text.SimpleDateFormat;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.provider.Settings;
-import android.text.TextUtils;
-import android.text.format.Time;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -64,7 +57,6 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
@@ -923,8 +915,19 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
 
 
         public void clear() {
+
+            List<HJBleScanDevice> connectedDevices = new ArrayList<>();
+            BleManager bleManager = BleManager.getInstance();
+            for (HJBleScanDevice item : mScanDevices) {
+                if (bleManager.isConnected(item.device.getMac())) {
+                    connectedDevices.add(item);
+                }
+            }
+
+            mScanDevices = connectedDevices;
+
             // 保留以连接的
-            mScanDevices = mScanDevices.stream().filter(item -> BleManager.getInstance().isConnected(item.device.getMac())).collect(Collectors.toList());
+//            mScanDevices = mScanDevices.stream().filter(item -> BleManager.getInstance().isConnected(item.device.getMac())).collect(Collectors.toList());
         }
 
         @Override
