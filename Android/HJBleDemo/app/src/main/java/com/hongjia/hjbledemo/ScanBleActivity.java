@@ -285,7 +285,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
         }
 
         if (timer != null) {
-            timer.schedule(timerTask,1000,2000);//延时1s，每隔2秒执行一次run方法
+            timer.schedule(timerTask,1000,5000);//延时1s，每隔2秒执行一次run方法
         }
     }
 
