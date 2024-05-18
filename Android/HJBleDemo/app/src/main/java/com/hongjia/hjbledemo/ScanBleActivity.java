@@ -30,6 +30,10 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.recyclerview.widget.DividerItemDecoration;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.clj.fastble.BleManager;
 import com.clj.fastble.callback.BleGattCallback;
 import com.clj.fastble.callback.BleMtuChangedCallback;
@@ -38,6 +42,8 @@ import com.clj.fastble.callback.BleWriteCallback;
 import com.clj.fastble.data.BleDevice;
 import com.clj.fastble.exception.BleException;
 import com.githang.statusbar.StatusBarCompat;
+import com.hongjia.hjbledemo.adapter.LeDeviceListAdapter;
+import com.hongjia.hjbledemo.bean.HJBleScanDevice;
 import com.wise.ble.ConvertData;
 import com.wise.ble.WiseCharacteristic;
 import com.wise.ble.WiseWaitEvent;
@@ -62,7 +68,7 @@ import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
 
 public class ScanBleActivity extends BaseActivity implements EasyPermissions.PermissionCallbacks,
-        EasyPermissions.RationaleCallbacks {
+        EasyPermissions.RationaleCallbacks, LeDeviceListAdapter.OnDeviceListItemClickListener {
 
     // 扫描是否过滤
     private boolean bScanFilter = HJBleApplication.shareInstance().isScanFilter();
@@ -78,7 +84,8 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
 
     private boolean mScanning=true;
 
-    private ListView mListView = null;
+    private RecyclerView mRecyclerView;
+    private LinearLayoutManager mLayoutManager;
 
     private LeDeviceListAdapter mLeDeviceListAdapter;
 
@@ -117,8 +124,17 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
             return ;
         }
 
+        // 使用LinearLayoutManager来设置布局，也可以使用GridLayoutManager或StaggeredGridLayoutManager
+        mLayoutManager = new LinearLayoutManager(this);
+        mRecyclerView.setLayoutManager(mLayoutManager);
+
         mLeDeviceListAdapter = new LeDeviceListAdapter(this);
-        mListView.setAdapter(mLeDeviceListAdapter);
+        mLeDeviceListAdapter.setListener(this);
+        mRecyclerView.setAdapter(mLeDeviceListAdapter);
+
+        // 添加分隔线
+        DividerItemDecoration dividerItemDecoration = new DividerItemDecoration(this, mLayoutManager.getOrientation());
+        mRecyclerView.addItemDecoration(dividerItemDecoration);
     }
 
     @Override
@@ -192,7 +208,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
             }
         });
 
-        mListView = findViewById(R.id.list_view);
+        mRecyclerView = findViewById(R.id.recycler_view);
         scanProgress = findViewById(R.id.progressBar1);
 
         LoadingDialog.Builder loadBuilder=new LoadingDialog.Builder(this)
@@ -211,7 +227,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
                 });
         loadingDialog = loadBuilder.create();
 
-//        mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+//        mRecyclerView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 //            @Override
 //            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 //
@@ -242,6 +258,39 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
 
         BluetoothScanManager.setBleParamsOptions(builder.build());
 
+    }
+
+    @Override
+    public void onConnectClick(int position) {
+        HJBleScanDevice scanDevice = mLeDeviceListAdapter.getScanDeviceInfo(position);
+        if (BleManager.getInstance().isConnected(scanDevice.device.getMac())) {
+            BleManager.getInstance().disconnect(scanDevice.device);
+        } else {
+            loadingDialog.show();
+
+            selectBleDevice = scanDevice.device;
+
+            scanLeDevice(false);
+
+            connectBle(scanDevice);
+        }
+
+        mLeDeviceListAdapter.notifyDataSetChanged();
+    }
+
+    @Override
+    public void onDetailClick(int position) {
+        HJBleScanDevice scanDevice = mLeDeviceListAdapter.getScanDeviceInfo(position);
+        HJBleApplication.shareInstance().setGroupLen(scanDevice.mtuLen);
+
+        final Intent intent = new Intent(ScanBleActivity.this, BluetoothDataActivity.class);
+        intent.putExtra(BluetoothDataActivity.EXTRAS_DEVICE_IS_CONFIG, scanDevice.isConfig);
+        intent.putExtra(BluetoothDataActivity.EXTRAS_DEVICE_IS_FLOW_CONTROL, scanDevice.bFlowControl);
+        intent.putExtra(BluetoothDataActivity.EXTRAS_DEVICE_GROUP_LEN_MAX, scanDevice.mtuLen);
+
+        intent.putExtra(BluetoothDataActivity.EXTRAS_DEVICE, scanDevice.device);
+
+        ScanBleActivity.this.startActivity(intent);
     }
 
     @Override
@@ -285,7 +334,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
         }
 
         if (timer != null) {
-            timer.schedule(timerTask,1000,5000);//延时1s，每隔2秒执行一次run方法
+            timer.schedule(timerTask,1000,2000);//延时1s，每隔2秒执行一次run方法
         }
     }
 
@@ -726,7 +775,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
             scanDevice.bMtu = bMtu;
 //            scanDevice.sendDataLenMax = maxLen;
             mLeDeviceListAdapter.addDevice(scanDevice);
-            mLeDeviceListAdapter.notifyDataSetChanged();
+//            mLeDeviceListAdapter.notifyDataSetChanged();
         }
     };
 
@@ -832,239 +881,5 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
         EasyPermissions.onRequestPermissionsResult(requestCode, permissions, grantResults, this);
-    }
-
-    private class HJBleScanDevice implements Comparable<HJBleScanDevice> {
-        // 蓝牙设备
-        BleDevice device;
-        // 信号强度
-        int rssi;
-        // 广播数据
-        String record;
-        // 是否为简易模式
-        boolean isEasy;
-        // 是否支持配置
-        boolean isConfig;
-        // 最大发送数据长度
-        int sendDataLenMax;
-        // 是否需要获取mtu
-        boolean bMtu;
-        // 减过3了
-        int mtuLen;
-        //
-        boolean bFlowControl;
-
-        // 时间
-        Long timeStamp;
-
-        @Override
-        public int compareTo(HJBleScanDevice o) {
-
-            // 降序
-            return o.rssi - this.rssi;
-        }
-    }
-
-
-    // Adapter for holding devices found through scanning.
-    private class LeDeviceListAdapter extends BaseAdapter
-    {
-        private List<HJBleScanDevice> mScanDevices;
-        private LayoutInflater mInflator;
-
-        public LeDeviceListAdapter(Context context)
-        {
-            super();
-            mScanDevices = new ArrayList<>();
-            mInflator = LayoutInflater.from(context);
-        }
-
-        public void addDevice(HJBleScanDevice scanDevice)
-        {
-            boolean isAdd = true;
-
-            for (int i=0; i<mScanDevices.size(); i++) {
-                if (mScanDevices.get(i).device.getMac().equals(scanDevice.device.getMac())) {
-                    scanDevice.timeStamp = new Date().getTime();
-                    mScanDevices.set(i, scanDevice);
-                    isAdd = false;
-                    break;
-                }
-            }
-
-            if (isAdd) {
-                scanDevice.timeStamp = new Date().getTime();
-                mScanDevices.add(scanDevice);
-            }
-
-        }
-
-        public void sort() {
-            Collections.sort(mScanDevices);
-        }
-
-        public BleDevice getDevice(int position)
-        {
-            return mScanDevices.get(position).device;
-        }
-
-        public HJBleScanDevice getScanDeviceInfo(int position)
-        {
-            return mScanDevices.get(position);
-        }
-
-
-        public void clear() {
-
-            List<HJBleScanDevice> connectedDevices = new ArrayList<>();
-            BleManager bleManager = BleManager.getInstance();
-            for (HJBleScanDevice item : mScanDevices) {
-                if (bleManager.isConnected(item.device.getMac())) {
-                    connectedDevices.add(item);
-                }
-            }
-
-            mScanDevices = connectedDevices;
-
-            // 保留以连接的
-//            mScanDevices = mScanDevices.stream().filter(item -> BleManager.getInstance().isConnected(item.device.getMac())).collect(Collectors.toList());
-        }
-
-        @Override
-        public int getCount()
-        {
-            return mScanDevices.size();
-        }
-
-        @Override
-        public Object getItem(int i)
-        {
-            return mScanDevices.get(i);
-        }
-
-        @Override
-        public long getItemId(int i)
-        {
-            return i;
-        }
-
-        @Override
-        public View getView(int i, View view, ViewGroup viewGroup)
-        {
-            ViewHolder viewHolder;
-            // General ListView optimization code.
-            if (view == null)
-            {
-//                view = mInflator.inflate(R.layout.activity_main, null);
-                view = mInflator.inflate(R.layout.list, null);
-                viewHolder = new ViewHolder();
-                viewHolder.itemBgLayout = view.findViewById(R.id.item_bg);
-                viewHolder.deviceAddress = (TextView) view.findViewById(R.id.device_address);
-                viewHolder.deviceName = (TextView) view.findViewById(R.id.device_name);
-                viewHolder.deviceRecord = (TextView)view.findViewById(R.id.device_record);
-                viewHolder.deviceTime = (TextView)view.findViewById(R.id.device_time);
-                viewHolder.imageView = view.findViewById(R.id.icon);
-                viewHolder.connectBtn = view.findViewById(R.id.connect_btn);
-                viewHolder.detailbtn = view.findViewById(R.id.detail_btn);
-                view.setTag(viewHolder);
-                viewHolder.connectBtn.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        int pos = ((Integer)v.getTag()).intValue();
-                        HJBleScanDevice scanDevice = mScanDevices.get(pos);
-                        if (BleManager.getInstance().isConnected(scanDevice.device.getMac())) {
-                            BleManager.getInstance().disconnect(scanDevice.device);
-                        } else {
-                            loadingDialog.show();
-
-                            selectBleDevice = scanDevice.device;
-
-                            scanLeDevice(false);
-
-                            connectBle(scanDevice);
-                        }
-
-                        mLeDeviceListAdapter.notifyDataSetChanged();
-                    }
-                });
-
-                viewHolder.detailbtn.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        int pos = ((Integer)v.getTag()).intValue();
-                        HJBleScanDevice scanDevice = mScanDevices.get(pos);
-                        HJBleApplication.shareInstance().setGroupLen(scanDevice.mtuLen);
-
-                        final Intent intent = new Intent(ScanBleActivity.this, BluetoothDataActivity.class);
-                        intent.putExtra(BluetoothDataActivity.EXTRAS_DEVICE_IS_CONFIG, scanDevice.isConfig);
-                        intent.putExtra(BluetoothDataActivity.EXTRAS_DEVICE_IS_FLOW_CONTROL, scanDevice.bFlowControl);
-                        intent.putExtra(BluetoothDataActivity.EXTRAS_DEVICE_GROUP_LEN_MAX, scanDevice.mtuLen);
-
-                        intent.putExtra(BluetoothDataActivity.EXTRAS_DEVICE, scanDevice.device);
-
-                        ScanBleActivity.this.startActivity(intent);
-                    }
-                });
-            }
-            else
-            {
-                viewHolder = (ViewHolder) view.getTag();
-            }
-
-            HJBleScanDevice scanDevice = mScanDevices.get(i);
-            final String deviceName = scanDevice.device.getName();
-            if (deviceName != null && deviceName.length() > 0)
-                viewHolder.deviceName.setText(deviceName);
-            else
-                viewHolder.deviceName.setText(getResources().getString(R.string.unknow_device));
-
-            viewHolder.connectBtn.setTag(i);
-            viewHolder.detailbtn.setTag(i);
-            if (BleManager.getInstance().isConnected(scanDevice.device.getMac())) {
-                viewHolder.connectBtn.setText(getResources().getString(R.string.device_disconnect));
-                viewHolder.detailbtn.setVisibility(View.VISIBLE);
-            } else {
-                viewHolder.connectBtn.setText(getResources().getString(R.string.device_connect));
-                viewHolder.detailbtn.setVisibility(View.GONE);
-            }
-
-            viewHolder.deviceAddress.setText("address:"+scanDevice.device.getMac() + "     RSSI:"+scanDevice.rssi+"dB");
-            viewHolder.deviceRecord.setText("broadcast:"+scanDevice.record);
-
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-            viewHolder.deviceTime.setText(sdf.format(scanDevice.timeStamp));
-
-            if (!scanDevice.isEasy) {
-//                viewHolder.imageView.setVisibility(View.GONE);
-                viewHolder.itemBgLayout.setBackgroundColor(Color.parseColor("#ffffff"));
-                viewHolder.deviceName.setTextColor(Color.parseColor("#333333"));
-                viewHolder.deviceAddress.setTextColor(Color.parseColor("#333333"));
-                viewHolder.deviceRecord.setTextColor(Color.parseColor("#333333"));
-                viewHolder.deviceTime.setTextColor(Color.parseColor("#333333"));
-            }
-            else {
-//                viewHolder.imageView.setVisibility(View.VISIBLE);
-                viewHolder.itemBgLayout.setBackgroundColor(Color.parseColor("#1FA7D3"));
-                viewHolder.deviceName.setTextColor(Color.WHITE);
-                viewHolder.deviceAddress.setTextColor(Color.WHITE);
-                viewHolder.deviceRecord.setTextColor(Color.WHITE);
-                viewHolder.deviceTime.setTextColor(Color.WHITE);
-            }
-
-            return view;
-        }
-    }
-
-    static class ViewHolder
-    {
-        LinearLayout itemBgLayout;
-        TextView deviceName;
-        TextView deviceAddress;
-        TextView deviceRecord;
-        TextView deviceTime;
-        ImageView imageView;
-
-        Button connectBtn;
-        Button detailbtn;
     }
 }
