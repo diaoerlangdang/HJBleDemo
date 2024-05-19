@@ -13,6 +13,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
+import android.os.SystemClock;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
@@ -33,6 +34,9 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.DividerItemDecoration;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.clj.fastble.BleManager;
 import com.clj.fastble.callback.BleGattCallback;
@@ -53,7 +57,9 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -82,7 +88,7 @@ public class BluetoothDataActivity extends BaseActivity {
     private EditText sendEdit;
     private TextView testBtn;
     private Button sendBt;
-    private ListView dataListView;
+    private RecyclerView dataListView;
     private SendReceiveDataAdapter mDataAdapter;
 
     private WiseWaitEvent sendEvent = new WiseWaitEvent();
@@ -92,8 +98,6 @@ public class BluetoothDataActivity extends BaseActivity {
     private boolean isTesting = false; // 是否正在测试
     private static final int MSG_DATA_CHANGE = 0x11;
     private LinearLayout bottomLayout; //底部
-
-    private int groupLenMax = 20;
 
     // 更新速率
     private static final int MSG_UPDATE_RATE = 0x12;
@@ -117,6 +121,11 @@ public class BluetoothDataActivity extends BaseActivity {
     private TextView receiveRateTV;
     // 发送速率
     private TextView sendRateTV;
+
+    // 最大接收速率
+    private TextView maxReceiveRateTV;
+    // 最大发送速率
+    private TextView maxSendRateTV;
     // 流控
     private TextView tvFlowControl;
 
@@ -125,6 +134,11 @@ public class BluetoothDataActivity extends BaseActivity {
     private int recCountBySecond = 0;
 
     private int sendCountBySecond = 0;
+
+    // 最大发送速率
+    private int maxSendRate = 0;
+    // 最大接收速率
+    private int maxReceiveRate = 0;
 
     // 发送服务
     private WiseCharacteristic mSendCharact = BleConfig.Ble_Data_Send_Service();
@@ -159,7 +173,6 @@ public class BluetoothDataActivity extends BaseActivity {
         mDeviceAddress = mBleDevice.getMac().toUpperCase();
         isConfig = intent.getBooleanExtra(EXTRAS_DEVICE_IS_CONFIG, false);
         bFlowControl = intent.getBooleanExtra(EXTRAS_DEVICE_IS_FLOW_CONTROL, false);
-        groupLenMax = intent.getIntExtra(EXTRAS_DEVICE_GROUP_LEN_MAX, 20);
 
         super.onCreate(savedInstanceState);
 
@@ -172,6 +185,10 @@ public class BluetoothDataActivity extends BaseActivity {
         rightTitleTxt.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                if (isTesting) {
+                    Toast.makeText(BluetoothDataActivity.this, "正在测试...", Toast.LENGTH_SHORT).show();
+                    return;
+                }
                 final Intent intent = new Intent(BluetoothDataActivity.this, SetActivity.class);
 
                 intent.putExtra(SetActivity.EXTRAS_SET_IS_CONFIG, isConfig);
@@ -255,8 +272,10 @@ public class BluetoothDataActivity extends BaseActivity {
         dataBytesLayout = findViewById(R.id.data_bytes_layout);
         sendByteCountTV = findViewById(R.id.send_byte_count_tv);
         sendRateTV = findViewById(R.id.send_rate_tv);
+        maxSendRateTV = findViewById(R.id.max_send_rate_tv);
         receiveByteCountTV = findViewById(R.id.receive_byte_count_tv);
         receiveRateTV = findViewById(R.id.receive_rate_tv);
+        maxReceiveRateTV = findViewById(R.id.max_receive_rate_tv);
         tvFlowControl = findViewById(R.id.tv_flow_control);
         tvFlowControl.setText(bFlowControl ? getResources().getString(R.string.flow_control_enable): getResources().getString(R.string.flow_control_disable));
         readVersionBtn = findViewById(R.id.read_version_btn);
@@ -270,6 +289,8 @@ public class BluetoothDataActivity extends BaseActivity {
         setIsTesting(false);
 
         mDataAdapter = new SendReceiveDataAdapter(this);
+        dataListView.setLayoutManager(new LinearLayoutManager(this));
+        dataListView.addItemDecoration(new DividerItemDecoration(this, LinearLayoutManager.VERTICAL));
         dataListView.setAdapter(mDataAdapter);
 
         testBtn.setOnClickListener(new View.OnClickListener() {
@@ -278,10 +299,10 @@ public class BluetoothDataActivity extends BaseActivity {
                 setIsTesting(!isTesting);
                 if (isTesting) {
                     startTest();
-                    bottomLayout.setVisibility(View.GONE);
+
                 } else {
                     stopTest();
-                    bottomLayout.setVisibility(View.VISIBLE);
+
                 }
             }
         });
@@ -295,8 +316,11 @@ public class BluetoothDataActivity extends BaseActivity {
                 mDataAdapter.clear();
                 mDataAdapter.notifyDataSetChanged();
 
+                maxSendRate = 0;
+                maxReceiveRate = 0;
                 setReceiveByteCount(0);
                 setSendByteCount(0);
+
             }
         });
 
@@ -340,24 +364,29 @@ public class BluetoothDataActivity extends BaseActivity {
 
     }
 
+    BleWriteCallback bleWriteCallback = new BleWriteCallback() {
+        @Override
+        public void onWriteSuccess(int i, int i1, byte[] bytes) {
+            sendEvent.setSignal(WiseWaitEvent.SUCCESS);
+        }
+
+        @Override
+        public void onWriteFailure(BleException e) {
+            sendEvent.setSignal(WiseWaitEvent.ERROR_FAILED);
+        }
+    };
+
     private boolean sendDataSynchronization(BleManager bleManager, BleDevice bleDevice, WiseCharacteristic characteristic, byte[] data) {
         sendEvent.init();
-        bleManager.write(bleDevice, characteristic.getServiceID(), characteristic.getCharacteristicID(), data, new BleWriteCallback() {
-            @Override
-            public void onWriteSuccess(int i, int i1, byte[] bytes) {
-                sendEvent.setSignal(WiseWaitEvent.SUCCESS);
-            }
+        bleManager.write(bleDevice, characteristic.getServiceID(), characteristic.getCharacteristicID(), data, bleWriteCallback);
 
-            @Override
-            public void onWriteFailure(BleException e) {
-                sendEvent.setSignal(WiseWaitEvent.ERROR_FAILED);
+        // respone 才执行
+        if (HJBleApplication.shareInstance().isWriteTypeResponse())  {
+            int result = sendEvent.waitSignal(5000);
+//        bleManager.getBleBluetooth(bleDevice).removeWriteCallback(characteristic.getCharacteristicID());
+            if(WiseWaitEvent.SUCCESS != result) {
+                return false;
             }
-        });
-
-        int result = sendEvent.waitSignal(5000);
-        bleManager.getBleBluetooth(bleDevice).removeWriteCallback(characteristic.getCharacteristicID());
-        if(WiseWaitEvent.SUCCESS != result) {
-            return false;
         }
 
         return true;
@@ -365,12 +394,13 @@ public class BluetoothDataActivity extends BaseActivity {
 
     void startTest() {
         setIsTesting(true);
+        bottomLayout.setVisibility(View.GONE);
 
         new Thread(new Runnable() {
             @Override
             public void run() {
                 long gapTime = HJBleApplication.shareInstance().testGapTime();
-                final int dataLen = HJBleApplication.shareInstance().testDataLen();
+                final int totalDataLen = HJBleApplication.shareInstance().testDataLen();
                 final boolean isBleConfig = HJBleApplication.shareInstance().isBleConfig();
                 // 是否使用文件测试
                 final boolean bUseFileTest = HJBleApplication.shareInstance().useFileTest();
@@ -382,7 +412,7 @@ public class BluetoothDataActivity extends BaseActivity {
                         Uri uri = HJBleApplication.shareInstance().getTestFileUri();
 //                        File file = new File(filePath);// 成文件路径中获取文件
                         if (uri == null) {
-                            setIsTesting(false);
+                            stopTest();
                             runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
@@ -399,11 +429,12 @@ public class BluetoothDataActivity extends BaseActivity {
 //                        fileInputStream = new FileInputStream(file);
                         BufferedInputStream inputStream = new BufferedInputStream(fileInputStream);
 
-                        byte[] inputBuffer = new byte[dataLen];
+                        int groupDataLen = BleManager.getInstance().getSplitWriteNum();
+                        byte[] inputBuffer = new byte[groupDataLen];
                         int readCount;
-                        while ((readCount = inputStream.read(inputBuffer, 0, dataLen)) != -1) {
+                        while ((readCount = inputStream.read(inputBuffer, 0, groupDataLen)) != -1) {
                             if (bBusyBle) {
-                                setIsTesting(false);
+                                stopTest();
                                 runOnUiThread(new Runnable() {
                                     @Override
                                     public void run() {
@@ -434,7 +465,7 @@ public class BluetoothDataActivity extends BaseActivity {
 
                                 addDataInfoItem(dataBean);
 
-                                setIsTesting(false);
+                                stopTest();
                                 runOnUiThread(new Runnable() {
                                     @Override
                                     public void run() {
@@ -445,22 +476,18 @@ public class BluetoothDataActivity extends BaseActivity {
                                 inputStream.close();
                             }
 
-
-                            for (int i = 0; i < gapTime / 10 && isTesting; i++) {
-                                try {
-                                    Thread.sleep(10);
-                                } catch (InterruptedException e) {
-                                    e.printStackTrace();
-                                }
+                            if (gapTime > 0) {
+                                SystemClock.sleep(gapTime);
                             }
+
                         }
 
                         fileInputStream.close();
                         inputStream.close();
-                        setIsTesting(false);
+                        stopTest();
 
                     } catch (IOException e) {
-                        setIsTesting(false);
+                        stopTest();
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
@@ -470,13 +497,19 @@ public class BluetoothDataActivity extends BaseActivity {
                     }
 
                 } else {
-                    final byte[] data = new byte[dataLen];
+                    int groupDataLen = BleManager.getInstance().getSplitWriteNum();
 
-                    while (isTesting) {
+                    // 循环创建字节数组片段
+                    for (int i = 0; i < totalDataLen && isTesting; i += groupDataLen) {
+                        int len = Math.min(groupDataLen, totalDataLen - i); // 确保最后一个片段不会超出总长度
+                        byte[] groupData = new byte[len]; // 创建一个新的字节数组片段
+                        // 这里可以填充数据，例如设置为0
+                        Arrays.fill(groupData, (byte) 0);
+
 
                         // 蓝牙设备不繁忙时，可发送测试数据
                         if (!bBusyBle) {
-                            final String info = ConvertData.bytesToHexString(data, false);
+                            final String info = ConvertData.bytesToHexString(groupData, false);
 //                    SendReceiveDataBean sendDataBean = new SendReceiveDataBean(SendReceiveDataBean.DataTypeSend, info);
 //
 //                    addDataInfoItem(sendDataBean);
@@ -485,28 +518,25 @@ public class BluetoothDataActivity extends BaseActivity {
                                 @Override
                                 public void run() {
                                     if (!isBleConfig) {
-                                        addSendByteCount(dataLen);
-                                        sendCountBySecond += dataLen;
+                                        addSendByteCount(len);
+                                        sendCountBySecond += len;
                                     }
                                 }
                             });
 
-                            if (!sendDataSynchronization(BleManager.getInstance(), mBleDevice, mSendCharact, data)) {
+                            if (!sendDataSynchronization(BleManager.getInstance(), mBleDevice, mSendCharact, groupData)) {
                                 SendReceiveDataBean dataBean = new SendReceiveDataBean(SendReceiveDataBean.DataTypeFailed, getResources().getString(R.string.send_failure));
 
                                 addDataInfoItem(dataBean);
                             }
                         }
 
-                        for (int i = 0; i < gapTime / 10 && isTesting; i++) {
-                            try {
-                                Thread.sleep(10);
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
+                        if (gapTime > 0) {
+                            SystemClock.sleep(gapTime);
                         }
-
                     }
+
+                   stopTest();
                 }
 
             }
@@ -516,6 +546,12 @@ public class BluetoothDataActivity extends BaseActivity {
     // 停止测试
     void stopTest() {
         setIsTesting(false);
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                bottomLayout.setVisibility(View.VISIBLE);
+            }
+        });
     }
 
 
@@ -540,11 +576,20 @@ public class BluetoothDataActivity extends BaseActivity {
     // 显示接收速率
     private void showRecCountBySecond(int count) {
         receiveRateTV.setText(String.format(getResources().getString(R.string.receive_rate_format), count));
+        if (count >= maxReceiveRate) {
+            maxReceiveRate = count;
+            maxReceiveRateTV.setText(String.format(getResources().getString(R.string.max_receive_rate_format), maxReceiveRate));
+        }
+
     }
 
     // 显示发送速率
     private void showSendCountBySecond(int count) {
         sendRateTV.setText(String.format(getResources().getString(R.string.send_rate_format), count));
+        if (count >= maxSendRate) {
+            maxSendRate = count;
+            maxSendRateTV.setText(String.format(getResources().getString(R.string.max_send_rate_format), maxSendRate));
+        }
     }
 
     // 开始定时器
@@ -589,8 +634,6 @@ public class BluetoothDataActivity extends BaseActivity {
     @Override
     protected void onResume() {
         super.onResume();
-
-        BleManager.getInstance().setSplitWriteNum(HJBleApplication.shareInstance().getGroupLen());
 
         if (HJBleApplication.shareInstance().isBleConfig()) {
             // 发送服务
@@ -804,7 +847,9 @@ public class BluetoothDataActivity extends BaseActivity {
                 BleManager.getInstance().write(mBleDevice, mSendCharact.getServiceID(), mSendCharact.getCharacteristicID(), bytes, new BleWriteCallback() {
                     @Override
                     public void onWriteSuccess(int i, int i1, byte[] bytes) {
-
+//                        SendReceiveDataBean dataBean = new SendReceiveDataBean(SendReceiveDataBean.DataTypeOther, "发送成功");
+//
+//                        addDataInfoItem(dataBean);
                     }
 
                     @Override
@@ -837,6 +882,8 @@ public class BluetoothDataActivity extends BaseActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+//        BleManager.getInstance().getBleBluetooth(mBleDevice).removeWriteCallback(BleConfig.Ble_Config_Send_Service.getCharacteristicID());
+//        BleManager.getInstance().getBleBluetooth(mBleDevice).removeWriteCallback(BleConfig.Ble_Data_Send_Service().getCharacteristicID());
 //        BleManager.getInstance().disconnect(mBleDevice);
     }
 
@@ -875,19 +922,30 @@ public class BluetoothDataActivity extends BaseActivity {
 
 
     // Adapter for holding devices found through scanning.
-    private class SendReceiveDataAdapter extends BaseAdapter {
-        private ArrayList<SendReceiveDataBean> mDataList;
+    private class SendReceiveDataAdapter extends RecyclerView.Adapter<DataViewHolder> {
+
+        private static final int MAX_ITEMS = 400; // 定义最大数据条数 -1 为不限制
+
+        private LinkedList<SendReceiveDataBean> mDataList;
         private LayoutInflater mInflator;
+
 
         public SendReceiveDataAdapter(Context context) {
             super();
-            mDataList = new ArrayList<>();
+            mDataList = new LinkedList<>();
             mInflator = LayoutInflater.from(context);
         }
 
         public void addDataItem(SendReceiveDataBean dataInfo) {
-            mDataList.add(dataInfo);
 
+            // 倒序
+
+            // 如果数据列表已满，先移除最旧的数据
+            if (mDataList.size() >= MAX_ITEMS && MAX_ITEMS > 0) {
+                mDataList.removeLast();
+            }
+
+            mDataList.addFirst(dataInfo);
         }
 
         public void clear() {
@@ -895,41 +953,19 @@ public class BluetoothDataActivity extends BaseActivity {
         }
 
         @Override
-        public int getCount() {
-            return mDataList.size();
+        public DataViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            View view = LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.send_receive_data_item, parent, false);
+            return new DataViewHolder(view);
         }
 
         @Override
-        public SendReceiveDataBean getItem(int i) {
-            return mDataList.get(i);
-        }
-
-        @Override
-        public long getItemId(int i) {
-            return i;
-        }
-
-        @Override
-        public View getView(int i, View view, ViewGroup viewGroup) {
-            DataViewHolder viewHolder;
-            // General ListView optimization code.
-            if (view == null) {
-                view = mInflator.inflate(R.layout.send_receive_data_item, null);
-                viewHolder = new DataViewHolder();
-                viewHolder.dataTypeTv = view.findViewById(R.id.tv_data_type);
-                viewHolder.dataInfoTv = (TextView) view.findViewById(R.id.tv_data_info);
-                viewHolder.dataTimeTv = view.findViewById(R.id.tv_data_time);
-                view.setTag(viewHolder);
-            } else {
-                viewHolder = (DataViewHolder) view.getTag();
-            }
-
-            SendReceiveDataBean dataInfo = mDataList.get(i);
+        public void onBindViewHolder(DataViewHolder viewHolder, int position) {
+            SendReceiveDataBean dataInfo = mDataList.get(position);
 
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss SSS");
             String timeStr = sdf.format(dataInfo.getTimeStamp());
             viewHolder.dataTimeTv.setText(timeStr);
-
             switch (dataInfo.getDataType()) {
                 case SendReceiveDataBean.DataTypeSend: {
                     viewHolder.dataTypeTv.setTextColor(Color.BLUE);
@@ -954,19 +990,29 @@ public class BluetoothDataActivity extends BaseActivity {
 
                 default: {
                     viewHolder.dataTypeTv.setTextColor(Color.BLACK);
-                    viewHolder.dataTypeTv.setText(getResources().getString(R.string.data_type_title_other) + timeStr);
+                    viewHolder.dataTypeTv.setText(getResources().getString(R.string.data_type_title_other));
                     viewHolder.dataInfoTv.setText(dataInfo.getDataInfo());
                 }
             }
-
-            return view;
         }
+
+        @Override
+        public int getItemCount() {
+            return mDataList.size();
+        }
+
     }
 
-    static class DataViewHolder {
+    static class DataViewHolder extends RecyclerView.ViewHolder {
         TextView dataTypeTv;
         TextView dataInfoTv;
         TextView dataTimeTv;
 
+        public DataViewHolder(View itemView) {
+            super(itemView);
+            dataTypeTv = itemView.findViewById(R.id.tv_data_type);
+            dataInfoTv = itemView.findViewById(R.id.tv_data_info);
+            dataTimeTv = itemView.findViewById(R.id.tv_data_time);
+        }
     }
 }

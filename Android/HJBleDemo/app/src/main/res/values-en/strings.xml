@@ -47,7 +47,7 @@
     <string name="failed_to_enable_high_speed_mode">Failed to enable high speed mode</string>
     <string name="failed_to_disable_high_speed_mode">Failed to disable high speed mode</string>
     <string name="data_length_of_each_packet_title">Data length of each packet</string>
-    <string name="length_of_test_data_to_be_delivered_each_time">Length of test data to be delivered each time</string>
+    <string name="total_length_of_test_data">Total length of test data </string>
     <string name="data_delivery_interval">Data delivery interval (ms)</string>
     <string name="config_mode">Configuration mode</string>
     <string name="data_mode">Data mode</string>
@@ -70,9 +70,13 @@
     <string name="send_byte_format">Sent bytes：%d Byte</string>
     <string name="receive_byte_format">Received bytes：%d Byte</string>
     <string name="send_rate_default">Sent rate：0 B/s</string>
+    <string name="max_send_rate_default">Max Sent rate：0 B/s</string>
     <string name="receive_rate_default">Received rate：0 B/s</string>
+    <string name="max_receive_rate_default">Max Received rate：0 B/s</string>
     <string name="send_rate_format">Sent rate：%d B/s</string>
     <string name="receive_rate_format">Received rate：%d B/s</string>
+    <string name="max_send_rate_format">Max Sent rate：%d B/s</string>
+    <string name="max_receive_rate_format">Max Received rate：%d B/s</string>
     <string name="log_title">Log：</string>
     <string name="flow_control_disable">Flow control：disable</string>
     <string name="flow_control_enable">Flow control：enable</string>

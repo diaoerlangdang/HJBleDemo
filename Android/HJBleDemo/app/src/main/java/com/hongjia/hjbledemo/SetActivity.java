@@ -52,8 +52,6 @@ public class SetActivity extends BaseActivity {
     // 选择写方式
     private LinearLayout selectWriteTypeBtn;
 
-    // 每包数据长度
-    private RelativeLayout selecGroupLenBtn;
 
     // 每次下发测试数据长度
     private RelativeLayout selecDataLenBtn;
@@ -74,9 +72,6 @@ public class SetActivity extends BaseActivity {
     private TextView returnTxt;
     // 写方式
     private TextView writeTypeTxt;
-
-    // 每包数据长度
-    private TextView groupLenTxt;
 
     // 每次下发测试数据长度
     private TextView dataLenTxt;
@@ -145,7 +140,6 @@ public class SetActivity extends BaseActivity {
         returnTxt = findViewById(R.id.return_txt);
         writeTypeTxt = findViewById(R.id.write_type_txt);
 
-        groupLenTxt = findViewById(R.id.group_len_txt);
         dataLenTxt = findViewById(R.id.data_len_txt);
         gapTimeTxt = findViewById(R.id.gap_time_txt);
 
@@ -199,28 +193,6 @@ public class SetActivity extends BaseActivity {
             }
         });
 
-        selecGroupLenBtn = findViewById(R.id.group_len_layout);
-        selecGroupLenBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                final EditText inputServer = new EditText(SetActivity.this);
-                inputServer.setInputType(InputType.TYPE_CLASS_NUMBER);
-                inputServer.setText(groupLenTxt.getText());
-                AlertDialog.Builder builder = new AlertDialog.Builder(SetActivity.this);
-                builder.setTitle(getResources().getString(R.string.data_length_of_each_packet_title)).setView(inputServer)
-                        .setNegativeButton(getResources().getString(R.string.cancel_btn), null);
-                builder.setPositiveButton(getResources().getString(R.string.sure_btn), new DialogInterface.OnClickListener() {
-
-                    public void onClick(DialogInterface dialog, int which) {
-                        String info = inputServer.getText().toString();
-                        groupLenTxt.setText(info);
-                        HJBleApplication.shareInstance().setGroupLen(Integer.parseInt(info));
-                    }
-                });
-                builder.show();
-            }
-        });
-
         selecDataLenBtn = findViewById(R.id.data_len_layout);
         selecDataLenBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -229,7 +201,7 @@ public class SetActivity extends BaseActivity {
                 inputServer.setInputType(InputType.TYPE_CLASS_NUMBER);
                 inputServer.setText(dataLenTxt.getText());
                 AlertDialog.Builder builder = new AlertDialog.Builder(SetActivity.this);
-                builder.setTitle(getResources().getString(R.string.length_of_test_data_to_be_delivered_each_time)).setView(inputServer)
+                builder.setTitle(getResources().getString(R.string.total_length_of_test_data)).setView(inputServer)
                         .setNegativeButton(getResources().getString(R.string.cancel_btn), null);
                 builder.setPositiveButton(getResources().getString(R.string.sure_btn), new DialogInterface.OnClickListener() {
 
@@ -305,7 +277,6 @@ public class SetActivity extends BaseActivity {
             writeTypeTxt.setText(getResources().getString(R.string.no));
         }
 
-        groupLenTxt.setText("" + HJBleApplication.shareInstance().getGroupLen());
         dataLenTxt.setText("" + HJBleApplication.shareInstance().testDataLen());
         gapTimeTxt.setText("" + HJBleApplication.shareInstance().testGapTime());
         filePathTxt.setText(getFileName(HJBleApplication.shareInstance().getTestFileUri()));

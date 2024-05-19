@@ -17,9 +17,6 @@ public class HJBleApplication extends Application {
     // 是否为配置模式
     private boolean isBleConfig = false;
 
-    // 分组长度
-    private int groupLen = 20;
-
     // 测试文件uri
     private Uri testFileUri;
 
@@ -161,16 +158,6 @@ public class HJBleApplication extends Application {
     public void setWriteTypeResponse(boolean isWriteTypeResponse) {
 
         SPUtils.put(getAppContext(), "isWriteTypeResponse", isWriteTypeResponse);
-    }
-
-    // 每包数据长度
-    public int getGroupLen() {
-        return groupLen;
-    }
-
-    public void setGroupLen(int groupLen) {
-
-        this.groupLen = groupLen;
     }
 
     // 每次下发测试数据长度

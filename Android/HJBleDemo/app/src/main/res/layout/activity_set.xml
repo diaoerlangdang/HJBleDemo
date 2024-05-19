@@ -194,34 +194,6 @@
     </RelativeLayout>
 
     <RelativeLayout
-        android:id="@+id/group_len_layout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:padding="10dp">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_centerVertical="true"
-            android:textColor="@android:color/black"
-            android:text="@string/data_length_of_each_packet_title"/>
-
-        <TextView
-            android:id="@+id/group_len_txt"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:paddingTop="5dp"
-            android:paddingBottom="5dp"
-            android:paddingLeft="15dp"
-            android:paddingRight="15dp"
-            android:layout_alignParentEnd="true"
-            android:textColor="@android:color/black"
-            android:text="20"/>
-
-
-    </RelativeLayout>
-
-    <RelativeLayout
         android:id="@+id/data_len_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -232,7 +204,7 @@
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
             android:textColor="@android:color/black"
-            android:text="@string/length_of_test_data_to_be_delivered_each_time"/>
+            android:text="@string/total_length_of_test_data"/>
 
         <TextView
             android:id="@+id/data_len_txt"

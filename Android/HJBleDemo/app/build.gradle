@@ -7,8 +7,8 @@ android {
         applicationId "com.hongjia.hjbledemo"
         minSdkVersion 21
         targetSdkVersion 31
-        versionCode 731
-        versionName "7.3.1"
+        versionCode 750
+        versionName "7.5.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     buildTypes {

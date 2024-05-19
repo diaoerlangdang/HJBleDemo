@@ -17,6 +17,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.os.SystemClock;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -281,7 +282,6 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
     @Override
     public void onDetailClick(int position) {
         HJBleScanDevice scanDevice = mLeDeviceListAdapter.getScanDeviceInfo(position);
-        HJBleApplication.shareInstance().setGroupLen(scanDevice.mtuLen);
 
         final Intent intent = new Intent(ScanBleActivity.this, BluetoothDataActivity.class);
         intent.putExtra(BluetoothDataActivity.EXTRAS_DEVICE_IS_CONFIG, scanDevice.isConfig);
@@ -556,12 +556,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
                     if(connectBleSynchronization(bleManager, scanDevice.device))	//连接蓝牙设备
                         break;
 
-                    try {
-                        Thread.sleep(200,0);//200ms
-                    }
-                    catch (Exception e){
-
-                    }
+                    SystemClock.sleep(200);//200ms
                 }
                 if(i == 5)
                 {
@@ -576,12 +571,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
                     return ;
                 }
 
-//                try {
-//                    Thread.sleep(200,0);//200ms
-//                }
-//                catch (Exception e){
-//
-//                }
+//                SystemClock.sleep(200);//200ms
 
                 runOnUiThread(new Runnable() {
                     @Override
@@ -611,12 +601,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
                     return ;
                 }
 
-//                try {
-//                    Thread.sleep(200,0);//200ms
-//                }
-//                catch (Exception e){
-//
-//                }
+//                SystemClock.sleep(200);//200ms
 
                 runOnUiThread(new Runnable() {
                     @Override
