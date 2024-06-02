@@ -71,10 +71,12 @@
     <string name="receive_byte_format">Received bytes：%d Byte</string>
     <string name="send_rate_default">Sent rate：0 B/s</string>
     <string name="max_send_rate_default">Max Sent rate：0 B/s</string>
+    <string name="average_send_rate_default">Average Sent rate：0 B/s</string>
     <string name="receive_rate_default">Received rate：0 B/s</string>
     <string name="max_receive_rate_default">Max Received rate：0 B/s</string>
     <string name="send_rate_format">Sent rate：%d B/s</string>
     <string name="receive_rate_format">Received rate：%d B/s</string>
+    <string name="average_send_rate_format">Average Sent rate：%d B/s</string>
     <string name="max_send_rate_format">Max Sent rate：%d B/s</string>
     <string name="max_receive_rate_format">Max Received rate：%d B/s</string>
     <string name="log_title">Log：</string>

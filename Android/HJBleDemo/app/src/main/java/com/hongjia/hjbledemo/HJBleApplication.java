@@ -151,7 +151,7 @@ public class HJBleApplication extends Application {
     // 是否为respone
     public boolean isWriteTypeResponse() {
 
-        Boolean isResponse = (Boolean)SPUtils.get(getAppContext(), "isWriteTypeResponse", true);
+        Boolean isResponse = (Boolean)SPUtils.get(getAppContext(), "isWriteTypeResponse", false);
         return isResponse.booleanValue();
     }
 

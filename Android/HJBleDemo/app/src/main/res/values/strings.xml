@@ -72,10 +72,12 @@
     <string name="receive_byte_format">接收字节：%d Byte</string>
     <string name="send_rate_default">发送速率：0 B/s</string>
     <string name="max_send_rate_default">最大发送速率：0 B/s</string>
+    <string name="average_send_rate_default">平均发送速率：0 B/s</string>
     <string name="receive_rate_default">接收速率：0 B/s</string>
     <string name="max_receive_rate_default">最大接收速率：0 B/s</string>
     <string name="send_rate_format">发送速率：%d B/s</string>
     <string name="receive_rate_format">接收速率：%d B/s</string>
+    <string name="average_send_rate_format">平均发送速率：%d B/s</string>
     <string name="max_send_rate_format">最大发送速率：%d B/s</string>
     <string name="max_receive_rate_format">最大接收速率：%d B/s</string>
     <string name="log_title">日志：</string>

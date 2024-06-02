@@ -100,7 +100,9 @@ public class BluetoothDataActivity extends BaseActivity {
     private LinearLayout bottomLayout; //底部
 
     // 更新速率
-    private static final int MSG_UPDATE_RATE = 0x12;
+    private static final int MSG_UPDATE_RECEIVE_RATE = 0x12;
+    private static final int MSG_UPDATE_SEND_RATE = 0x13;
+    private static final int MSG_UPDATE_AVERAGE_SEND_RATE = 0x14;
 
     // 字节数
     private RelativeLayout dataBytesLayout;
@@ -126,6 +128,8 @@ public class BluetoothDataActivity extends BaseActivity {
     private TextView maxReceiveRateTV;
     // 最大发送速率
     private TextView maxSendRateTV;
+    // 平均发送速率
+    private TextView averageSendRateTV;
     // 流控
     private TextView tvFlowControl;
 
@@ -133,7 +137,7 @@ public class BluetoothDataActivity extends BaseActivity {
 
     private int recCountBySecond = 0;
 
-    private int sendCountBySecond = 0;
+//    private int sendCountBySecond = 0;
 
     // 最大发送速率
     private int maxSendRate = 0;
@@ -207,11 +211,11 @@ public class BluetoothDataActivity extends BaseActivity {
             @Override
             public void run() {
                 Message message = new Message();
-                message.what = MSG_UPDATE_RATE;
+                message.what = MSG_UPDATE_RECEIVE_RATE;
                 message.arg1 = recCountBySecond;
-                message.arg2 = sendCountBySecond;
+//                message.arg2 = sendCountBySecond;
                 recCountBySecond = 0;
-                sendCountBySecond = 0;
+//                sendCountBySecond = 0;
                 mHandler.sendMessage(message);
             }
         };
@@ -246,12 +250,23 @@ public class BluetoothDataActivity extends BaseActivity {
             public boolean handleMessage(@NonNull Message msg) {
                 switch (msg.what) {
                     // 更新速率
-                    case MSG_UPDATE_RATE:
+                    case MSG_UPDATE_RECEIVE_RATE: {
                         int recvRate = msg.arg1;
-                        int sendRate = msg.arg2;
+//                        int sendRate = msg.arg2;
 
                         showRecCountBySecond(recvRate);
+//                        showSendCountBySecond(sendRate);
+                    }
+                        break;
+                    case MSG_UPDATE_SEND_RATE: {
+                        int sendRate = msg.arg1;
                         showSendCountBySecond(sendRate);
+                    }
+                        break;
+                    case MSG_UPDATE_AVERAGE_SEND_RATE: {
+                        int sendRate = msg.arg1;
+                        showAverageSendRate(sendRate);
+                    }
                         break;
 
                     default:
@@ -273,6 +288,7 @@ public class BluetoothDataActivity extends BaseActivity {
         sendByteCountTV = findViewById(R.id.send_byte_count_tv);
         sendRateTV = findViewById(R.id.send_rate_tv);
         maxSendRateTV = findViewById(R.id.max_send_rate_tv);
+        averageSendRateTV = findViewById(R.id.average_send_rate_tv);
         receiveByteCountTV = findViewById(R.id.receive_byte_count_tv);
         receiveRateTV = findViewById(R.id.receive_rate_tv);
         maxReceiveRateTV = findViewById(R.id.max_receive_rate_tv);
@@ -320,6 +336,8 @@ public class BluetoothDataActivity extends BaseActivity {
                 maxReceiveRate = 0;
                 setReceiveByteCount(0);
                 setSendByteCount(0);
+                averageSendRateTV.setText(getResources().getString(R.string.average_send_rate_default));
+                maxSendRateTV.setText(getResources().getString(R.string.max_send_rate_default));
 
             }
         });
@@ -373,11 +391,16 @@ public class BluetoothDataActivity extends BaseActivity {
         @Override
         public void onWriteFailure(BleException e) {
             sendEvent.setSignal(WiseWaitEvent.ERROR_FAILED);
+
+            SendReceiveDataBean dataBean = new SendReceiveDataBean(SendReceiveDataBean.DataTypeFailed, getResources().getString(R.string.send_failure));
+
+            addDataInfoItem(dataBean);
         }
     };
 
     private boolean sendDataSynchronization(BleManager bleManager, BleDevice bleDevice, WiseCharacteristic characteristic, byte[] data) {
         sendEvent.init();
+        long startTime = System.currentTimeMillis(); // 获取开始时间戳
         bleManager.write(bleDevice, characteristic.getServiceID(), characteristic.getCharacteristicID(), data, bleWriteCallback);
 
         // respone 才执行
@@ -388,6 +411,16 @@ public class BluetoothDataActivity extends BaseActivity {
                 return false;
             }
         }
+
+        long endTime = System.currentTimeMillis(); // 获取结束时间戳
+        long timeTaken = endTime - startTime; // 计算时间差（以毫秒为单位）
+        double timeTakenInSeconds = timeTaken / 1000.0; // 将时间差转换为秒
+        int rate = (int) (data.length / timeTakenInSeconds);  // 计算速率（每秒字节数）
+
+        Message message = new Message();
+        message.what = MSG_UPDATE_SEND_RATE;
+        message.arg1 = rate;
+        mHandler.sendMessage(message);
 
         return true;
     }
@@ -406,6 +439,11 @@ public class BluetoothDataActivity extends BaseActivity {
                 final boolean bUseFileTest = HJBleApplication.shareInstance().useFileTest();
                 // 文件路径
 //                final String filePath = HJBleApplication.shareInstance().testFilePath();
+
+                Message message2 = new Message();
+                message2.what = MSG_UPDATE_AVERAGE_SEND_RATE;
+                message2.arg1 = 0;
+                mHandler.sendMessage(message2);
 
                 if (bUseFileTest) {
                     try {
@@ -429,9 +467,12 @@ public class BluetoothDataActivity extends BaseActivity {
 //                        fileInputStream = new FileInputStream(file);
                         BufferedInputStream inputStream = new BufferedInputStream(fileInputStream);
 
+                        long startTime = System.currentTimeMillis(); // 获取开始时间戳
+
                         int groupDataLen = BleManager.getInstance().getSplitWriteNum();
                         byte[] inputBuffer = new byte[groupDataLen];
                         int readCount;
+                        long fileTotalLen = 0;
                         while ((readCount = inputStream.read(inputBuffer, 0, groupDataLen)) != -1) {
                             if (bBusyBle) {
                                 stopTest();
@@ -446,6 +487,8 @@ public class BluetoothDataActivity extends BaseActivity {
                                 return;
                             }
 
+                            fileTotalLen += readCount;
+
                             byte[] sendBytes = new byte[readCount];
                             System.arraycopy(inputBuffer, 0, sendBytes, 0, readCount);
 
@@ -455,7 +498,7 @@ public class BluetoothDataActivity extends BaseActivity {
                                 public void run() {
                                     if (!isBleConfig) {
                                         addSendByteCount(sendLen);
-                                        sendCountBySecond += sendLen;
+//                                        sendCountBySecond += sendLen;
                                     }
                                 }
                             });
@@ -486,6 +529,22 @@ public class BluetoothDataActivity extends BaseActivity {
                         inputStream.close();
                         stopTest();
 
+                        long endTime = System.currentTimeMillis(); // 获取结束时间戳
+                        long timeTaken = endTime - startTime; // 计算时间差（以毫秒为单位）
+                        double timeTakenInSeconds = timeTaken / 1000.0; // 将时间差转换为秒
+                        int rate = (int) (fileTotalLen / timeTakenInSeconds); // 计算速率（每秒字节数）
+                        Message message = new Message();
+                        message.what = MSG_UPDATE_AVERAGE_SEND_RATE;
+                        message.arg1 = rate;
+                        mHandler.sendMessage(message);
+
+                        Message message1 = new Message();
+                        message1.what = MSG_UPDATE_SEND_RATE;
+                        message1.arg1 = 0;
+                        mHandler.sendMessage(message1);
+
+
+
                     } catch (IOException e) {
                         stopTest();
                         runOnUiThread(new Runnable() {
@@ -498,6 +557,8 @@ public class BluetoothDataActivity extends BaseActivity {
 
                 } else {
                     int groupDataLen = BleManager.getInstance().getSplitWriteNum();
+
+                    long startTime = System.currentTimeMillis(); // 获取开始时间戳
 
                     // 循环创建字节数组片段
                     for (int i = 0; i < totalDataLen && isTesting; i += groupDataLen) {
@@ -519,7 +580,7 @@ public class BluetoothDataActivity extends BaseActivity {
                                 public void run() {
                                     if (!isBleConfig) {
                                         addSendByteCount(len);
-                                        sendCountBySecond += len;
+//                                        sendCountBySecond += len;
                                     }
                                 }
                             });
@@ -536,7 +597,20 @@ public class BluetoothDataActivity extends BaseActivity {
                         }
                     }
 
-                   stopTest();
+                    stopTest();
+                    long endTime = System.currentTimeMillis(); // 获取结束时间戳
+                    long timeTaken = endTime - startTime; // 计算时间差（以毫秒为单位）
+                    double timeTakenInSeconds = timeTaken / 1000.0; // 将时间差转换为秒
+                    int rate = (int) (totalDataLen / timeTakenInSeconds); // 计算速率（每秒字节数）
+                    Message message = new Message();
+                    message.what = MSG_UPDATE_AVERAGE_SEND_RATE;
+                    message.arg1 = rate;
+                    mHandler.sendMessage(message);
+
+                    Message message1 = new Message();
+                    message1.what = MSG_UPDATE_SEND_RATE;
+                    message1.arg1 = 0;
+                    mHandler.sendMessage(message1);
                 }
 
             }
@@ -592,6 +666,10 @@ public class BluetoothDataActivity extends BaseActivity {
         }
     }
 
+    private void showAverageSendRate(int count) {
+        averageSendRateTV.setText(String.format(getResources().getString(R.string.average_send_rate_format), count));
+    }
+
     // 开始定时器
     private void startTimer() {
         if (timer == null) {
@@ -603,11 +681,11 @@ public class BluetoothDataActivity extends BaseActivity {
                 @Override
                 public void run() {
                     Message message = new Message();
-                    message.what = MSG_UPDATE_RATE;
+                    message.what = MSG_UPDATE_RECEIVE_RATE;
                     message.arg1 = recCountBySecond;
-                    message.arg2 = sendCountBySecond;
+//                    message.arg2 = sendCountBySecond;
                     recCountBySecond = 0;
-                    sendCountBySecond = 0;
+//                    sendCountBySecond = 0;
                     mHandler.sendMessage(message);
                 }
             };
@@ -840,28 +918,70 @@ public class BluetoothDataActivity extends BaseActivity {
         }
 
         final byte[] bytes = data;
+
         new Thread(new Runnable() {
             @Override
             public void run() {
 
-                BleManager.getInstance().write(mBleDevice, mSendCharact.getServiceID(), mSendCharact.getCharacteristicID(), bytes, new BleWriteCallback() {
-                    @Override
-                    public void onWriteSuccess(int i, int i1, byte[] bytes) {
-//                        SendReceiveDataBean dataBean = new SendReceiveDataBean(SendReceiveDataBean.DataTypeOther, "发送成功");
-//
-//                        addDataInfoItem(dataBean);
-                    }
+                Message message2 = new Message();
+                message2.what = MSG_UPDATE_AVERAGE_SEND_RATE;
+                message2.arg1 = 0;
+                mHandler.sendMessage(message2);
 
-                    @Override
-                    public void onWriteFailure(BleException e) {
-                        SendReceiveDataBean dataBean = new SendReceiveDataBean(SendReceiveDataBean.DataTypeFailed, getResources().getString(R.string.send_failure));
+                long startTime = System.currentTimeMillis(); // 获取开始时间戳
 
-                        addDataInfoItem(dataBean);
-                    }
-                });
+                int groupLen = BleManager.getInstance().getSplitWriteNum();
 
+                int start = 0;
+                while (start < bytes.length) {
+                    int end = Math.min(start + groupLen, bytes.length);
+                    byte[] group = Arrays.copyOfRange(bytes, start, end);
+
+                    sendDataSynchronization(BleManager.getInstance(), mBleDevice, mSendCharact, group);
+
+                    start += groupLen;
+                }
+
+                long endTime = System.currentTimeMillis(); // 获取结束时间戳
+                long timeTaken = endTime - startTime; // 计算时间差（以毫秒为单位）
+                double timeTakenInSeconds = timeTaken / 1000.0; // 将时间差转换为秒
+                int rate = (int) (bytes.length / timeTakenInSeconds); // 计算速率（每秒字节数）并强制转换为整数
+
+                Message message = new Message();
+                message.what = MSG_UPDATE_AVERAGE_SEND_RATE;
+                message.arg1 = rate;
+                mHandler.sendMessage(message);
+
+                Message message1 = new Message();
+                message1.what = MSG_UPDATE_SEND_RATE;
+                message1.arg1 = 0;
+                mHandler.sendMessage(message1);
             }
         }).start();
+
+
+//        new Thread(new Runnable() {
+//            @Override
+//            public void run() {
+//
+//                BleManager.getInstance().write(mBleDevice, mSendCharact.getServiceID(), mSendCharact.getCharacteristicID(), bytes, new BleWriteCallback() {
+//                    @Override
+//                    public void onWriteSuccess(int i, int i1, byte[] bytes) {
+////                        SendReceiveDataBean dataBean = new SendReceiveDataBean(SendReceiveDataBean.DataTypeOther, "发送成功");
+////
+////                        addDataInfoItem(dataBean);
+//                    }
+//
+//                    @Override
+//                    public void onWriteFailure(BleException e) {
+//                        SendReceiveDataBean dataBean = new SendReceiveDataBean(SendReceiveDataBean.DataTypeFailed, getResources().getString(R.string.send_failure));
+//
+//                        addDataInfoItem(dataBean);
+//                    }
+//                });
+//
+//            }
+//        }).start();
 
     }
 
