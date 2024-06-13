@@ -178,4 +178,49 @@
     return [[WWCharacteristic alloc] initWithServiceID:self.dataMainService characteristicID:self.dataReceiveSubService];
 }
 
+
+- (BOOL)isRespone
+{
+    NSNumber *tmp = (NSNumber *)[_cache objectForKey:@"isRespone"];
+    if (tmp == nil) {
+        return false;
+    }
+    return tmp.boolValue;
+}
+
+- (void)setIsRespone:(BOOL)isRespone
+{
+    [_cache setObject:@(isRespone) forKey:@"isRespone"];
+}
+
+- (int)dataTotalLen
+{
+    NSNumber *tmp = (NSNumber *)[_cache objectForKey:@"dataTotalLen"];
+    if (tmp == nil) {
+        return 100;
+    }
+    return tmp.intValue;
+}
+
+- (void)setDataTotalLen:(int)len
+{
+    [_cache setObject:@(len) forKey:@"dataTotalLen"];
+}
+
+- (int)sendDataGap
+{
+    NSNumber *tmp = (NSNumber *)[_cache objectForKey:@"sendDataGap"];
+    if (tmp == nil) {
+        return 20;
+    }
+    return tmp.intValue;
+}
+
+- (void)setSendDataGap:(int)gap
+{
+    [_cache setObject:@(gap) forKey:@"sendDataGap"];
+}
+
+
+
 @end

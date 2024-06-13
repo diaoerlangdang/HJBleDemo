@@ -57,6 +57,15 @@ NS_ASSUME_NONNULL_BEGIN
 // 数据通知服务
 @property (nonatomic, strong) NSString *dataReceiveSubService;
 
+// 是否为respone
+@property (nonatomic, assign) BOOL isRespone;
+
+// 测试数据总长度
+@property (nonatomic, assign) int dataTotalLen;
+
+// 下发数据时间间隙(ms)
+@property (nonatomic, assign) int sendDataGap;
+
 
 /**
  * 配置信息单例

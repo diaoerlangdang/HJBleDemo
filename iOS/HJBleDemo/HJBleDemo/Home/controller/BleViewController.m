@@ -11,9 +11,10 @@
 #import <Toast/Toast.h>
 #import "SetViewController.h"
 #import "HJConfigInfo.h"
+#import "wiseBle/WWWaitEvent.h"
  
 // header view 高度
-#define HEADER_VIEW_HEIGHT 40.f
+#define HEADER_VIEW_HEIGHT 85.f
 
 @interface BleViewController ()<WWBluetoothLEConnectDelegate>
 
@@ -26,6 +27,8 @@
 @property (nonatomic, strong) WWBluetoothLE *ble;
 
 @property (nonatomic, assign) BOOL isShowHex;
+
+@property (nonatomic, assign) BOOL isRespone;
 
 @property (nonatomic, strong) UIView *headerView;
 
@@ -42,6 +45,12 @@
 // 接收速率
 @property (nonatomic, strong) UILabel *receiveRateLabel;
 
+// 平均发送速率
+@property (nonatomic, strong) UILabel *averageSendRateLabel;
+
+// 测试
+@property (nonatomic, strong) UIButton *testBtn;
+
 // 每秒钟接收的字节数
 @property (nonatomic, assign) NSInteger recCountBySecond;
 
@@ -53,6 +62,14 @@
 
 // 蓝牙是否繁忙
 @property (nonatomic, assign) BOOL bBusyBle;
+
+// 正在测试
+@property (nonatomic, assign) BOOL isTesting;
+
+
+
+//接受数据等待
+@property (nonatomic, strong) WWWaitEvent *sendEvent;
 
 @end
 
@@ -66,6 +83,8 @@
     _sendByteCount = 0;
     _receiveByteCount = 0;
     _recCountBySecond = 0;
+    _isTesting = false;
+    _sendEvent = [[WWWaitEvent alloc] init];
     
     _peripheral = _scanData.peripheral;
     if (!_scanData.isConfig) {
@@ -80,6 +99,7 @@
     
     CGFloat chatToolBarHeight = [DXMessageToolBar defaultHeight];
     _chatToolBar = [[DXMessageToolBar alloc] initWithFrame:CGRectMake(0, self.view.frame.size.height - [DXMessageToolBar defaultHeight], self.view.frame.size.width, chatToolBarHeight)];
+    _chatToolBar.backgroundColor = [UIColor whiteColor];
     _chatToolBar.autoresizingMask = UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleRightMargin;
     _chatToolBar.delegate = self;
     [self.view addSubview:_chatToolBar];
@@ -147,6 +167,7 @@
     [self.view endEditing:true];
     [_chatToolBar clearText]; //清空发送的数据
     self.isShowHex = [HJConfigInfo shareInstance].isBleHex;
+    self.isRespone = [HJConfigInfo shareInstance].isRespone;
 }
 
 - (void)viewWillDisappear:(BOOL)animated
@@ -202,6 +223,15 @@
     
     [self showRecCountBySecond:0];
     
+    _averageSendRateLabel = [UILabel labelWithTextColor:WW_COLOR_HexRGB(0x333333) font:WW_Font(9)];
+    [_headerView addSubview:_averageSendRateLabel];
+    [_averageSendRateLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(_receiveRateLabel.mas_bottom).offset(5);
+        make.left.equalTo(_headerView).offset(10);
+    }];
+    
+    [self showAverageSendCountBySecond:0];
+    
     _flowControlLabel = [UILabel labelWithTextColor:WW_COLOR_HexRGB(0x333333) font:WW_Font(9)];
     [_headerView addSubview:_flowControlLabel];
     [_flowControlLabel mas_makeConstraints:^(MASConstraintMaker *make) {
@@ -209,6 +239,17 @@
         make.right.equalTo(_headerView).offset(-10);
     }];
     _flowControlLabel.text = self.scanData.bFlowControl ? @"串口流控：使能" : @"串口流控：禁止";
+    
+    _testBtn = [UIButton buttonWithType:UIButtonTypeSystem];
+    [_testBtn setTitle:@"开始测试" forState:UIControlStateNormal];
+    [_testBtn addTarget:self action:@selector(testBtnClicked) forControlEvents:UIControlEventTouchUpInside];
+    [_headerView addSubview:_testBtn];
+    
+    [_testBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(_averageSendRateLabel.mas_bottom).offset(5);
+        make.right.equalTo(_headerView).offset(-10);
+    }];
+    
     
 }
 
@@ -240,6 +281,11 @@
     _receiveRateLabel.text = [NSString stringWithFormat:@"实时速率：%ld B/s", (long)recCountBySecond];
 }
 
+- (void)showAverageSendCountBySecond:(NSInteger)count
+{
+    _averageSendRateLabel.text = [NSString stringWithFormat:@"平均发送速率：%ld B/s", (long)count];
+}
+
 // 返回
 - (void)leftButtonMethod
 {
@@ -254,6 +300,7 @@
     
     [self setReceiveByteCount:0];
     [self setSendByteCount:0];
+    [self showAverageSendCountBySecond:0];
     
     [self.tableView reloadData];
 }
@@ -329,7 +376,7 @@
 {
     [self.view endEditing:true];
     
-    if (!text || text.length <= 0) {
+    if (!text || text.length <= 0 || _isTesting) {
         return ;
     }
     
@@ -355,7 +402,6 @@
         return;
     }
     
-    BOOL bResult = false;
     
     WWCharacteristic *chart = nil;
     //配置模式
@@ -388,33 +434,153 @@
         [self addSendByteCount:sendData.length];
     }
     
-    bResult = [_ble send:_peripheral characteristic:chart value:sendData];
+    @weakify(self)
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        
+        @strongify(self)
+        
+        BOOL bResult = false;
+        
+        // 获取当前时间
+        NSDate *startTime = [NSDate date];
+        
+        bResult = [self synchronizedSendData:self.peripheral characteristic:chart value:sendData type:self.isRespone ? CBCharacteristicWriteWithResponse : CBCharacteristicWriteWithoutResponse];
+        // 再次获取当前时间
+        NSDate *endTime = [NSDate date];
+        // 计算时间间隔
+        NSTimeInterval interval = [endTime timeIntervalSinceDate:startTime];
+        
+        if (bResult) {
+            
+            
+            NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
+            NSDate* now = [NSDate date];
+            NSDateFormatter* fmt = [[NSDateFormatter alloc] init];
+            fmt.locale = [[NSLocale alloc] initWithLocaleIdentifier:@"zh_CN"];
+            fmt.dateFormat = @"HH:mm:ss SSS";
+            NSString* dateString = [NSString stringWithFormat:@"时间:%@",[fmt stringFromDate:now]];
+            [dict setValue:dateString forKey:@"time"];
+            [dict setValue:@"发送:" forKey:@"title"];
+            [dict setValue:text forKey:@"context"];
+            
+            [self.tableData addObject:[BleSendReceiveData BleSendReceiveDataWithDictionary:dict]];
+            
+            dispatch_async(dispatch_get_main_queue(), ^{
+                int rate = (int) (sendData.length / interval); // 计算速率（每秒字节数）
+                [self showAverageSendCountBySecond:rate];
+                
+                [self.tableView reloadData];
+                
+                NSIndexPath *indexPath = [NSIndexPath indexPathForRow:self.tableData.count-1 inSection:0];
+                [self.tableView scrollToRowAtIndexPath:indexPath atScrollPosition:UITableViewScrollPositionTop animated:YES];
+                
+                if ([HJConfigInfo shareInstance].isClearInput) {
+                    [toolBar clearText]; //清空发送的数据
+                }
+            });
+        }
+        else {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [self.view makeToast:@"发送失败"];
+            });
+        }
+    });
     
-    if (bResult) {
-        NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
-        NSDate* now = [NSDate date];
-        NSDateFormatter* fmt = [[NSDateFormatter alloc] init];
-        fmt.locale = [[NSLocale alloc] initWithLocaleIdentifier:@"zh_CN"];
-        fmt.dateFormat = @"HH:mm:ss SSS";
-        NSString* dateString = [NSString stringWithFormat:@"时间:%@",[fmt stringFromDate:now]];
-        [dict setValue:dateString forKey:@"time"];
-        [dict setValue:@"发送:" forKey:@"title"];
-        [dict setValue:text forKey:@"context"];
+}
+
+// 测试
+- (void)testBtnClicked
+{
+    if (_isTesting) {
+        _isTesting = false;
+        [_testBtn setTitle:@"开始测试" forState:UIControlStateNormal];
+    } else {
+        _isTesting = true;
+        [_testBtn setTitle:@"停止测试" forState:UIControlStateNormal];
+        [self startTest];
+    }
+    
+}
+
+- (void)startTest {
+    [self showAverageSendCountBySecond:0];
+    @weakify(self)
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         
-        [_tableData addObject:[BleSendReceiveData BleSendReceiveDataWithDictionary:dict]];
-        [self.tableView reloadData];
+        @strongify(self)
         
-        NSIndexPath *indexPath = [NSIndexPath indexPathForRow:_tableData.count-1 inSection:0];
-        [self.tableView scrollToRowAtIndexPath:indexPath atScrollPosition:UITableViewScrollPositionTop animated:YES];
+        // 获取当前时间
+        NSDate *startTime = [NSDate date];
         
-        if ([HJConfigInfo shareInstance].isClearInput) {
-            [toolBar clearText]; //清空发送的数据
+        int totalLen = [HJConfigInfo shareInstance].dataTotalLen;
+        int gap = [HJConfigInfo shareInstance].sendDataGap;
+        
+        NSInteger BleDataLengthMax = self.ble.nGroupSendDataLen;
+        
+        NSUInteger nGroup = (totalLen + BleDataLengthMax - 1) / BleDataLengthMax;
+        
+        for (NSUInteger i=0; i<nGroup && self.isTesting; i++)
+        {
+            NSInteger tmpLen = 0;
+            if (i == (nGroup-1)) {
+                tmpLen = totalLen - i * BleDataLengthMax;
+            }
+            else{
+                tmpLen = BleDataLengthMax;
+            }
+            
+            NSMutableData *temp= [NSMutableData dataWithLength:tmpLen];
+            memset(temp.mutableBytes, 0, tmpLen);
+            
+            BOOL bResult = [self synchronizedSendData:self.peripheral characteristic:[HJConfigInfo shareInstance].dataSendService value:temp type:self.isRespone ? CBCharacteristicWriteWithResponse : CBCharacteristicWriteWithoutResponse];
+            if (!bResult) {
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    [self.view makeToast:@"发送失败"];
+                });
+            }
+            
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [self addSendByteCount:tmpLen];
+            });
+            
+            if (gap > 0) {
+                usleep(1000 * gap);
+            }
+            
+            
+        }
+        
+        // 再次获取当前时间
+        NSDate *endTime = [NSDate date];
+        // 计算时间间隔
+        NSTimeInterval interval = [endTime timeIntervalSinceDate:startTime];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            int rate = (int) ([HJConfigInfo shareInstance].dataTotalLen / interval); // 计算速率（每秒字节数）
+            [self showAverageSendCountBySecond:rate];
+            
+            self.isTesting = false;
+            [self.testBtn setTitle:@"开始测试" forState:UIControlStateNormal];
+        });
+    });
+}
+
+- (BOOL)synchronizedSendData:(CBPeripheral *)peripheral characteristic:(WWCharacteristic *)characteristic value:(NSData *)data type:(CBCharacteristicWriteType)type
+{
+    bool bResult = [_ble send:peripheral characteristic:characteristic value:data type:type];
+    if (!bResult) {
+        return false;
+    }
+    
+    // respone等待
+    if (type == CBCharacteristicWriteWithResponse) {
+        WWWaitResult result = [_sendEvent waitSignle:2000];
+        if (result != WWWaitResultSuccess) {
+            return false;
         }
     }
-    else {
-        [self.view makeToast:@"发送失败"];
-    }
     
+    return true;
 }
 
 #pragma mark -- WWBluetoothLEManagerDelegate
@@ -474,9 +640,16 @@
 - (void)ble:(WWBluetoothLE *)ble didSendData:(CBPeripheral *)peripheral characteristic:(WWCharacteristic *)characteristic result:(BOOL)isSuccess
 {
     if (isSuccess) {
-        [self.view makeToast:@"发送成功"];
+        if ([_sendEvent getWaitStatus] == WWWaitResultWaiting) {
+            [_sendEvent waitOver:WWWaitResultSuccess];
+        }
+        
+//        [self.view makeToast:@"发送成功"];
     }
     else{
+        if ([_sendEvent getWaitStatus] == WWWaitResultWaiting) {
+            [_sendEvent waitOver:WWWaitResultFailed];
+        }
         [self.view makeToast:@"发送失败"];
     }
 }
