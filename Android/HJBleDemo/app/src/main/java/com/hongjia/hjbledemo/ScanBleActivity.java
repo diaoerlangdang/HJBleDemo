@@ -601,15 +601,6 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
                     return ;
                 }
 
-//                SystemClock.sleep(200);//200ms
-
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-
-                        loadingDialog.setMessage(getResources().getString(R.string.reading_flow_control));
-                    }
-                });
 
                 // 设置mtu
                 int mtuLen = requestMtu(bleManager, scanDevice.device, 512) - 3;
@@ -622,6 +613,14 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
 
                 // 支持配置模式的设备，获取是否为流控模式
                 if (scanDevice.isConfig && supportFlowControl) {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+
+                            loadingDialog.setMessage(getResources().getString(R.string.reading_flow_control));
+                        }
+                    });
+
                     byte[] cmd = ConvertData.utf8ToBytes("<RD_UART_FC>");
                     byte[] recv = sendRecvData(bleManager, scanDevice.device, BleConfig.Ble_Config_Send_Service, BleConfig.Ble_Config_Receive_Service, cmd);
                     if (recv != null) {
