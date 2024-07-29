@@ -76,6 +76,17 @@ public class HJBleApplication extends Application {
         SPUtils.put(getAppContext(), "isScanFilter", scanFilter);
     }
 
+    // 是否支持流控
+    public boolean isFlowControl() {
+        Boolean flowControl = (Boolean)SPUtils.get(getAppContext(), "isFlowControl", false);
+        return flowControl.booleanValue();
+    }
+
+    public void setFlowControl(boolean flowControl) {
+
+        SPUtils.put(getAppContext(), "isFlowControl", flowControl);
+    }
+
     // 获取数据通知主服务
     public String getDataNotifyMainService() {
         String defaultId = BleConfig.Ble_Default_Data_Send_Service.getServiceID();

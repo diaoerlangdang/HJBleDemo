@@ -34,6 +34,33 @@
     </RelativeLayout>
 
     <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="45dp"
+        android:paddingStart="15dp"
+        android:paddingEnd="15dp"
+        android:background="#ececec">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#666"
+            android:textSize="15sp"
+            android:layout_centerVertical="true"
+            android:text="@string/flow_control_title"/>
+
+        <Switch
+            android:id="@+id/switch_flow_control"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:switchMinWidth="20dp"
+            android:thumb="@drawable/switch_thumb"
+            android:track="@drawable/switch_track"/>
+
+    </RelativeLayout>
+
+    <RelativeLayout
         android:id="@+id/rl_data_service"
         android:layout_width="match_parent"
         android:layout_height="45dp"

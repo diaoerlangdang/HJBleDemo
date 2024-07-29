@@ -19,6 +19,7 @@ public class AppConfigSetActivity extends BaseActivity {
     TextView tvVersion;
     RelativeLayout rlDataService; // 数据服务
     Switch switchFilter;
+    Switch switchFlowControl;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,6 +43,15 @@ public class AppConfigSetActivity extends BaseActivity {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
                 HJBleApplication.shareInstance().setScanFilter(b);
+            }
+        });
+
+        switchFlowControl = findViewById(R.id.switch_flow_control);
+        switchFlowControl.setChecked(HJBleApplication.shareInstance().isFlowControl());
+        switchFlowControl.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                HJBleApplication.shareInstance().setFlowControl(b);
             }
         });
 

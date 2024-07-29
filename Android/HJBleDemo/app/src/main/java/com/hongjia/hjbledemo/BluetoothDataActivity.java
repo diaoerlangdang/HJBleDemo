@@ -294,6 +294,8 @@ public class BluetoothDataActivity extends BaseActivity {
         maxReceiveRateTV = findViewById(R.id.max_receive_rate_tv);
         tvFlowControl = findViewById(R.id.tv_flow_control);
         tvFlowControl.setText(bFlowControl ? getResources().getString(R.string.flow_control_enable): getResources().getString(R.string.flow_control_disable));
+        boolean supportFlowControl = HJBleApplication.shareInstance().isFlowControl();
+        tvFlowControl.setVisibility(supportFlowControl ? View.VISIBLE : View.GONE);
         readVersionBtn = findViewById(R.id.read_version_btn);
 
         scrollView = findViewById(R.id.scroll);

@@ -618,8 +618,10 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
                 // 是否为流控模式
                 boolean bFlowControl = false;
 
+                boolean supportFlowControl = HJBleApplication.shareInstance().isFlowControl();
+
                 // 支持配置模式的设备，获取是否为流控模式
-                if (scanDevice.isConfig) {
+                if (scanDevice.isConfig && supportFlowControl) {
                     byte[] cmd = ConvertData.utf8ToBytes("<RD_UART_FC>");
                     byte[] recv = sendRecvData(bleManager, scanDevice.device, BleConfig.Ble_Config_Send_Service, BleConfig.Ble_Config_Receive_Service, cmd);
                     if (recv != null) {

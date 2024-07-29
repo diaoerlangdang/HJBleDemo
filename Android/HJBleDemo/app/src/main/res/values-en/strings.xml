@@ -22,6 +22,7 @@
     <!--    软件设置-->
     <string name="software_setup">Software setup</string>
     <string name="scanning_filtering">Scanning filtering</string>
+    <string name="flow_control_title">Flow Control</string>
     <string name="data_service">Data service</string>
     <string name="version_info">Version information</string>
 
