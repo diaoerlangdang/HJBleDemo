@@ -379,6 +379,9 @@ public class BluetoothDataActivity extends BaseActivity {
             public void run() {
                 mDataAdapter.addDataItem(dataBean);
                 mDataAdapter.notifyDataSetChanged();
+                // 滚动到最下面
+                int lastPosition = mDataAdapter.getItemCount() - 1;
+                dataListView.smoothScrollToPosition(lastPosition);
             }
         });
 
@@ -1046,7 +1049,7 @@ public class BluetoothDataActivity extends BaseActivity {
     // Adapter for holding devices found through scanning.
     private class SendReceiveDataAdapter extends RecyclerView.Adapter<DataViewHolder> {
 
-        private static final int MAX_ITEMS = 400; // 定义最大数据条数 -1 为不限制
+        private static final int MAX_ITEMS = 800; // 定义最大数据条数 -1 为不限制
 
         private LinkedList<SendReceiveDataBean> mDataList;
         private LayoutInflater mInflator;
@@ -1064,10 +1067,10 @@ public class BluetoothDataActivity extends BaseActivity {
 
             // 如果数据列表已满，先移除最旧的数据
             if (mDataList.size() >= MAX_ITEMS && MAX_ITEMS > 0) {
-                mDataList.removeLast();
+                mDataList.removeFirst();
             }
 
-            mDataList.addFirst(dataInfo);
+            mDataList.addLast(dataInfo);
         }
 
         public void clear() {
