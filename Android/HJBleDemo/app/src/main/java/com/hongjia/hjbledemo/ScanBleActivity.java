@@ -173,7 +173,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
         super.initView();
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            StatusBarCompat.setStatusBarColor(this, getResources().getColor(R.color.colorNavBackground, null), false);
+            StatusBarCompat.setStatusBarColor(this, getResources().getColor(com.wise.wisekit.R.color.colorNavBackground, null), false);
         }
 
         setTitle(getResources().getString(R.string.scan_list_title));

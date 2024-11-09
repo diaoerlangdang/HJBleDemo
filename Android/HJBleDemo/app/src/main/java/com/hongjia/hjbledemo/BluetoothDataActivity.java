@@ -29,7 +29,6 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
-import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -94,7 +93,6 @@ public class BluetoothDataActivity extends BaseActivity {
     private WiseWaitEvent sendEvent = new WiseWaitEvent();
 
     private Handler mHandler;
-    private ScrollView scrollView;
     private boolean isTesting = false; // 是否正在测试
     private static final int MSG_DATA_CHANGE = 0x11;
     private LinearLayout bottomLayout; //底部
@@ -298,7 +296,6 @@ public class BluetoothDataActivity extends BaseActivity {
         tvFlowControl.setVisibility(supportFlowControl ? View.VISIBLE : View.GONE);
         readVersionBtn = findViewById(R.id.read_version_btn);
 
-        scrollView = findViewById(R.id.scroll);
         sendBt = findViewById(R.id.send);
         sendEdit = findViewById(R.id.sendData);
         bottomLayout = findViewById(R.id.bottom_layout);
