@@ -1,21 +1,54 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
+    <declare-styleable name="ProgressBarView">
+        <!--圆环颜色-->
+        <attr name="annulusColor" format="reference|color"/>
+        <!--环形进度条加载颜色 -->
+        <attr name="loadColor"  format="reference|color"/>
+        <!--边框颜色 -->
+        <attr name="borderColor"  format="reference|color"/>
+        <!--圆环宽度 -->
+        <attr name="annulusWidth"  format="reference|dimension"/>
+        <!--圆环宽度-->
+        <attr name="progressWidth"  format="reference|dimension"/>
+        <!--圆环边框宽度-->
+        <attr name="borderWidth"  format="reference|dimension"/>
+        <!-- 开始角度-->
+        <attr name="startAngle"  format="reference|integer"/>
+        <!--圆环进度 -->
+        <attr name="progress"  format="reference|integer"/>
+    </declare-styleable>
+
+
     <declare-styleable name="SegmentControl">
         <attr name="cornerRadius" format="dimension|reference" />
-        <attr name="scv_BackgroundSelectedColor" format="reference|color" />//选中segment的背景颜色
-        <attr name="scv_BackgroundNormalColor" format="reference|color" />//未选中segment的背景颜色
-        <attr name="scv_TextSelectedColor" format="reference|color" />//选中segment的文字颜色
-        <attr name="scv_TextNormalColor" format="reference|color" />//未选中segment的文字颜色
-        <attr name="scv_FrameColor" format="reference|color" />//segment边框的颜色
-        <attr name="scv_FrameWidth" format="reference|dimension" />//segment边框的宽度
-        <attr name="scv_FrameCornerRadius" format="reference|dimension" />//segment四个圆角的半径大小
-        <attr name="scv_TextSize" format="reference|dimension" />//文字大小
-        <attr name="scv_TextArray" format="reference" />//string数组，每一个string都会填充到一个segment中
-        <attr name="scv_SelectedIndex" format="reference|integer" />//默认选中的segment
-        <attr name="scv_SegmentPaddingHorizontal" format="reference|dimension" />//每一个segment内部的水平padding
-        <attr name="scv_SegmentPaddingVertical" format="reference|dimension" />每一个Segment的竖直方向的padding
-        <attr name="scv_Gradient" format="reference|boolean" />//Segment改变时是否使用颜色渐变效果
+        <!--  //选中segment的背景颜色   -->
+        <attr name="scv_BackgroundSelectedColor" format="reference|color" />
+        <!--  //未选中segment的背景颜色   -->
+        <attr name="scv_BackgroundNormalColor" format="reference|color" />
+        <!--  //选中segment的文字颜色   -->
+        <attr name="scv_TextSelectedColor" format="reference|color" />
+        <!--  //未选中segment的文字颜色 -->
+        <attr name="scv_TextNormalColor" format="reference|color" />
+        <!--   //segment边框的颜色  -->
+        <attr name="scv_FrameColor" format="reference|color" />
+        <!--  //segment边框的宽度   -->
+        <attr name="scv_FrameWidth" format="reference|dimension" />
+        <!--  //segment四个圆角的半径大小    -->
+        <attr name="scv_FrameCornerRadius" format="reference|dimension" />
+        <!--  /文字大小   -->
+        <attr name="scv_TextSize" format="reference|dimension" />
+        <!--  //string数组，每一个string都会填充到一个segment中   -->
+        <attr name="scv_TextArray" format="reference" />
+        <!--  //默认选中的segment  -->
+        <attr name="scv_SelectedIndex" format="reference|integer" />
+        <!--  //每一个segment内部的水平padding    -->
+        <attr name="scv_SegmentPaddingHorizontal" format="reference|dimension" />
+        <!--  每一个Segment的竖直方向的padding   -->
+        <attr name="scv_SegmentPaddingVertical" format="reference|dimension" />
+        <!--  //Segment改变时是否使用颜色渐变效果   -->
+        <attr name="scv_Gradient" format="reference|boolean" />
     </declare-styleable>
 
 </resources>
