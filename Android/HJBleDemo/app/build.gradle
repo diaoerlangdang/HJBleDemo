@@ -49,8 +49,12 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
     implementation 'com.orhanobut:logger:2.2.0'
 //    implementation 'com.blakequ.androidblemanager:bluetooth-manager-lib:2.1.5'
-    implementation 'pub.devrel:easypermissions:2.0.0'
-    implementation 'com.githang:status-bar-compat:0.7'
+    implementation 'pub.devrel:easypermissions:3.0.0'
+//    implementation 'com.githang:status-bar-compat:0.7'
+    implementation ('com.github.niorgai:StatusBarCompat:2.3.3', {
+        exclude group: 'androidx.appcompat:appcompat'
+        exclude group: 'com.google.android.material:material'
+    })
     implementation 'com.github.Jasonchenlijian:FastBle:2.4.0'
     implementation project(':wisekit')
 }

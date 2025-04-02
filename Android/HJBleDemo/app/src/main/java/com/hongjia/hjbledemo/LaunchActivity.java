@@ -10,7 +10,8 @@ import android.os.Handler;
 import android.view.Window;
 import android.view.WindowManager;
 
-import com.githang.statusbar.StatusBarCompat;
+import qiu.niorgai.StatusBarCompat;
+
 
 public class LaunchActivity extends Activity {
 
@@ -20,7 +21,7 @@ public class LaunchActivity extends Activity {
         requestWindowFeature(Window.FEATURE_NO_TITLE);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            StatusBarCompat.setStatusBarColor(this, Color.parseColor("#e6e6e6"), true);
+            StatusBarCompat.setStatusBarColor(this, Color.parseColor("#e6e6e6"));
         }
 
         getWindow().setFormat(PixelFormat.RGBA_8888);

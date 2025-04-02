@@ -42,7 +42,6 @@ import com.clj.fastble.callback.BleNotifyCallback;
 import com.clj.fastble.callback.BleWriteCallback;
 import com.clj.fastble.data.BleDevice;
 import com.clj.fastble.exception.BleException;
-import com.githang.statusbar.StatusBarCompat;
 import com.hongjia.hjbledemo.adapter.LeDeviceListAdapter;
 import com.hongjia.hjbledemo.bean.HJBleScanDevice;
 import com.wise.ble.ConvertData;
@@ -67,6 +66,7 @@ import java.util.UUID;
 
 import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
+import qiu.niorgai.StatusBarCompat;
 
 public class ScanBleActivity extends BaseActivity implements EasyPermissions.PermissionCallbacks,
         EasyPermissions.RationaleCallbacks, LeDeviceListAdapter.OnDeviceListItemClickListener {
@@ -173,7 +173,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
         super.initView();
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            StatusBarCompat.setStatusBarColor(this, getResources().getColor(com.wise.wisekit.R.color.colorNavBackground, null), false);
+            StatusBarCompat.setStatusBarColor(this, getResources().getColor(com.wise.wisekit.R.color.colorNavBackground, null));
         }
 
         setTitle(getResources().getString(R.string.scan_list_title));

@@ -3,7 +3,7 @@ package com.wise.ble;
 public class WiseWaitEvent {
 
    public final static int ERROR_FAILED = 3;
-   public final static int ERROR_TIME_OUT = 2;
+   public final static int ERROR_TIME_OUT = 4;
    public final static int WillWaitting = 2;
    public final static int Waitting = 1;
    public final static int SUCCESS = 0;
