@@ -3,6 +3,7 @@ package com.hongjia.hjbledemo;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
+import android.content.ClipboardManager;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
@@ -23,6 +24,7 @@ import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -303,10 +305,24 @@ public class BluetoothDataActivity extends BaseActivity {
         testBtn = findViewById(R.id.test_btn);
         setIsTesting(false);
 
-        mDataAdapter = new SendReceiveDataAdapter(this);
+        mDataAdapter = new SendReceiveDataAdapter(this, new OnItemDataClickListener() {
+            @Override
+            public void onItemClick(int position) {
+                SendReceiveDataBean data = mDataAdapter.getItem(position);
+                // 获取剪贴板管理器
+                ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+                // 设置要复制的文本
+                String textToCopy = data.getDataInfo();
+                // 将文本复制到剪贴板
+                clipboard.setText(textToCopy);
+                Toast.makeText(BluetoothDataActivity.this, "复制成功", Toast.LENGTH_SHORT).show();
+            }
+        });
         dataListView.setLayoutManager(new LinearLayoutManager(this));
         dataListView.addItemDecoration(new DividerItemDecoration(this, LinearLayoutManager.VERTICAL));
         dataListView.setAdapter(mDataAdapter);
+
+
 
         testBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -1050,12 +1066,18 @@ public class BluetoothDataActivity extends BaseActivity {
 
         private LinkedList<SendReceiveDataBean> mDataList;
         private LayoutInflater mInflator;
+        private OnItemDataClickListener listener;
 
 
-        public SendReceiveDataAdapter(Context context) {
+        public SendReceiveDataAdapter(Context context, OnItemDataClickListener listener) {
             super();
+            this.listener = listener;
             mDataList = new LinkedList<>();
             mInflator = LayoutInflater.from(context);
+        }
+
+        public SendReceiveDataBean getItem(int position) {
+            return mDataList.get(position);
         }
 
         public void addDataItem(SendReceiveDataBean dataInfo) {
@@ -1088,6 +1110,7 @@ public class BluetoothDataActivity extends BaseActivity {
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss SSS");
             String timeStr = sdf.format(dataInfo.getTimeStamp());
             viewHolder.dataTimeTv.setText(timeStr);
+            viewHolder.bind(position, listener);
             switch (dataInfo.getDataType()) {
                 case SendReceiveDataBean.DataTypeSend: {
                     viewHolder.dataTypeTv.setTextColor(Color.BLUE);
@@ -1125,16 +1148,31 @@ public class BluetoothDataActivity extends BaseActivity {
 
     }
 
+    // 定义一个接口，用于处理 item 的点击事件
+    interface OnItemDataClickListener {
+        void onItemClick(int position);
+    }
+
     static class DataViewHolder extends RecyclerView.ViewHolder {
         TextView dataTypeTv;
         TextView dataInfoTv;
         TextView dataTimeTv;
+
 
         public DataViewHolder(View itemView) {
             super(itemView);
             dataTypeTv = itemView.findViewById(R.id.tv_data_type);
             dataInfoTv = itemView.findViewById(R.id.tv_data_info);
             dataTimeTv = itemView.findViewById(R.id.tv_data_time);
+        }
+
+        public void bind(final int position, final OnItemDataClickListener listener) {
+            itemView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    listener.onItemClick(position);
+                }
+            });
         }
     }
 }
