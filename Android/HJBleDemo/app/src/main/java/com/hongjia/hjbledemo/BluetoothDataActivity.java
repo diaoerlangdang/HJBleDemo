@@ -30,6 +30,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -45,6 +46,8 @@ import com.clj.fastble.callback.BleNotifyCallback;
 import com.clj.fastble.callback.BleWriteCallback;
 import com.clj.fastble.data.BleDevice;
 import com.clj.fastble.exception.BleException;
+
+import com.hongjia.hjbledemo.bean.CustomCommand;
 import com.wise.ble.ConvertData;
 import com.wise.ble.WiseBluetoothLe;
 import com.wise.ble.WiseCharacteristic;
@@ -135,6 +138,10 @@ public class BluetoothDataActivity extends BaseActivity {
 
     private TextView readVersionBtn;
 
+    // 自定义指令相关
+    private TextView btnCustomCommands;
+    private CustomCommandOverlayManager overlayManager;
+
     private int recCountBySecond = 0;
 
 //    private int sendCountBySecond = 0;
@@ -173,8 +180,13 @@ public class BluetoothDataActivity extends BaseActivity {
 
         final Intent intent = getIntent();
         mBleDevice = intent.getParcelableExtra(EXTRAS_DEVICE);
-        mDeviceName = mBleDevice.getName();
-        mDeviceAddress = mBleDevice.getMac().toUpperCase();
+        if (mBleDevice != null) {
+            mDeviceName = mBleDevice.getName();
+            mDeviceAddress = mBleDevice.getMac().toUpperCase();
+        } else {
+            mDeviceName = "";
+            mDeviceAddress = "";
+        }
         isConfig = intent.getBooleanExtra(EXTRAS_DEVICE_IS_CONFIG, false);
         bFlowControl = intent.getBooleanExtra(EXTRAS_DEVICE_IS_FLOW_CONTROL, false);
 
@@ -220,30 +232,32 @@ public class BluetoothDataActivity extends BaseActivity {
             }
         };
 
-        BleManager.getInstance().getBleBluetooth(mBleDevice).addConnectGattCallback(new BleGattCallback() {
-            @Override
-            public void onStartConnect() {
+        if (mBleDevice != null) {
+            BleManager.getInstance().getBleBluetooth(mBleDevice).addConnectGattCallback(new BleGattCallback() {
+                @Override
+                public void onStartConnect() {
 
-            }
+                }
 
-            @Override
-            public void onConnectFail(BleDevice bleDevice, BleException e) {
+                @Override
+                public void onConnectFail(BleDevice bleDevice, BleException e) {
 
-            }
+                }
 
-            @Override
-            public void onConnectSuccess(BleDevice bleDevice, BluetoothGatt bluetoothGatt, int i) {
+                @Override
+                public void onConnectSuccess(BleDevice bleDevice, BluetoothGatt bluetoothGatt, int i) {
 
-            }
+                }
 
-            @Override
-            public void onDisConnected(boolean b, BleDevice bleDevice, BluetoothGatt bluetoothGatt, int i) {
-                SendReceiveDataBean dataBean = new SendReceiveDataBean(SendReceiveDataBean.DataTypeOther, getResources().getString(R.string.ble_disconnected));
+                @Override
+                public void onDisConnected(boolean b, BleDevice bleDevice, BluetoothGatt bluetoothGatt, int i) {
+                    SendReceiveDataBean dataBean = new SendReceiveDataBean(SendReceiveDataBean.DataTypeOther, getResources().getString(R.string.ble_disconnected));
 
-                addDataInfoItem(dataBean);
-                finish();
-            }
-        });
+                    addDataInfoItem(dataBean);
+                    finish();
+                }
+            });
+        }
 
         mHandler = new Handler(new Handler.Callback() {
             @Override
@@ -297,6 +311,16 @@ public class BluetoothDataActivity extends BaseActivity {
         boolean supportFlowControl = HJBleApplication.shareInstance().isFlowControl();
         tvFlowControl.setVisibility(supportFlowControl ? View.VISIBLE : View.GONE);
         readVersionBtn = findViewById(R.id.read_version_btn);
+        btnCustomCommands = findViewById(R.id.btn_custom_commands);
+
+        // 初始化自定义指令蒙版管理器（右侧区域占屏幕70%宽度）
+        overlayManager = new CustomCommandOverlayManager(this, 0.85f);
+        overlayManager.setOnCommandExecuteListener(new CustomCommandOverlayManager.OnCommandExecuteListener() {
+            @Override
+            public void onCommandExecute(CustomCommand command) {
+                executeCustomCommand(command);
+            }
+        });
 
         sendBt = findViewById(R.id.send);
         sendEdit = findViewById(R.id.sendData);
@@ -383,6 +407,35 @@ public class BluetoothDataActivity extends BaseActivity {
             }
         });
 
+        // 自定义指令按钮点击事件
+        btnCustomCommands.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                overlayManager.showOverlay();
+            }
+        });
+
+    }
+
+    /**
+     * 执行自定义指令
+     */
+    private void executeCustomCommand(CustomCommand command) {
+        if (isTesting) {
+            Toast.makeText(this, "正在测试中，无法执行指令", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String commandContent = command.getCommand();
+        
+        // 根据指令类型处理数据
+        if (command.getType() == CustomCommand.TYPE_HEX) {
+            // 十六进制指令
+            preSendData(commandContent, true);
+        } else {
+            // ASCII指令
+            preSendData(commandContent, false);
+        }
     }
 
     // 添加数据
@@ -769,7 +822,9 @@ public class BluetoothDataActivity extends BaseActivity {
             sendEdit.setHint(getResources().getString(R.string.please_input_character_data));
         }
 
-        writeTypeBle(mSendCharact, HJBleApplication.shareInstance().isWriteTypeResponse());
+        if (mBleDevice != null) {
+            writeTypeBle(mSendCharact, HJBleApplication.shareInstance().isWriteTypeResponse());
+        }
 
         FastBleListener.getInstance().setNotifyBleCallback(BleConfig.Ble_Config_Receive_Service.getCharacteristicID(), new BleNotifyCallback() {
             @Override
@@ -886,8 +941,14 @@ public class BluetoothDataActivity extends BaseActivity {
     // 准备发送数据
     void preSendData(String sendString) {
 
+        preSendData(sendString, HJBleApplication.shareInstance().isBleHex())
+    }
+
+    // 准备发送数据
+    void preSendData(String sendString, boolean isHex) {
+
         byte[] tmpBytes;
-        if (HJBleApplication.shareInstance().isBleHex()) {
+        if (isHex) {
 
             if (sendString.length() % 2 != 0) {
                 Toast.makeText(BluetoothDataActivity.this, getResources().getString(R.string.hex_len_error), Toast.LENGTH_SHORT).show();
@@ -1020,6 +1081,11 @@ public class BluetoothDataActivity extends BaseActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        
+        // 销毁蒙版管理器
+        if (overlayManager != null) {
+            overlayManager.destroy();
+        }
 //        BleManager.getInstance().getBleBluetooth(mBleDevice).removeWriteCallback(BleConfig.Ble_Config_Send_Service.getCharacteristicID());
 //        BleManager.getInstance().getBleBluetooth(mBleDevice).removeWriteCallback(BleConfig.Ble_Data_Send_Service().getCharacteristicID());
 //        BleManager.getInstance().disconnect(mBleDevice);

@@ -198,6 +198,10 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
         rightTitleTxt.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                final Intent intent = new Intent(ScanBleActivity.this, BluetoothDataActivity.class);
+
+                ScanBleActivity.this.startActivity(intent);
+
                 if (mScanning) {
                     scanLeDevice(false);
                 }
