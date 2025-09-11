@@ -941,7 +941,7 @@ public class BluetoothDataActivity extends BaseActivity {
     // 准备发送数据
     void preSendData(String sendString) {
 
-        preSendData(sendString, HJBleApplication.shareInstance().isBleHex())
+        preSendData(sendString, HJBleApplication.shareInstance().isBleHex());
     }
 
     // 准备发送数据

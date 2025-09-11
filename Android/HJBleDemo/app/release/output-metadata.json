@@ -1,0 +1,20 @@
+{
+  "version": 3,
+  "artifactType": {
+    "type": "APK",
+    "kind": "Directory"
+  },
+  "applicationId": "com.hongjia.hjbledemo",
+  "variantName": "release",
+  "elements": [
+    {
+      "type": "SINGLE",
+      "filters": [],
+      "attributes": [],
+      "versionCode": 780,
+      "versionName": "7.8.0",
+      "outputFile": "HJBleDemo.apk"
+    }
+  ],
+  "elementType": "File"
+}
