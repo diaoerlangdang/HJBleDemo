@@ -55,7 +55,7 @@
                 android:layout_height="wrap_content"
                 android:textColor="@android:color/white"
                 android:paddingEnd="5dp"
-                android:text="ASCII"/>
+                android:text="@string/ascii_text"/>
 
             <ImageView
                 android:layout_width="wrap_content"

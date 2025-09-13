@@ -107,7 +107,7 @@ public class CustomCommandOverlayManager {
         
         // 标题
         TextView titleText = new TextView(activity);
-        titleText.setText("自定义指令");
+        titleText.setText(activity.getString(R.string.custom_command_overlay_title));
         titleText.setTextSize(18);
         titleText.setTextColor(Color.BLACK);
         titleText.setGravity(Gravity.CENTER);
@@ -115,7 +115,7 @@ public class CustomCommandOverlayManager {
         
         // 添加按钮
         Button addButton = new Button(activity);
-        addButton.setText("添加指令");
+        addButton.setText(activity.getString(R.string.add_command_button));
         addButton.setTextColor(Color.WHITE);
         addButton.setBackgroundResource(R.drawable.button_background); // 使用项目统一的按钮背景
         addButton.setPadding(20, 10, 20, 10);

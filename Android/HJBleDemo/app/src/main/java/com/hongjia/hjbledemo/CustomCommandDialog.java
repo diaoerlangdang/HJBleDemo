@@ -83,7 +83,7 @@ public class CustomCommandDialog extends Dialog {
             public void onNothingSelected(android.widget.AdapterView<?> parent) {}
         });
         
-        setTitle(currentCommand == null ? "添加指令" : "编辑指令");
+        setTitle(currentCommand == null ? getContext().getString(R.string.add_command_title) : getContext().getString(R.string.edit_command_title));
     }
     
     private void initData() {
@@ -103,11 +103,11 @@ public class CustomCommandDialog extends Dialog {
      */
     private void updateInputHints(int spinnerPosition) {
         if (spinnerPosition == CustomCommand.TYPE_HEX) { // position 0 = HEX
-            etCommand.setHint("请输入HEX数据（例：FF01A2B3）\n只能包含0-9、A-F，且必须为偶数位");
+            etCommand.setHint(getContext().getString(R.string.hex_input_hint));
             // 为HEX类型添加输入过滤器
             etCommand.setFilters(new InputFilter[]{new HexInputFilter(), new InputFilter.LengthFilter(1000)});
         } else { // position 1 = ASCII
-            etCommand.setHint("请输入ASCII数据（例：<RD_SOFT_VERSION>）");
+            etCommand.setHint(getContext().getString(R.string.ascii_input_hint));
             // 移除输入过滤器
             etCommand.setFilters(new InputFilter[]{new InputFilter.LengthFilter(1000)});
         }
@@ -121,12 +121,12 @@ public class CustomCommandDialog extends Dialog {
         int type = spinnerPosition;
         
         if (TextUtils.isEmpty(name)) {
-            Toast.makeText(getContext(), "请输入指令名称", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), R.string.error_empty_command_name, Toast.LENGTH_SHORT).show();
             return;
         }
         
         if (TextUtils.isEmpty(command)) {
-            Toast.makeText(getContext(), "请输入指令内容", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), R.string.error_empty_command_content, Toast.LENGTH_SHORT).show();
             return;
         }
         
@@ -169,22 +169,22 @@ public class CustomCommandDialog extends Dialog {
         
         // 检查是否为空
         if (hex.isEmpty()) {
-            return "HEX指令不能为空";
+            return getContext().getString(R.string.error_hex_empty);
         }
         
         // 检查长度是否为偶数
         if (hex.length() % 2 != 0) {
-            return "HEX指令长度必须为偶数（每个字节由两个字符表示）";
+            return getContext().getString(R.string.error_hex_length);
         }
         
         // 检查是否只包含0-9和a-f（大小写不敏感）
         if (!hex.matches("^[0-9A-Fa-f]+$")) {
-            return "HEX指令只能包含0-9和A-F的字符";
+            return getContext().getString(R.string.error_hex_invalid_chars);
         }
         
         // 检查长度限制（避免过长的指令）
         if (hex.length() > 1000) {
-            return "HEX指令过长，最大支持500个字节";
+            return getContext().getString(R.string.error_hex_too_long);
         }
         
         return null; // 验证通过

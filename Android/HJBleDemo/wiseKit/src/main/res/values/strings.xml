@@ -11,4 +11,6 @@
     <string name="loading">正在加载...</string>
     <string name="load_succeed">加载成功</string>
     <string name="load_fail">加载失败</string>
+    <string name="chat_tab">聊天</string>
+    <string name="pull_to_refresh_text">下拉刷新</string>
 </resources>

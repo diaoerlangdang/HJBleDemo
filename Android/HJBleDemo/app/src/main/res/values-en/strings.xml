@@ -101,4 +101,36 @@
     <string name="data_type_title_other">Other：</string>
     <string name="data_type_title_failed">Failed：</string>
     <string name="read_soft_version_btn">Read Version</string>
+    
+    <!-- 新增的硬编码文字 -->
+    <string name="copyright_text">Copyright (c) Tangshan Hongjia Electronics Technology Co., Ltd. All rights reserved.</string>
+    <string name="custom_commands">Custom Commands</string>
+    <string name="command_name">Command Name</string>
+    <string name="command_content">Command Content</string>
+    <string name="edit">Edit</string>
+    <string name="delete">Delete</string>
+    <string name="command_name_label">Command Name:</string>
+    <string name="command_type_label">Command Type:</string>
+    <string name="command_content_label">Command Content:</string>
+    <string name="command_name_hint">Please enter command name</string>
+    <string name="command_content_hint">Please enter command content</string>
+    <string name="ascii_text">ASCII</string>
+    <string name="hex_text">HEX</string>
+    <string name="chat_tab">Chat</string>
+    <string name="pull_to_refresh_text">Pull to Refresh</string>
+    <string name="other_text">Other</string>
+    
+    <!-- Java代码中的硬编码文字 -->
+    <string name="add_command_title">Add Command</string>
+    <string name="edit_command_title">Edit Command</string>
+    <string name="hex_input_hint">Please enter HEX data (e.g.: FF01A2B3)\nOnly contains 0-9, A-F, and must be even digits</string>
+    <string name="ascii_input_hint">Please enter ASCII data (e.g.: &lt;RD_SOFT_VERSION&gt;)</string>
+    <string name="error_empty_command_name">Please enter command name</string>
+    <string name="error_empty_command_content">Please enter command content</string>
+    <string name="error_hex_empty">HEX command cannot be empty</string>
+    <string name="error_hex_length">HEX command length must be even (each byte is represented by two characters)</string>
+    <string name="error_hex_invalid_chars">HEX command can only contain 0-9 and A-F characters</string>
+    <string name="error_hex_too_long">HEX command is too long, maximum support 500 bytes</string>
+    <string name="custom_command_overlay_title">Custom Commands</string>
+    <string name="add_command_button">Add Command</string>
 </resources>

@@ -17,7 +17,7 @@
             android:id="@+id/tv_data_type"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="其他"/>
+            android:text="@string/other_text"/>
 
         <TextView
             android:id="@+id/tv_data_time"

@@ -102,5 +102,37 @@
     <string name="data_type_title_other">其他：</string>
     <string name="data_type_title_failed">失败：</string>
     <string name="read_soft_version_btn">读取版本号</string>
+    
+    <!-- 新增的硬编码文字 -->
+    <string name="copyright_text">Copyright (c) 唐山宏佳电子科技有限公司 All rights reserved.</string>
+    <string name="custom_commands">自定义指令</string>
+    <string name="command_name">指令名称</string>
+    <string name="command_content">指令内容</string>
+    <string name="edit">编辑</string>
+    <string name="delete">删除</string>
+    <string name="command_name_label">指令名称：</string>
+    <string name="command_type_label">指令类型：</string>
+    <string name="command_content_label">指令内容：</string>
+    <string name="command_name_hint">请输入指令名称</string>
+    <string name="command_content_hint">请输入指令内容</string>
+    <string name="ascii_text">ASCII</string>
+    <string name="hex_text">HEX</string>
+    <string name="chat_tab">聊天</string>
+    <string name="pull_to_refresh_text">下拉刷新</string>
+    <string name="other_text">其他</string>
+    
+    <!-- Java代码中的硬编码文字 -->
+    <string name="add_command_title">添加指令</string>
+    <string name="edit_command_title">编辑指令</string>
+    <string name="hex_input_hint">请输入HEX数据（例：FF01A2B3）\n只能包含0-9、A-F，且必须为偶数位</string>
+    <string name="ascii_input_hint">请输入ASCII数据（例：&lt;RD_SOFT_VERSION&gt;）</string>
+    <string name="error_empty_command_name">请输入指令名称</string>
+    <string name="error_empty_command_content">请输入指令内容</string>
+    <string name="error_hex_empty">检指令不能为空</string>
+    <string name="error_hex_length">检指令长度必须为偶数（每个字节由两个字符表示）</string>
+    <string name="error_hex_invalid_chars">检指令只能包含0-9和A-F的字符</string>
+    <string name="error_hex_too_long">检指令过长，最大支持51个字节</string>
+    <string name="custom_command_overlay_title">自定义指令</string>
+    <string name="add_command_button">添加指令</string>
 
 </resources>

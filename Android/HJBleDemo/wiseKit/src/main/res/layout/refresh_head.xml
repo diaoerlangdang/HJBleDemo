@@ -57,7 +57,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerInParent="true"
-                android:text="下拉刷新"
+                android:text="@string/pull_to_refresh_text"
                 android:textColor="#ffffff"
                 android:textSize="16sp" />
 

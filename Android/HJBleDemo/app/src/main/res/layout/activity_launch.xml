@@ -18,7 +18,7 @@
         android:layout_alignParentBottom="true"
         android:layout_marginBottom="10dp"
         android:textSize="10sp"
-        android:text="Copyright (c) 唐山宏佳电子科技有限公司 All rights reserved."/>
+        android:text="@string/copyright_text"/>
 
 
 </RelativeLayout>
