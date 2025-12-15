@@ -90,7 +90,8 @@
     _data = data;
     
     _rssiLabel.text = [NSString stringWithFormat:@"RSSI:%@dB",data.RSSI];
-    _nameLabel.text = data.peripheral.name;
+//    _nameLabel.text = data.peripheral.name;
+    _nameLabel.text = [data.advertisementData objectForKey:CBAdvertisementDataLocalNameKey];
     
     _timeLabel.text = [NSString stringWithFormat:@"time: %@", data.formatDateTime];
     if (![WWUtils isEmptyString:data.mac]) {
