@@ -32,6 +32,7 @@
 - (void)initWindows
 {
     [SVProgressHUD appearance].defaultStyle = SVProgressHUDStyleDark;
+    [SVProgressHUD appearance].defaultMaskType = SVProgressHUDMaskTypeClear;
     //设置toast位置
     [CSToastManager setDefaultPosition:CSToastPositionCenter];
     

@@ -25,6 +25,7 @@
 @property(nonatomic,strong) WWBluetoothLE *ble;
 
 @property(nonatomic,strong) HJBleScanData *selectedScanData;
+@property(nonatomic, strong) NSDate *lastReloadTime;
 
 @end
 
@@ -140,6 +141,7 @@
 
 -(void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
+    NSLog(@"====");
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
     
     [self stopScan];
@@ -403,7 +405,17 @@
         [_hjBleArray addObject:scanData];
     }
     
-    [self.tableView reloadData];
+    [self throttleReloadData];
+}
+
+- (void)throttleReloadData
+{
+    NSTimeInterval interval = 0.3;
+    NSDate *now = [NSDate date];
+    if (_lastReloadTime == nil || [now timeIntervalSinceDate:_lastReloadTime] >= interval) {
+        _lastReloadTime = now;
+        [self.tableView reloadData];
+    }
 }
 
 #pragma mark -- WWBluetoothLEDelegate
