@@ -194,6 +194,47 @@
     </RelativeLayout>
 
     <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="10dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:textColor="@android:color/black"
+            android:text="@string/save_log"/>
+
+        <Switch
+            android:id="@+id/switch_save_log"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:switchMinWidth="20dp"
+            android:thumb="@drawable/switch_thumb"
+            android:track="@drawable/switch_track"/>
+
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#E0E0E0"
+        android:padding="15dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:textColor="@android:color/black"
+            android:text="@string/info_of_test_data"/>
+
+
+
+    </RelativeLayout>
+
+    <RelativeLayout
         android:id="@+id/data_len_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -249,6 +290,29 @@
 
     </RelativeLayout>
 
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="10dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:textColor="@android:color/black"
+            android:text="@string/use_file_test"/>
+
+        <Switch
+            android:id="@+id/switch_use_file_test"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:switchMinWidth="20dp"
+            android:thumb="@drawable/switch_thumb"
+            android:track="@drawable/switch_track"/>
+
+    </RelativeLayout>
 
     <RelativeLayout
         android:id="@+id/file_path_layout"
@@ -279,6 +343,7 @@
     </RelativeLayout>
 
     <RelativeLayout
+        android:id="@+id/file_per_group_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="10dp">
@@ -287,22 +352,26 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
-            android:textColor="@android:color/black"
-            android:text="@string/use_file_test"/>
+            android:text="@string/test_file_send_size_per_packet"
+            android:textColor="@android:color/black" />
 
-        <Switch
-            android:id="@+id/switch_use_file_test"
+        <TextView
+            android:id="@+id/file_per_group_txt"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:paddingTop="5dp"
+            android:paddingBottom="5dp"
+            android:paddingLeft="15dp"
+            android:paddingRight="15dp"
             android:layout_alignParentEnd="true"
-            android:layout_centerVertical="true"
-            android:switchMinWidth="20dp"
-            android:thumb="@drawable/switch_thumb"
-            android:track="@drawable/switch_track"/>
+            android:textColor="@android:color/black"
+            android:text="200"/>
+
 
     </RelativeLayout>
 
     <RelativeLayout
+        android:id="@+id/file_interval_per_packet_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="10dp">
@@ -311,19 +380,24 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
-            android:textColor="@android:color/black"
-            android:text="@string/save_log"/>
+            android:text="@string/test_file_interval_per_packet"
+            android:textColor="@android:color/black" />
 
-        <Switch
-            android:id="@+id/switch_save_log"
+        <TextView
+            android:id="@+id/file_interval_per_packet_txt"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:paddingTop="5dp"
+            android:paddingBottom="5dp"
+            android:paddingLeft="15dp"
+            android:paddingRight="15dp"
             android:layout_alignParentEnd="true"
-            android:layout_centerVertical="true"
-            android:switchMinWidth="20dp"
-            android:thumb="@drawable/switch_thumb"
-            android:track="@drawable/switch_track"/>
+            android:textColor="@android:color/black"
+            android:text="100"/>
+
 
     </RelativeLayout>
+
+
 
 </LinearLayout>

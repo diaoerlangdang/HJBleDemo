@@ -193,6 +193,28 @@ public class HJBleApplication extends Application {
         SPUtils.put(getAppContext(), "testGapTime", testGapTime);
     }
 
+    // 测试文件每包下发数量
+    public int testFilePerGroupLen() {
+
+        return (Integer)SPUtils.get(getAppContext(), "testFilePerGroupLen", 200);
+    }
+
+    public void setTestFilePerGroupLen(int len) {
+
+        SPUtils.put(getAppContext(), "testFilePerGroupLen", len);
+    }
+
+    // 测试文件每包下发间隔
+    public int testFileIntervalPerPacket() {
+
+        return (Integer)SPUtils.get(getAppContext(), "testFileIntervalPerPacket", 100);
+    }
+
+    public void setTestFileIntervalPerPacket(int len) {
+
+        SPUtils.put(getAppContext(), "testFileIntervalPerPacket", len);
+    }
+
     // 测试文件路径
     public String testFilePath() {
 

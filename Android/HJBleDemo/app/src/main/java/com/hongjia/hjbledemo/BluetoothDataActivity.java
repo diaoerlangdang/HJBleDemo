@@ -503,8 +503,7 @@ public class BluetoothDataActivity extends BaseActivity {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                long gapTime = HJBleApplication.shareInstance().testGapTime();
-                final int totalDataLen = HJBleApplication.shareInstance().testDataLen();
+
                 final boolean isBleConfig = HJBleApplication.shareInstance().isBleConfig();
                 // 是否使用文件测试
                 final boolean bUseFileTest = HJBleApplication.shareInstance().useFileTest();
@@ -517,6 +516,8 @@ public class BluetoothDataActivity extends BaseActivity {
                 mHandler.sendMessage(message2);
 
                 if (bUseFileTest) {
+                    int gapTime = HJBleApplication.shareInstance().testFileIntervalPerPacket();
+                    int fileGroupLen = HJBleApplication.shareInstance().testFilePerGroupLen();
                     try {
                         Uri uri = HJBleApplication.shareInstance().getTestFileUri();
 //                        File file = new File(filePath);// 成文件路径中获取文件
@@ -541,53 +542,59 @@ public class BluetoothDataActivity extends BaseActivity {
                         long startTime = System.currentTimeMillis(); // 获取开始时间戳
 
                         int groupDataLen = BleManager.getInstance().getSplitWriteNum();
-                        byte[] inputBuffer = new byte[groupDataLen];
-                        int readCount;
+                        byte[] fileBuffer = new byte[fileGroupLen];
+                        int fileReadCount;
                         long fileTotalLen = 0;
-                        while ((readCount = inputStream.read(inputBuffer, 0, groupDataLen)) != -1) {
-                            if (bBusyBle) {
-                                stopTest();
-                                runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        Toast.makeText(BluetoothDataActivity.this, getResources().getString(R.string.ble_busy), Toast.LENGTH_SHORT).show();
-                                    }
-                                });
-                                fileInputStream.close();
-                                inputStream.close();
-                                return;
-                            }
-
-                            fileTotalLen += readCount;
-
-                            byte[] sendBytes = new byte[readCount];
-                            System.arraycopy(inputBuffer, 0, sendBytes, 0, readCount);
-
-                            final int sendLen = readCount;
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    if (!isBleConfig) {
-                                        addSendByteCount(sendLen);
-//                                        sendCountBySecond += sendLen;
-                                    }
+                        while ((fileReadCount = inputStream.read(fileBuffer, 0, fileGroupLen)) != -1 && isTesting) {
+                            int offset = 0;
+                            while (offset < fileReadCount && isTesting) {
+                                if (bBusyBle) {
+                                    stopTest();
+                                    runOnUiThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            Toast.makeText(BluetoothDataActivity.this, getResources().getString(R.string.ble_busy), Toast.LENGTH_SHORT).show();
+                                        }
+                                    });
+                                    fileInputStream.close();
+                                    inputStream.close();
+                                    return;
                                 }
-                            });
 
-                            if (!sendDataSynchronization(BleManager.getInstance(), mBleDevice, mSendCharact, sendBytes)) {
-                                SendReceiveDataBean dataBean = new SendReceiveDataBean(SendReceiveDataBean.DataTypeFailed, getResources().getString(R.string.send_failure));
+                                int sendLen = Math.min(groupDataLen, fileReadCount - offset);
+                                byte[] sendBytes = new byte[sendLen];
+                                System.arraycopy(fileBuffer, offset, sendBytes, 0, sendLen);
 
-                                addDataInfoItem(dataBean);
+                                fileTotalLen += sendLen;
 
-                                stopTest();
+                                final int sendLenFinal = sendLen;
                                 runOnUiThread(new Runnable() {
                                     @Override
                                     public void run() {
-                                        Toast.makeText(BluetoothDataActivity.this, getResources().getString(R.string.ble_busy), Toast.LENGTH_SHORT).show();
+                                        if (!isBleConfig) {
+                                            addSendByteCount(sendLenFinal);
+                                        }
                                     }
                                 });
-                                fileInputStream.close();
-                                inputStream.close();
+
+                                if (!sendDataSynchronization(BleManager.getInstance(), mBleDevice, mSendCharact, sendBytes)) {
+                                    SendReceiveDataBean dataBean = new SendReceiveDataBean(SendReceiveDataBean.DataTypeFailed, getResources().getString(R.string.send_failure));
+
+                                    addDataInfoItem(dataBean);
+
+                                    stopTest();
+                                    runOnUiThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            Toast.makeText(BluetoothDataActivity.this, getResources().getString(R.string.ble_busy), Toast.LENGTH_SHORT).show();
+                                        }
+                                    });
+                                    fileInputStream.close();
+                                    inputStream.close();
+                                    return;
+                                }
+
+                                offset += sendLen;
                             }
 
                             if (gapTime > 0) {
@@ -627,6 +634,8 @@ public class BluetoothDataActivity extends BaseActivity {
                     }
 
                 } else {
+                    long gapTime = HJBleApplication.shareInstance().testGapTime();
+                    final int totalDataLen = HJBleApplication.shareInstance().testDataLen();
                     int groupDataLen = BleManager.getInstance().getSplitWriteNum();
 
                     long startTime = System.currentTimeMillis(); // 获取开始时间戳

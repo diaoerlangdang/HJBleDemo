@@ -49,7 +49,10 @@
     <string name="failed_to_disable_high_speed_mode">Failed to disable high speed mode</string>
     <string name="data_length_of_each_packet_title">Data length of each packet</string>
     <string name="total_length_of_test_data">Total length of test data </string>
+    <string name="info_of_test_data">Test Information</string>
     <string name="data_delivery_interval">Data delivery interval (ms)</string>
+    <string name="test_file_interval_per_packet">Test File Send Interval Per Packet (ms)</string>
+    <string name="test_file_send_size_per_packet">Test File Send Size Per Packet</string>
     <string name="config_mode">Configuration mode</string>
     <string name="data_mode">Data mode</string>
     <string name="yes">Yes</string>

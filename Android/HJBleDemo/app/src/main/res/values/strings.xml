@@ -50,7 +50,10 @@
     <string name="failed_to_disable_high_speed_mode">关闭高速模式失败</string>
     <string name="data_length_of_each_packet_title">每包数据长度</string>
     <string name="total_length_of_test_data">测试数据总长度</string>
+    <string name="info_of_test_data">测试信息</string>
     <string name="data_delivery_interval">下发数据时间间隙(ms)</string>
+    <string name="test_file_interval_per_packet">测试文件每包发送间隔(ms)</string>
+    <string name="test_file_send_size_per_packet">测试文件每包发送大小</string>
     <string name="config_mode">配置模式</string>
     <string name="data_mode">数据模式</string>
     <string name="yes">是</string>

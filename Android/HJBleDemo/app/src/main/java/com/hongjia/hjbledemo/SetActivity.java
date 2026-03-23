@@ -59,6 +59,12 @@ public class SetActivity extends BaseActivity {
     // 下发数据时间间隙
     private RelativeLayout selecGapTimeBtn;
 
+    // 测试文件每包下发大小
+    private RelativeLayout selecFilePerGroupBtn;
+
+    // 测试文件每包下发大小
+    private RelativeLayout selecFileIntervalPerPacketBtn;
+
     private RelativeLayout selectFilePathBtn;
 
     private Switch switchUseFileTest;
@@ -78,6 +84,10 @@ public class SetActivity extends BaseActivity {
 
     // 下发数据时间间隙
     private TextView gapTimeTxt;
+
+    // 测试文件每包下发数
+    private TextView filePerGroupTxt;
+    private TextView fileIntervalPerPacketTxt;
 
     // 文件路径
     private TextView filePathTxt;
@@ -142,6 +152,9 @@ public class SetActivity extends BaseActivity {
 
         dataLenTxt = findViewById(R.id.data_len_txt);
         gapTimeTxt = findViewById(R.id.gap_time_txt);
+
+        filePerGroupTxt = findViewById(R.id.file_per_group_txt);
+        fileIntervalPerPacketTxt = findViewById(R.id.file_interval_per_packet_txt);
 
         filePathTxt = findViewById(R.id.file_path_txt);
         switchUseFileTest = findViewById(R.id.switch_use_file_test);
@@ -237,6 +250,50 @@ public class SetActivity extends BaseActivity {
             }
         });
 
+        selecFilePerGroupBtn = findViewById(R.id.file_per_group_layout);
+        selecFilePerGroupBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                final EditText inputServer = new EditText(SetActivity.this);
+                inputServer.setInputType(InputType.TYPE_CLASS_NUMBER);
+                inputServer.setText(filePerGroupTxt.getText());
+                AlertDialog.Builder builder = new AlertDialog.Builder(SetActivity.this);
+                builder.setTitle(getResources().getString(R.string.test_file_send_size_per_packet)).setView(inputServer)
+                        .setNegativeButton(getResources().getString(R.string.cancel_btn), null);
+                builder.setPositiveButton(getResources().getString(R.string.sure_btn), new DialogInterface.OnClickListener() {
+
+                    public void onClick(DialogInterface dialog, int which) {
+                        String info = inputServer.getText().toString();
+                        filePerGroupTxt.setText(info);
+                        HJBleApplication.shareInstance().setTestFilePerGroupLen(Integer.parseInt(info));
+                    }
+                });
+                builder.show();
+            }
+        });
+
+        selecFileIntervalPerPacketBtn = findViewById(R.id.file_interval_per_packet_layout);
+        selecFileIntervalPerPacketBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                final EditText inputServer = new EditText(SetActivity.this);
+                inputServer.setInputType(InputType.TYPE_CLASS_NUMBER);
+                inputServer.setText(fileIntervalPerPacketTxt.getText());
+                AlertDialog.Builder builder = new AlertDialog.Builder(SetActivity.this);
+                builder.setTitle(getResources().getString(R.string.test_file_interval_per_packet)).setView(inputServer)
+                        .setNegativeButton(getResources().getString(R.string.cancel_btn), null);
+                builder.setPositiveButton(getResources().getString(R.string.sure_btn), new DialogInterface.OnClickListener() {
+
+                    public void onClick(DialogInterface dialog, int which) {
+                        String info = inputServer.getText().toString();
+                        fileIntervalPerPacketTxt.setText(info);
+                        HJBleApplication.shareInstance().setTestFileIntervalPerPacket(Integer.parseInt(info));
+                    }
+                });
+                builder.show();
+            }
+        });
+
         selectFilePathBtn = findViewById(R.id.file_path_layout);
         selectFilePathBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -278,6 +335,7 @@ public class SetActivity extends BaseActivity {
         }
 
         dataLenTxt.setText("" + HJBleApplication.shareInstance().testDataLen());
+        filePerGroupTxt.setText("" + HJBleApplication.shareInstance().testFilePerGroupLen());
         gapTimeTxt.setText("" + HJBleApplication.shareInstance().testGapTime());
         filePathTxt.setText(getFileName(HJBleApplication.shareInstance().getTestFileUri()));
 
