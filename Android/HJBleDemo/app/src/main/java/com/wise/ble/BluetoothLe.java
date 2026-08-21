@@ -1,5 +1,7 @@
 package com.wise.ble;
 
+import android.annotation.SuppressLint;
+
 import static android.bluetooth.BluetoothDevice.TRANSPORT_LE;
 
 import java.util.List;
@@ -19,6 +21,7 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.util.Log;
 
+@SuppressLint("MissingPermission")
 public class BluetoothLe
 {
     private final static String TAG = BluetoothLe.class.getSimpleName();

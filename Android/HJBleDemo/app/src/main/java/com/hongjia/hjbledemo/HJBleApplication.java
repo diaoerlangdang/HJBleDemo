@@ -14,9 +14,6 @@ public class HJBleApplication extends Application {
 
     private  static HJBleApplication instance;
 
-    // 是否为配置模式
-    private boolean isBleConfig = false;
-
     // 测试文件uri
     private Uri testFileUri;
 
@@ -36,22 +33,14 @@ public class HJBleApplication extends Application {
 
         BleManager.getInstance()
                 .enableLog(true)
-                .setReConnectCount(1, 5000)
-                .setConnectOverTime(5000)
+                .setReConnectCount(0)
+                .setConnectOverTime(15000)
                 .setOperateTimeout(5000);
 
     }
 
     public static HJBleApplication shareInstance() {
         return instance;
-    }
-
-    public boolean isBleConfig() {
-        return isBleConfig;
-    }
-
-    public void setBleConfig(boolean bleConfig) {
-        isBleConfig = bleConfig;
     }
 
     // 是否存储日志

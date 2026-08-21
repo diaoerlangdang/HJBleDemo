@@ -1,28 +1,23 @@
 package com.hongjia.hjbledemo;
 
-import android.bluetooth.BluetoothGatt;
-
 import com.clj.fastble.BleManager;
-import com.clj.fastble.callback.BleGattCallback;
 import com.clj.fastble.callback.BleNotifyCallback;
 import com.clj.fastble.data.BleDevice;
 import com.clj.fastble.exception.BleException;
 import com.wise.ble.WiseCharacteristic;
 
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 // 需要先初始化 BleManager
 public class FastBleListener {
 
    private static FastBleListener mBleListener = null;
 
-   private BleGattCallback connectBleCallBack;
-
    // 通知回调
-   private HashMap<String, BleNotifyCallback> notifyBleCallbackMap = new HashMap<>();
+   private final ConcurrentHashMap<String, BleNotifyCallback> notifyBleCallbackMap = new ConcurrentHashMap<>();
 
    // 高速
-   private HashMap<String, Boolean> highRateMap = new HashMap<>();
+   private final ConcurrentHashMap<String, Boolean> highRateMap = new ConcurrentHashMap<>();
 
    private FastBleListener()
    {
@@ -38,27 +33,16 @@ public class FastBleListener {
       return mBleListener;
    }
 
-   public void setConnectBleCallBack(BleGattCallback connectBleCallBack) {
-      this.connectBleCallBack = connectBleCallBack;
+   public BleNotifyCallback getNotifyBleCallback(BleDevice device, WiseCharacteristic characteristic) {
+      return notifyBleCallbackMap.get(notifyKey(device, characteristic));
    }
 
-   public BleGattCallback getConnectBleCallBack() {
-      return connectBleCallBack;
+   public void setNotifyBleCallback(BleDevice device, WiseCharacteristic characteristic, BleNotifyCallback notifyBleCallback) {
+      notifyBleCallbackMap.put(notifyKey(device, characteristic), notifyBleCallback);
    }
 
-   public BleNotifyCallback getNotifyBleCallback(String key) {
-
-      if (notifyBleCallbackMap.containsKey(key)) {
-         notifyBleCallbackMap.get(key);
-      }
-      return null;
-   }
-
-   public void setNotifyBleCallback(String characteristicId, BleNotifyCallback notifyBleCallback) {
-      if (notifyBleCallbackMap.containsKey(characteristicId)) {
-         notifyBleCallbackMap.remove(characteristicId);
-      }
-      this.notifyBleCallbackMap.put(characteristicId, notifyBleCallback);
+   public void removeNotifyBleCallback(BleDevice device, WiseCharacteristic characteristic) {
+      notifyBleCallbackMap.remove(notifyKey(device, characteristic));
    }
 
    // 设置高速模式
@@ -78,49 +62,6 @@ public class FastBleListener {
       }
    }
 
-   public BleGattCallback getBleGattCallBack() {
-      BleGattCallback bleGattCallback = new BleGattCallback() {
-         @Override
-         public void onStartConnect() {
-            if (connectBleCallBack != null) {
-               connectBleCallBack.onStartConnect();
-            }
-         }
-
-         @Override
-         public void onConnectFail(BleDevice bleDevice, BleException e) {
-            if (connectBleCallBack != null) {
-               connectBleCallBack.onConnectFail(bleDevice, e);
-            }
-         }
-
-         @Override
-         public void onConnectSuccess(BleDevice bleDevice, BluetoothGatt bluetoothGatt, int i) {
-            if (connectBleCallBack != null) {
-               connectBleCallBack.onConnectSuccess(bleDevice, bluetoothGatt, i);
-            }
-
-            if (highRateMap.containsKey(bleDevice.getMac())) {
-               highRateMap.remove(bleDevice.getMac());
-            }
-            highRateMap.put(bleDevice.getMac(), false);
-         }
-
-         @Override
-         public void onDisConnected(boolean b, BleDevice bleDevice, BluetoothGatt bluetoothGatt, int i) {
-            if (connectBleCallBack != null) {
-               connectBleCallBack.onDisConnected(b, bleDevice, bluetoothGatt, i);
-            }
-
-            if (highRateMap.containsKey(bleDevice.getMac())) {
-               highRateMap.remove(bleDevice.getMac());
-            }
-         }
-      };
-
-      return bleGattCallback;
-   }
-
    /**
     * 打开通知
     * @param bleDevice  设备
@@ -130,28 +71,35 @@ public class FastBleListener {
       BleManager.getInstance().notify(bleDevice, characteristic.getServiceID(), characteristic.getCharacteristicID(), new BleNotifyCallback() {
          @Override
          public void onNotifySuccess() {
-            String id = characteristic.getCharacteristicID();
-            if (notifyBleCallbackMap.containsKey(id)) {
-               notifyBleCallbackMap.get(id).onNotifySuccess();
-            }
+            BleNotifyCallback callback = getNotifyBleCallback(bleDevice, characteristic);
+            if (callback != null) callback.onNotifySuccess();
          }
 
          @Override
          public void onNotifyFailure(BleException e) {
-            String id = characteristic.getCharacteristicID();
-            if (notifyBleCallbackMap.containsKey(id)) {
-               notifyBleCallbackMap.get(id).onNotifyFailure(e);
-            }
+            BleNotifyCallback callback = getNotifyBleCallback(bleDevice, characteristic);
+            if (callback != null) callback.onNotifyFailure(e);
          }
 
          @Override
          public void onCharacteristicChanged(byte[] bytes) {
-            String id = characteristic.getCharacteristicID();
-            if (notifyBleCallbackMap.containsKey(id)) {
-               notifyBleCallbackMap.get(id).onCharacteristicChanged(bytes);
-            }
+            BleNotifyCallback callback = getNotifyBleCallback(bleDevice, characteristic);
+            if (callback != null) callback.onCharacteristicChanged(bytes);
          }
       });
+   }
+
+   private String notifyKey(BleDevice device, WiseCharacteristic characteristic) {
+      return device.getMac() + "|" + characteristic.getServiceID() + "|" + characteristic.getCharacteristicID();
+   }
+
+   public void removeDevice(BleDevice device) {
+      if (device == null) return;
+      String prefix = device.getMac() + "|";
+      for (String key : notifyBleCallbackMap.keySet()) {
+         if (key.startsWith(prefix)) notifyBleCallbackMap.remove(key);
+      }
+      highRateMap.remove(device.getMac());
    }
 
 }

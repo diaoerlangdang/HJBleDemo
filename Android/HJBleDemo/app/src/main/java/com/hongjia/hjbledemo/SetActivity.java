@@ -95,6 +95,7 @@ public class SetActivity extends BaseActivity {
     private boolean isConfig;
 
     private BleDevice mBleDevice;
+    private BleDeviceSession deviceSession;
 
     @Override
     protected int getPageLayoutId() {
@@ -113,6 +114,11 @@ public class SetActivity extends BaseActivity {
         final Intent intent = getIntent();
         isConfig = intent.getBooleanExtra(EXTRAS_SET_IS_CONFIG, false);
         mBleDevice = intent.getParcelableExtra(EXTRAS_DEVICE);
+        if (mBleDevice == null) {
+            finish();
+            return;
+        }
+        deviceSession = BleDeviceSession.get(mBleDevice);
 
         setTitle(getResources().getString(R.string.setting_title));
 
@@ -219,9 +225,10 @@ public class SetActivity extends BaseActivity {
                 builder.setPositiveButton(getResources().getString(R.string.sure_btn), new DialogInterface.OnClickListener() {
 
                     public void onClick(DialogInterface dialog, int which) {
-                        String info = inputServer.getText().toString();
-                        dataLenTxt.setText(info);
-                        HJBleApplication.shareInstance().setTestDataLen(Integer.parseInt(info));
+                        Integer value = parseNumber(inputServer, 1);
+                        if (value == null) return;
+                        dataLenTxt.setText(String.valueOf(value));
+                        HJBleApplication.shareInstance().setTestDataLen(value);
                     }
                 });
                 builder.show();
@@ -241,9 +248,10 @@ public class SetActivity extends BaseActivity {
                 builder.setPositiveButton(getResources().getString(R.string.sure_btn), new DialogInterface.OnClickListener() {
 
                     public void onClick(DialogInterface dialog, int which) {
-                        String info = inputServer.getText().toString();
-                        gapTimeTxt.setText(info);
-                        HJBleApplication.shareInstance().setTestGapTime(Integer.parseInt(info));
+                        Integer value = parseNumber(inputServer, 0);
+                        if (value == null) return;
+                        gapTimeTxt.setText(String.valueOf(value));
+                        HJBleApplication.shareInstance().setTestGapTime(value);
                     }
                 });
                 builder.show();
@@ -263,9 +271,10 @@ public class SetActivity extends BaseActivity {
                 builder.setPositiveButton(getResources().getString(R.string.sure_btn), new DialogInterface.OnClickListener() {
 
                     public void onClick(DialogInterface dialog, int which) {
-                        String info = inputServer.getText().toString();
-                        filePerGroupTxt.setText(info);
-                        HJBleApplication.shareInstance().setTestFilePerGroupLen(Integer.parseInt(info));
+                        Integer value = parseNumber(inputServer, 1);
+                        if (value == null) return;
+                        filePerGroupTxt.setText(String.valueOf(value));
+                        HJBleApplication.shareInstance().setTestFilePerGroupLen(value);
                     }
                 });
                 builder.show();
@@ -285,9 +294,10 @@ public class SetActivity extends BaseActivity {
                 builder.setPositiveButton(getResources().getString(R.string.sure_btn), new DialogInterface.OnClickListener() {
 
                     public void onClick(DialogInterface dialog, int which) {
-                        String info = inputServer.getText().toString();
-                        fileIntervalPerPacketTxt.setText(info);
-                        HJBleApplication.shareInstance().setTestFileIntervalPerPacket(Integer.parseInt(info));
+                        Integer value = parseNumber(inputServer, 0);
+                        if (value == null) return;
+                        fileIntervalPerPacketTxt.setText(String.valueOf(value));
+                        HJBleApplication.shareInstance().setTestFileIntervalPerPacket(value);
                     }
                 });
                 builder.show();
@@ -302,11 +312,12 @@ public class SetActivity extends BaseActivity {
 //                intent.setType("application/hj");
                 intent.setType("*/*");
                 intent.addCategory(Intent.CATEGORY_OPENABLE);
+                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
                 startActivityForResult(intent, SELECT_FILE_REQ);
             }
         });
 
-        if (HJBleApplication.shareInstance().isBleConfig()) {
+        if (deviceSession.isConfigMode()) {
             modeTxt.setText(getResources().getString(R.string.config_mode));
         }
         else {
@@ -359,11 +370,11 @@ public class SetActivity extends BaseActivity {
                 switch (menuItem.getItemId()){
                     case R.id.data_mode:
                         modeTxt.setText(getResources().getString(R.string.data_mode));
-                        HJBleApplication.shareInstance().setBleConfig(false);
+                        deviceSession.setConfigMode(false);
                         return true;
                     case R.id.config_mode:
                         modeTxt.setText(getResources().getString(R.string.config_mode));
-                        HJBleApplication.shareInstance().setBleConfig(true);
+                        deviceSession.setConfigMode(true);
                         return true;
 
                     default:
@@ -465,12 +476,21 @@ public class SetActivity extends BaseActivity {
 
         switch (requestCode) {
             case SELECT_FILE_REQ: {
+                if (data == null || data.getData() == null) return;
                 final Uri uri = data.getData();
 //                final String path = FileInfoUtils.getPath(this, uri);
                 String fileName = getFileName(uri);
                 filePathTxt.setText(fileName);
                 // 可使关机后也可以持续使用
-                getContentResolver().takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                try {
+                    if ((data.getFlags() & Intent.FLAG_GRANT_READ_URI_PERMISSION) == 0) {
+                        throw new SecurityException("Read permission was not granted");
+                    }
+                    getContentResolver().takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                } catch (SecurityException e) {
+                    Toast.makeText(this, R.string.file_permission_failed, Toast.LENGTH_LONG).show();
+                    return;
+                }
 //                HJBleApplication.shareInstance().setTestFilePath(fileName);
                 HJBleApplication.shareInstance().setTestFileUri(uri);
                 break;
@@ -513,10 +533,11 @@ public class SetActivity extends BaseActivity {
             Cursor cursor = getContentResolver().query(uri, null, null, null, null);
             try {
                 if (cursor != null && cursor.moveToFirst()) {
-                    result = cursor.getString(cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME));
+                    int nameColumn = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+                    if (nameColumn >= 0) result = cursor.getString(nameColumn);
                 }
             } finally {
-                cursor.close();
+                if (cursor != null) cursor.close();
             }
         }
         if (result == null) {
@@ -527,5 +548,16 @@ public class SetActivity extends BaseActivity {
             }
         }
         return result != null ? result : "-";
+    }
+
+    private Integer parseNumber(EditText input, int minValue) {
+        try {
+            int value = Integer.parseInt(input.getText().toString().trim());
+            if (value < minValue) throw new NumberFormatException();
+            return value;
+        } catch (NumberFormatException e) {
+            Toast.makeText(this, getString(R.string.invalid_number, minValue), Toast.LENGTH_SHORT).show();
+            return null;
+        }
     }
 }

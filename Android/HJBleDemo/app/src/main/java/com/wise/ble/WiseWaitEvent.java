@@ -34,7 +34,8 @@ public class WiseWaitEvent {
          try {
             wait();
          } catch (InterruptedException e) {
-            e.printStackTrace();
+            Thread.currentThread().interrupt();
+            return ERROR_FAILED;
          }
          return mResult;
       } else {
@@ -42,7 +43,8 @@ public class WiseWaitEvent {
             try {
                wait(rest);
             } catch (InterruptedException e) {
-               e.printStackTrace();
+               Thread.currentThread().interrupt();
+               return ERROR_FAILED;
             }
             rest = mills - (System.currentTimeMillis() - begin); // 计算剩余时间
          }

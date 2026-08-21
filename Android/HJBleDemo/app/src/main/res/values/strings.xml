@@ -66,6 +66,10 @@
     <string name="test_file">测试文件</string>
     <string name="use_file_test">使用文件测试</string>
     <string name="save_log">保存日志</string>
+    <string name="invalid_number">请输入不小于 %1$d 的有效整数</string>
+    <string name="file_permission_failed">无法保留所选文件的读取权限，请重新选择</string>
+    <string name="log_save_failed">日志保存失败</string>
+    <string name="testing_command_blocked">正在测试，暂不能发送普通指令</string>
 
     <!-- 发送数据   -->
     <string name="data_title_data_suffix">-数据</string>

@@ -3,6 +3,7 @@ package com.hongjia.hjbledemo;
 import android.annotation.SuppressLint;
 import android.content.ContentResolver;
 import android.content.ContentUris;
+import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
@@ -11,11 +12,16 @@ import android.os.Environment;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class FileInfoUtils {
+    private static final ConcurrentHashMap<String, Uri> DOWNLOAD_FILES = new ConcurrentHashMap<>();
     /**
      * Android 4.4往后版本 ，其中区别在 8.0download目录报错修改，华为手机uri获取不到路径处理。
      */
@@ -186,15 +192,57 @@ public class FileInfoUtils {
         return data;
     }
 
-    // 最近内容到download下的文件内
-    public static void appendDataToDownloadFile(String filePath, String data) {
-        try {
-            PrintWriter writer = new PrintWriter(new FileWriter(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS) + "/" + filePath, true));
+    public static synchronized boolean appendDataToDownloadFile(Context context, String filePath, String data) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            ContentResolver resolver = context.getContentResolver();
+            Uri collection = MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY);
+            Uri target = DOWNLOAD_FILES.get(filePath);
+            if (target == null) target = findDownloadFile(resolver, collection, filePath);
+            if (target == null) {
+                ContentValues values = new ContentValues();
+                values.put(MediaStore.Downloads.DISPLAY_NAME, filePath);
+                values.put(MediaStore.Downloads.MIME_TYPE, "text/plain");
+                values.put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/");
+                target = resolver.insert(collection, values);
+            }
+            if (target == null) return false;
+            DOWNLOAD_FILES.put(filePath, target);
+            try (OutputStream stream = resolver.openOutputStream(target, "wa")) {
+                if (stream == null) return false;
+                stream.write(data.getBytes(StandardCharsets.UTF_8));
+                return true;
+            } catch (IOException | SecurityException e) {
+                e.printStackTrace();
+                return false;
+            }
+        }
+
+        File directory = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
+        if (directory == null) directory = context.getFilesDir();
+        if (!directory.exists() && !directory.mkdirs()) return false;
+        try (PrintWriter writer = new PrintWriter(new FileWriter(new File(directory, filePath), true))) {
             writer.print(data);
-            writer.close();
+            return true;
         } catch (IOException e) {
             e.printStackTrace();
+            return false;
         }
+    }
+
+    @SuppressLint("InlinedApi")
+    private static Uri findDownloadFile(ContentResolver resolver, Uri collection, String filePath) {
+        String[] projection = {MediaStore.Downloads._ID};
+        String selection = MediaStore.Downloads.DISPLAY_NAME + "=? AND "
+                + MediaStore.Downloads.RELATIVE_PATH + "=?";
+        String[] args = {filePath, Environment.DIRECTORY_DOWNLOADS + "/"};
+        try (Cursor cursor = resolver.query(collection, projection, selection, args, null)) {
+            if (cursor != null && cursor.moveToFirst()) {
+                return ContentUris.withAppendedId(collection, cursor.getLong(0));
+            }
+        } catch (SecurityException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
 }

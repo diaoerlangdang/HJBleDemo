@@ -65,6 +65,10 @@
     <string name="test_file">Test file</string>
     <string name="use_file_test">Use file test</string>
     <string name="save_log">Save Log</string>
+    <string name="invalid_number">Enter a valid integer greater than or equal to %1$d</string>
+    <string name="file_permission_failed">Unable to retain permission for the selected file. Please select it again.</string>
+    <string name="log_save_failed">Failed to save log</string>
+    <string name="testing_command_blocked">A test is running. Regular commands are disabled.</string>
 
     <!-- 发送数据   -->
     <string name="data_title_data_suffix">-Data</string>

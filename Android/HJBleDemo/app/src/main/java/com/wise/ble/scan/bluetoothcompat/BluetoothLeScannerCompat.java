@@ -15,6 +15,8 @@
  */
 package com.wise.ble.scan.bluetoothcompat;
 
+import android.annotation.SuppressLint;
+
 import android.annotation.TargetApi;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -34,6 +36,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 
+@SuppressLint("MissingPermission")
 public class BluetoothLeScannerCompat {
 
     private static final String TAG = "BLeScannerCompat";

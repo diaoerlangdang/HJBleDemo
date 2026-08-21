@@ -2,6 +2,8 @@ package com.wise.ble;
 
 import android.bluetooth.BluetoothGattCharacteristic;
 
+import java.util.Locale;
+
 public class WiseCharacteristic {
 
     // 服务id
@@ -14,8 +16,8 @@ public class WiseCharacteristic {
     }
 
     public WiseCharacteristic(String serviceID, String characteristicID) {
-        this.serviceID = serviceID.toLowerCase();
-        this.characteristicID = characteristicID.toLowerCase();
+        this.serviceID = serviceID.toLowerCase(Locale.ROOT);
+        this.characteristicID = characteristicID.toLowerCase(Locale.ROOT);
     }
 
     /**

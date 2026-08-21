@@ -2,6 +2,7 @@ package com.wise.ble;
 
 
 import java.io.UnsupportedEncodingException;
+import java.util.Locale;
 
 public class ConvertData
 {
@@ -70,7 +71,7 @@ public class ConvertData
 			return null;
 		
 		hexString = hexString.replace(" ", "");
-		hexString = hexString.toUpperCase();
+		hexString = hexString.toUpperCase(Locale.ROOT);
 		
 		int len = (hexString.length() / 2);
 		if(len <= 0)

@@ -1,5 +1,7 @@
 package com.wise.ble;
 
+import android.annotation.SuppressLint;
+
 import java.io.ByteArrayOutputStream;
 import java.util.UUID;
 
@@ -21,6 +23,7 @@ import android.util.Log;
  * @修改时间:
  */
 
+@SuppressLint("MissingPermission")
 public class WiseBluetoothLe extends BluetoothLe
 {
 	private final static String TAG = WiseBluetoothLe.class.getSimpleName();

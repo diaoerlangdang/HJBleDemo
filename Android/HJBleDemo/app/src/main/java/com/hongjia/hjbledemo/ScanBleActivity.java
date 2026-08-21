@@ -1,6 +1,7 @@
 package com.hongjia.hjbledemo;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothGatt;
@@ -34,6 +35,7 @@ import android.widget.Toast;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.core.content.ContextCompat;
 
 import com.clj.fastble.BleManager;
 import com.clj.fastble.callback.BleGattCallback;
@@ -63,6 +65,10 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
@@ -77,11 +83,12 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
     private static final int REQUEST_ENABLE_BT = 1;
     private static final int RC_PERM_CODE = 124;
 
-    private String[] permissionList = {Manifest.permission.BLUETOOTH, Manifest.permission.BLUETOOTH_ADMIN,
-            Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE};
+    private String[] permissionList = {Manifest.permission.ACCESS_FINE_LOCATION};
 
     // android 12 以上版本
-    private String[] permissionListHigher = {Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE};
+    @SuppressLint("InlinedApi")
+    private String[] permissionListHigher = {Manifest.permission.BLUETOOTH_SCAN,
+            Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.ACCESS_FINE_LOCATION};
 
     private boolean mScanning=true;
 
@@ -99,7 +106,6 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
     private Timer timer = new Timer();
     private TimerTask timerTask;
 
-    private WiseWaitEvent connectEvent = new WiseWaitEvent();
     private WiseWaitEvent stateEvent = new WiseWaitEvent();
     private WiseWaitEvent mtuEvent = new WiseWaitEvent();
     private WiseWaitEvent sendEvent = new WiseWaitEvent();
@@ -111,6 +117,11 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
     private ByteArrayOutputStream recvBuffer = new ByteArrayOutputStream();
 
     private BleDevice selectBleDevice;
+    private final ExecutorService connectionExecutor = Executors.newSingleThreadExecutor();
+    private final AtomicBoolean connectionRunning = new AtomicBoolean(false);
+    private volatile AtomicBoolean connectionCancellation;
+    private volatile Future<?> connectionFuture;
+    private volatile BluetoothGatt pendingConnectionGatt;
 
 
     @Override
@@ -221,10 +232,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
                 .setOnCancelListener(new DialogInterface.OnCancelListener() {
                     @Override
                     public void onCancel(DialogInterface dialogInterface) {
-
-                        if (selectBleDevice != null && BleManager.getInstance().isConnected(selectBleDevice)) {
-                            BleManager.getInstance().disconnect(selectBleDevice);
-                        }
+                        cancelConnection(false);
                     }
                 });
         loadingDialog = loadBuilder.create();
@@ -244,7 +252,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
 //            }
 //        });
 
-        scanManager = BluetoothScanManager.getInstance(this);
+        scanManager = BluetoothScanManager.getInstance(getApplicationContext());
         scanManager.setScanOverListener(new ScanOverListener() {
             @Override
             public void onScanOver() {
@@ -268,6 +276,8 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
         if (BleManager.getInstance().isConnected(scanDevice.device.getMac())) {
             BleManager.getInstance().disconnect(scanDevice.device);
         } else {
+            if (connectionRunning.get()) return;
+
             loadingDialog.show();
 
             selectBleDevice = scanDevice.device;
@@ -373,11 +383,12 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
     };
 
     // 同步连接
-    private boolean connectBleSynchronization(BleManager bleManager, BleDevice bleDevice) {
-
+    private int connectBleSynchronization(BleManager bleManager, BleDevice bleDevice,
+                                          AtomicBoolean cancellation) {
+        WiseWaitEvent connectEvent = new WiseWaitEvent();
         connectEvent.init();
 
-        FastBleListener.getInstance().setConnectBleCallBack(new BleGattCallback() {
+        BleGattCallback callback = new BleGattCallback() {
             @Override
             public void onStartConnect() {
 
@@ -390,32 +401,53 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
 
             @Override
             public void onConnectSuccess(BleDevice bleDevice, BluetoothGatt bluetoothGatt, int i) {
-                connectEvent.setSignal(WiseWaitEvent.SUCCESS);
+                if (cancellation.get()) {
+                    disconnectGatt(bluetoothGatt);
+                    connectEvent.setSignal(WiseWaitEvent.ERROR_FAILED);
+                } else {
+                    connectEvent.setSignal(WiseWaitEvent.SUCCESS);
+                }
             }
 
             @Override
             public void onDisConnected(boolean b, BleDevice bleDevice, BluetoothGatt bluetoothGatt, int i) {
-                mLeDeviceListAdapter.notifyDataSetChanged();
+                BleDeviceSession.remove(bleDevice);
+                FastBleListener.getInstance().removeDevice(bleDevice);
+                runIfActive(() -> mLeDeviceListAdapter.notifyDataSetChanged());
             }
-        });
+        };
 
-        bleManager.connect(bleDevice, FastBleListener.getInstance().getConnectBleCallBack());
-
-        int result = connectEvent.waitSignal(5000);
-        if(WiseWaitEvent.SUCCESS != result)
-        {
-            bleManager.disconnect(bleDevice);
-            return false;
+        BluetoothGatt bluetoothGatt = bleManager.connect(bleDevice, callback);
+        pendingConnectionGatt = bluetoothGatt;
+        if (cancellation.get()) {
+            disconnectGatt(bluetoothGatt);
+            pendingConnectionGatt = null;
+            return WiseWaitEvent.ERROR_FAILED;
         }
 
-        return true;
+        int result = connectEvent.waitSignal(16000);
+        pendingConnectionGatt = null;
+        if (result == WiseWaitEvent.ERROR_TIME_OUT) {
+            cancellation.set(true);
+            disconnectGatt(bluetoothGatt);
+        }
+        return result;
+    }
+
+    @SuppressLint("MissingPermission")
+    private void disconnectGatt(BluetoothGatt bluetoothGatt) {
+        if (bluetoothGatt == null) return;
+        try {
+            bluetoothGatt.disconnect();
+        } catch (SecurityException ignored) {
+        }
     }
 
     // 同步打开通知
     private boolean openNotifyBleSynchronization(BleManager bleManager, BleDevice bleDevice, final WiseCharacteristic characteristic) {
 
         stateEvent.init();
-        FastBleListener.getInstance().setNotifyBleCallback(characteristic.getCharacteristicID(), new BleNotifyCallback() {
+        FastBleListener.getInstance().setNotifyBleCallback(bleDevice, characteristic, new BleNotifyCallback() {
             @Override
             public void onNotifySuccess() {
                 stateEvent.setSignal(WiseWaitEvent.SUCCESS);
@@ -543,131 +575,191 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
 
     // 连接蓝牙
     void connectBle(final HJBleScanDevice scanDevice) {
-
+        if (!connectionRunning.compareAndSet(false, true)) return;
+        AtomicBoolean cancellation = new AtomicBoolean(false);
+        connectionCancellation = cancellation;
         loadingDialog.setMessage(getResources().getString(R.string.ble_connecting));
-        new Thread(new Runnable() {
+        connectionFuture = connectionExecutor.submit(new Runnable() {
             @Override
             public void run() {
+                try {
+                    BleManager bleManager = BleManager.getInstance();
 
-                BleManager bleManager = BleManager.getInstance();
-
-                int i;
-                for (i = 0; i < 5; i++)
-                {
-                    if(connectBleSynchronization(bleManager, scanDevice.device))	//连接蓝牙设备
-                        break;
-
-                    SystemClock.sleep(200);//200ms
-                }
-                if(i == 5)
-                {
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(ScanBleActivity.this,getResources().getString(R.string.ble_connect_failed),Toast.LENGTH_SHORT).show();
-                            loadingDialog.dismiss();
-                            scanLeDevice(true);
+                    int i;
+                    for (i = 0; i < 5; i++)
+                    {
+                        if (isConnectionCancelled(cancellation)) return;
+                        int result = connectBleSynchronization(bleManager, scanDevice.device, cancellation);
+                        if (result == WiseWaitEvent.SUCCESS) break;
+                        if (result == WiseWaitEvent.ERROR_TIME_OUT) {
+                            showConnectionFailure();
+                            return;
                         }
-                    });
-                    return ;
-                }
+                        if (isConnectionCancelled(cancellation)) return;
+
+                        SystemClock.sleep(200);//200ms
+                    }
+                    if(i == 5)
+                    {
+                        showConnectionFailure();
+                        return ;
+                    }
+
+                    if (isConnectionCancelled(cancellation)) {
+                        bleManager.disconnect(scanDevice.device);
+                        return;
+                    }
 
 //                SystemClock.sleep(200);//200ms
 
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-
-                        Log.e("'test'", "'正在打开通知1'");
-                        loadingDialog.setMessage(getResources().getString(R.string.ble_opening_notification));
-                    }
-                });
-
-                scanDevice.isConfig = isSupportConfigService(bleManager, scanDevice.device);
-
-
-                // 打开配置通知
-                if(scanDevice.isConfig && !openNotifyBleSynchronization(bleManager, scanDevice.device, BleConfig.Ble_Config_Receive_Service))
-                {
-                    bleManager.disconnect(scanDevice.device);
-
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(ScanBleActivity.this,getResources().getString(R.string.ble_connect_failed),Toast.LENGTH_SHORT).show();
-                            loadingDialog.dismiss();
-                            scanLeDevice(true);
-                        }
-                    });
-                    return ;
-                }
-
-
-                // 设置mtu
-                int mtuLen = requestMtu(bleManager, scanDevice.device, 512) - 3;
-                scanDevice.mtuLen = mtuLen;
-
-                // 是否为流控模式
-                boolean bFlowControl = false;
-
-                boolean supportFlowControl = HJBleApplication.shareInstance().isFlowControl();
-
-                // 支持配置模式的设备，获取是否为流控模式
-                if (scanDevice.isConfig && supportFlowControl) {
-                    runOnUiThread(new Runnable() {
+                    runIfActive(new Runnable() {
                         @Override
                         public void run() {
 
-                            loadingDialog.setMessage(getResources().getString(R.string.reading_flow_control));
+                            Log.e("'test'", "'正在打开通知1'");
+                            loadingDialog.setMessage(getResources().getString(R.string.ble_opening_notification));
                         }
                     });
 
-                    byte[] cmd = ConvertData.utf8ToBytes("<RD_UART_FC>");
-                    byte[] recv = sendRecvData(bleManager, scanDevice.device, BleConfig.Ble_Config_Send_Service, BleConfig.Ble_Config_Receive_Service, cmd);
-                    if (recv != null) {
-                        String recvStr = ConvertData.bytesToUtf8(recv);
-                        if (recvStr.equals("<rd_uart_fc=1>")) {
-                            bFlowControl = true;
-                        } else {
-                            bFlowControl = false;
-                        }
+                    scanDevice.isConfig = isSupportConfigService(bleManager, scanDevice.device);
+
+
+                    // 打开配置通知
+                    if(scanDevice.isConfig && !openNotifyBleSynchronization(bleManager, scanDevice.device, BleConfig.Ble_Config_Receive_Service))
+                    {
+                        bleManager.disconnect(scanDevice.device);
+
+                        showConnectionFailure();
+                        return ;
                     }
 
-                    scanDevice.bFlowControl = bFlowControl;
+                    if (isConnectionCancelled(cancellation)) {
+                        bleManager.disconnect(scanDevice.device);
+                        return;
+                    }
 
-                }
 
+                    // 设置mtu
+                    int mtuLen = requestMtu(bleManager, scanDevice.device, 512) - 3;
+                    scanDevice.mtuLen = mtuLen;
+                    BleDeviceSession.get(scanDevice.device).setPacketLength(mtuLen);
 
-                if(openNotifyBleSynchronization(bleManager, scanDevice.device, BleConfig.Ble_Data_Receive_Service()))
-                {
-                    bleManager.setSplitWriteNum(mtuLen);
+                    // 是否为流控模式
+                    boolean bFlowControl = false;
 
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
+                    boolean supportFlowControl = HJBleApplication.shareInstance().isFlowControl();
 
-                            loadingDialog.dismiss();
-                            mLeDeviceListAdapter.notifyDataSetChanged();
+                    // 支持配置模式的设备，获取是否为流控模式
+                    if (scanDevice.isConfig && supportFlowControl) {
+                        runIfActive(new Runnable() {
+                            @Override
+                            public void run() {
 
+                                loadingDialog.setMessage(getResources().getString(R.string.reading_flow_control));
+                            }
+                        });
+
+                        byte[] cmd = ConvertData.utf8ToBytes("<RD_UART_FC>");
+                        byte[] recv = sendRecvData(bleManager, scanDevice.device, BleConfig.Ble_Config_Send_Service, BleConfig.Ble_Config_Receive_Service, cmd);
+                        if (recv != null) {
+                            String recvStr = ConvertData.bytesToUtf8(recv);
+                            if (recvStr.equals("<rd_uart_fc=1>")) {
+                                bFlowControl = true;
+                            } else {
+                                bFlowControl = false;
+                            }
                         }
-                    });
-                }
-                else
-                {
-                    BleManager.getInstance().disconnect(scanDevice.device);
 
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(ScanBleActivity.this,getResources().getString(R.string.ble_connect_failed),Toast.LENGTH_SHORT).show();
+                        scanDevice.bFlowControl = bFlowControl;
+
+                    }
+
+                    if (isConnectionCancelled(cancellation)) {
+                        bleManager.disconnect(scanDevice.device);
+                        return;
+                    }
+
+
+                    if(openNotifyBleSynchronization(bleManager, scanDevice.device, BleConfig.Ble_Data_Receive_Service()))
+                    {
+                        runIfActive(new Runnable() {
+                            @Override
+                            public void run() {
+
+                                loadingDialog.dismiss();
+                                mLeDeviceListAdapter.notifyDataSetChanged();
+
+                            }
+                        });
+                    }
+                    else
+                    {
+                        BleManager.getInstance().disconnect(scanDevice.device);
+
+                        showConnectionFailure();
+                    }
+                } finally {
+                    pendingConnectionGatt = null;
+                    connectionRunning.set(false);
+                    if (connectionCancellation == cancellation) {
+                        connectionCancellation = null;
+                        connectionFuture = null;
+                    }
+                    if (cancellation.get()) {
+                        runIfActive(() -> {
                             loadingDialog.dismiss();
-                            scanLeDevice(true);
-                        }
-                    });
+                            if (!mScanning) scanLeDevice(true);
+                        });
+                    }
                 }
-
             }
-        }).start();
+        });
+    }
+
+    private boolean isConnectionCancelled(AtomicBoolean cancellation) {
+        return cancellation.get() || Thread.currentThread().isInterrupted();
+    }
+
+    private void showConnectionFailure() {
+        runIfActive(new Runnable() {
+            @Override
+            public void run() {
+                Toast.makeText(ScanBleActivity.this,getResources().getString(R.string.ble_connect_failed),Toast.LENGTH_SHORT).show();
+                loadingDialog.dismiss();
+                scanLeDevice(true);
+            }
+        });
+    }
+
+    private void cancelConnection(boolean interrupt) {
+        AtomicBoolean cancellation = connectionCancellation;
+        if (cancellation != null) cancellation.set(true);
+        disconnectGatt(pendingConnectionGatt);
+        if (selectBleDevice != null && BleManager.getInstance().isConnected(selectBleDevice)) {
+            BleManager.getInstance().disconnect(selectBleDevice);
+        }
+        if (interrupt) {
+            Future<?> task = connectionFuture;
+            if (task != null) task.cancel(true);
+        }
+    }
+
+    private void runIfActive(Runnable action) {
+        runOnUiThread(() -> {
+            if (!isFinishing() && !isDestroyed()) action.run();
+        });
+    }
+
+    @Override
+    protected void onDestroy() {
+        cancelConnection(true);
+        connectionExecutor.shutdownNow();
+        handler.removeCallbacksAndMessages(null);
+        if (scanManager != null) {
+            scanManager.setScanCallbackCompat(null);
+            scanManager.setScanOverListener(null);
+        }
+        super.onDestroy();
     }
 
     @Override
@@ -678,6 +770,9 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
         {
             finish();
             return ;
+        }
+        if (requestCode == REQUEST_ENABLE_BT && resultCode == Activity.RESULT_OK) {
+            scanLeDevice(true);
         }
         super.onActivityResult(requestCode, resultCode, data);
     }
@@ -709,6 +804,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
         public void onScanResult(int callbackType, ScanResultCompat result) {
             super.onScanResult(callbackType, result);
 
+            if (result.getScanRecord() == null) return;
             byte[] scanRecord = result.getScanRecord().getBytes();
 
             if (scanRecord.length < 9) {
@@ -769,22 +865,28 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
     //enable = true表示蓝牙开始扫描，否则表示停止扫描
     private void scanLeDevice(final boolean enable)
     {
-        if (enable)
-        {
-            mScanning = true;
-            scanManager.startScanNow();	//开始蓝牙扫描
+        if (enable && !checkPermissions()) return;
+        try {
+            if (enable)
+            {
+                mScanning = true;
+                scanManager.startScanNow();	//开始蓝牙扫描
 
-            setRightText(getResources().getString(R.string.stop_scan));
-            scanProgress.setVisibility(View.VISIBLE);
-        }
-        else
-        {
-            //取消停止扫描的线程
+                setRightText(getResources().getString(R.string.stop_scan));
+                scanProgress.setVisibility(View.VISIBLE);
+            }
+            else
+            {
+                //取消停止扫描的线程
+                mScanning = false;
+                scanManager.stopCycleScan();	//停止蓝牙扫描
+
+                setRightText(getResources().getString(R.string.start_scan));
+                scanProgress.setVisibility(View.INVISIBLE);
+            }
+        } catch (SecurityException e) {
             mScanning = false;
-            scanManager.stopCycleScan();	//停止蓝牙扫描
-
-            setRightText(getResources().getString(R.string.start_scan));
-            scanProgress.setVisibility(View.INVISIBLE);
+            Toast.makeText(this, R.string.no_location_permission, Toast.LENGTH_LONG).show();
         }
     }
 
@@ -835,8 +937,13 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
             //判断本地蓝牙是否已打开
             if(!BleManager.getInstance().isBlueEnable())
             {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+                        && ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+                    return;
+                }
                 Intent openIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
                 startActivityForResult(openIntent, REQUEST_ENABLE_BT);
+                return;
             }
             scanLeDevice(true);
         }

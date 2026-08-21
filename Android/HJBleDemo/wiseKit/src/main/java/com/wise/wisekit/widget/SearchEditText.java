@@ -10,7 +10,7 @@ import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.CycleInterpolator;
 import android.view.animation.TranslateAnimation;
-import android.widget.EditText;
+import androidx.appcompat.widget.AppCompatEditText;
 
 import com.wise.wisekit.R;
 
@@ -19,7 +19,7 @@ import com.wise.wisekit.R;
  * Created by wuruizhi on 2017/8/12.
  */
 
-public class SearchEditText extends EditText implements
+public class SearchEditText extends AppCompatEditText implements
         View.OnFocusChangeListener, TextWatcher {
 
     //搜索
