@@ -11,6 +11,7 @@
 @interface HJBleScanData : NSObject
 
 @property(nonatomic,strong) CBPeripheral *peripheral;
+@property(nonatomic,strong) NSUUID *connectionSessionIdentifier;
 @property(nonatomic,strong) NSDictionary *advertisementData;
 @property(nonatomic,strong) NSNumber    *RSSI;
 // 是否为简易模式

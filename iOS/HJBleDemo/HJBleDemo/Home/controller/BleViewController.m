@@ -12,11 +12,13 @@
 #import "SetViewController.h"
 #import "HJConfigInfo.h"
 #import "wiseBle/WWWaitEvent.h"
+#import "HJBleConnectionCoordinator.h"
+#import "HJBleDevicePageLifecycle.h"
  
 // header view 高度
 #define HEADER_VIEW_HEIGHT 85.f
 
-@interface BleViewController ()<WWBluetoothLEConnectDelegate>
+@interface BleViewController ()
 
 @property (nonatomic,strong) CBPeripheral *peripheral;
 
@@ -71,6 +73,9 @@
 //接受数据等待
 @property (nonatomic, strong) WWWaitEvent *sendEvent;
 
+@property (nonatomic, assign) BOOL connectionPageActive;
+@property (nonatomic, assign) BOOL didCleanupConnection;
+
 @end
 
 @implementation BleViewController
@@ -85,6 +90,7 @@
     _recCountBySecond = 0;
     _isTesting = false;
     _sendEvent = [[WWWaitEvent alloc] init];
+    _connectionPageActive = YES;
     
     _peripheral = _scanData.peripheral;
     if (!_scanData.isConfig) {
@@ -128,7 +134,10 @@
     _ble = [WWBluetoothLE shareBLE];
     _ble.managerDelegate = self;
     _ble.bleDelegate = self;
-    _ble.connectDelegate = self;
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(peripheralDidDisconnect:)
+                                                 name:HJBlePeripheralDidDisconnectNotification
+                                               object:[HJBleConnectionCoordinator sharedCoordinator]];
     
     _timer = [NSTimer timerWithTimeInterval:1
                                              target:self
@@ -145,6 +154,10 @@
 - (void)viewWillAppear:(BOOL)animated
 {
     [super viewWillAppear:animated];
+    if (!_didCleanupConnection) {
+        _ble.managerDelegate = self;
+        _ble.bleDelegate = self;
+    }
     
     if ([HJConfigInfo shareInstance].isBleConfig) {
         self.navigationItem.title = [NSString stringWithFormat:@"%@-配置",_peripheral.name];
@@ -176,6 +189,20 @@
     
     // 定时器停止
     [_timer setFireDate:[NSDate distantFuture]];
+}
+
+- (void)viewDidDisappear:(BOOL)animated
+{
+    [super viewDidDisappear:animated];
+    NSArray *stack = self.navigationController.viewControllers ?: @[];
+    if (HJBleDevicePageDidLeaveNavigationStack(stack, self)) {
+        [self cleanupConnectionIfNeeded];
+    }
+}
+
+- (void)dealloc
+{
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
 // 计算速率
@@ -290,7 +317,36 @@
 - (void)leftButtonMethod
 {
     [self.navigationController popViewControllerAnimated:YES];
-    [_ble disconnect:_peripheral callBack:false];
+}
+
+- (void)cleanupConnectionIfNeeded
+{
+    if (_didCleanupConnection) {
+        return;
+    }
+    _didCleanupConnection = YES;
+    _connectionPageActive = NO;
+    _isTesting = NO;
+    [_timer setFireDate:[NSDate distantFuture]];
+    [_sendEvent waitOver:WWWaitResultFailed];
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+
+    if (_ble.managerDelegate == self) {
+        _ble.managerDelegate = nil;
+    }
+    if (_ble.bleDelegate == self) {
+        _ble.bleDelegate = nil;
+    }
+    [[HJBleConnectionCoordinator sharedCoordinator] disconnectPeripheral:_peripheral
+                                                                  session:_scanData.connectionSessionIdentifier];
+}
+
+- (BOOL)isCallbackForCurrentPeripheral:(CBPeripheral *)peripheral
+{
+    return _connectionPageActive && HJBleConnectionEventMatches(_peripheral,
+                                                                 _scanData.connectionSessionIdentifier,
+                                                                 peripheral,
+                                                                 nil);
 }
 
 // 清除数据
@@ -567,14 +623,30 @@
 
 - (BOOL)synchronizedSendData:(CBPeripheral *)peripheral characteristic:(WWCharacteristic *)characteristic value:(NSData *)data type:(CBCharacteristicWriteType)type
 {
+    if (!_connectionPageActive || peripheral.state != CBPeripheralStateConnected) {
+        return false;
+    }
+
+    WWWaitEvent *event = nil;
+    if (type == CBCharacteristicWriteWithResponse) {
+        @synchronized (self) {
+            if ([_sendEvent getWaitStatus] == WWWaitResultWaiting) {
+                return false;
+            }
+            event = [[WWWaitEvent alloc] init];
+            [event prepareWait];
+            _sendEvent = event;
+        }
+    }
     bool bResult = [_ble send:peripheral characteristic:characteristic value:data type:type];
     if (!bResult) {
+        [event waitOver:WWWaitResultFailed];
         return false;
     }
     
     // respone等待
     if (type == CBCharacteristicWriteWithResponse) {
-        WWWaitResult result = [_sendEvent waitSignle:2000];
+        WWWaitResult result = [event waitPrepared:2000];
         if (result != WWWaitResultSuccess) {
             return false;
         }
@@ -612,8 +684,18 @@
 
 #pragma mark -- WWBluetoothLEDelegate
 
--(void)ble:(WWBluetoothLE *)ble didDisconnect:(CBPeripheral *)peripheral
+- (void)peripheralDidDisconnect:(NSNotification *)notification
 {
+    CBPeripheral *peripheral = notification.userInfo[HJBlePeripheralKey];
+    NSUUID *token = notification.userInfo[HJBleSessionTokenKey];
+    if (!_connectionPageActive ||
+        !HJBleConnectionEventMatches(_peripheral, _scanData.connectionSessionIdentifier, peripheral, token)) {
+        return;
+    }
+    _connectionPageActive = NO;
+    _isTesting = NO;
+    [_timer setFireDate:[NSDate distantFuture]];
+    [_sendEvent waitOver:WWWaitResultFailed];
     NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
     NSDate* now = [NSDate date];
     NSDateFormatter* fmt = [[NSDateFormatter alloc] init];
@@ -639,6 +721,9 @@
  */
 - (void)ble:(WWBluetoothLE *)ble didSendData:(CBPeripheral *)peripheral characteristic:(WWCharacteristic *)characteristic result:(BOOL)isSuccess
 {
+    if (![self isCallbackForCurrentPeripheral:peripheral]) {
+        return;
+    }
     if (isSuccess) {
         if ([_sendEvent getWaitStatus] == WWWaitResultWaiting) {
             [_sendEvent waitOver:WWWaitResultSuccess];
@@ -665,6 +750,9 @@
  */
 - (void)ble:(WWBluetoothLE *)ble didReceiveData:(CBPeripheral *)peripheral characteristic:(WWCharacteristic *)characteristic  data:(NSData *)data
 {
+    if (![self isCallbackForCurrentPeripheral:peripheral]) {
+        return;
+    }
     // 配置服务
     if ([characteristic isEqual:[HJConfigInfo shareInstance].configReceiveService]) {
         NSString *recvStr = [NSString utf8ToUnicode:data];

@@ -15,6 +15,7 @@
 #import "HJScanTableViewCell.h"
 #import "WWAlertView.h"
 #import "AppConfigSetViewController.h"
+#import "HJBleConnectionCoordinator.h"
 
 
 @interface ScanViewController ()
@@ -26,6 +27,8 @@
 
 @property(nonatomic,strong) HJBleScanData *selectedScanData;
 @property(nonatomic, strong) NSDate *lastReloadTime;
+@property(nonatomic, strong) HJBleConnectionCoordinator *connectionCoordinator;
+@property(nonatomic, strong) NSUUID *connectionSessionToken;
 
 @end
 
@@ -46,11 +49,13 @@
     self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemRefresh target:self action:@selector(refresh)];
     
     _hjBleArray = [[NSMutableArray alloc] init];
+    _connectionCoordinator = [HJBleConnectionCoordinator sharedCoordinator];
 }
 
 - (void)viewWillAppear:(BOOL)animated
 {
     [super viewWillAppear:animated];
+    [self setConnectionInProgress:NO];
     _ble = [WWBluetoothLE shareBLE];
     _ble.managerDelegate = self;
     _ble.bleDelegate = self;
@@ -69,6 +74,11 @@
 {
     [super viewWillDisappear:animated];
     [_ble stopScan];
+    if (_connectionSessionToken != nil) {
+        [_connectionCoordinator cancelSession:_connectionSessionToken];
+        _connectionSessionToken = nil;
+        [SVProgressHUD dismiss];
+    }
 }
 
 // 配置信息
@@ -141,100 +151,149 @@
 
 -(void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    NSLog(@"====");
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
-    
-    [self stopScan];
-    
-    _selectedScanData = _hjBleArray[indexPath.row];
+    if (_connectionSessionToken != nil) {
+        return;
+    }
 
-    @weakify(self)
+    [self stopScan];
+    HJBleScanData *scanData = _hjBleArray[indexPath.row];
+    _selectedScanData = scanData;
+    [self setConnectionInProgress:YES];
     [SVProgressHUD showWithStatus:@"正在连接中..."];
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        
-        @strongify(self)
-        BOOL bResult = false;
-        // 连接重复5次
-        for (int i=0; i<5; i++) {
-            bResult = [self.ble synchronizedConnect:self.selectedScanData.peripheral time:5000];
-            if (bResult) {
-                break;
-            }
-            
-            [self.ble disconnect:self.selectedScanData.peripheral];
-            sleep(0.5);
+
+    __weak typeof(self) weakSelf = self;
+    _connectionSessionToken = [_connectionCoordinator connectPeripheral:scanData.peripheral completion:^(HJBleConnectionResult result) {
+        __strong typeof(weakSelf) self = weakSelf;
+        if (self == nil || self.selectedScanData != scanData || self.connectionSessionToken == nil) {
+            return;
         }
-        
-        if (bResult) {
-            
-            // 是否为流控模式
-            self.selectedScanData.bFlowControl = false;
-            
-            // 是否支持配置模式判断
-            CBCharacteristicProperties properties = [self.ble getCharacteristicProperties:self.selectedScanData.peripheral characteristic:[HJConfigInfo shareInstance].configReceiveService];
-            if ((properties & CBCharacteristicPropertyNotify) &&  ((properties & CBCharacteristicPropertyWrite) || (properties & CBCharacteristicPropertyWriteWithoutResponse))) {
-                self.selectedScanData.isConfig = true;
-            } else {
-                self.selectedScanData.isConfig = false;
-            }
-            
-            // 打开配置通知
-            if (self.selectedScanData.isConfig) {
-                
-                bResult = [self.ble synchronizedOpenNofity:self.selectedScanData.peripheral characteristic:[HJConfigInfo shareInstance].configReceiveService time:5000];
-                
-                // 打开失败
-                if (!bResult) {
-                    
-                    dispatch_async(dispatch_get_main_queue(), ^{
-                        [SVProgressHUD dismiss];
-                        [self.ble disconnect:self.selectedScanData.peripheral];
-                        [self.view makeToast:@"连接失败"];
-                    });
-                    return ;
-                }
-                
-                // 读取流控信息
+        if (result == HJBleConnectionResultSuccess) {
+            [self initializeScanData:scanData session:self.connectionSessionToken];
+            return;
+        }
+
+        self.connectionSessionToken = nil;
+        [self setConnectionInProgress:NO];
+        [SVProgressHUD dismiss];
+        if (result == HJBleConnectionResultTimedOut) {
+            [self.view makeToast:@"连接超时"];
+        }
+        else if (result == HJBleConnectionResultFailed) {
+            [self.view makeToast:@"连接失败"];
+        }
+    }];
+}
+
+- (void)initializeScanData:(HJBleScanData *)scanData session:(NSUUID *)token
+{
+    __weak typeof(self) weakSelf = self;
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        __strong typeof(weakSelf) self = weakSelf;
+        if (self == nil || ![self.connectionCoordinator isSessionActive:token peripheral:scanData.peripheral]) {
+            return;
+        }
+
+        scanData.bFlowControl = NO;
+        CBCharacteristicProperties properties = [self.ble getCharacteristicProperties:scanData.peripheral
+                                                                        characteristic:[HJConfigInfo shareInstance].configReceiveService];
+        scanData.isConfig = (properties & CBCharacteristicPropertyNotify) &&
+            ((properties & CBCharacteristicPropertyWrite) ||
+             (properties & CBCharacteristicPropertyWriteWithoutResponse));
+
+        BOOL initialized = YES;
+        if (scanData.isConfig) {
+            initialized = [self.ble synchronizedOpenNofity:scanData.peripheral
+                                           characteristic:[HJConfigInfo shareInstance].configReceiveService
+                                                     time:5000];
+            if (initialized && [self.connectionCoordinator isSessionActive:token peripheral:scanData.peripheral]) {
                 NSData *sendData = [NSData unicodeToUtf8:@"<RD_UART_FC>"];
                 self.ble.commonResponeNotifyCharacteristic = [HJConfigInfo shareInstance].configReceiveService;
-                NSData *recvData = [self.ble sendReceive:self.selectedScanData.peripheral characteristic:[HJConfigInfo shareInstance].configReceiveService value:sendData time:5000];
+                NSData *recvData = [self.ble sendReceive:scanData.peripheral
+                                          characteristic:[HJConfigInfo shareInstance].configReceiveService
+                                                   value:sendData
+                                                    time:5000];
                 if (recvData != nil) {
-                    NSString *recvStr = [NSString utf8ToUnicode:recvData];
-                    self.selectedScanData.bFlowControl = [recvStr isEqualToString:@"<rd_uart_fc=1>"];
+                    scanData.bFlowControl = [[NSString utf8ToUnicode:recvData] isEqualToString:@"<rd_uart_fc=1>"];
                 }
-                
             }
-            
-            NSUInteger sendDataMaxLen = [self.selectedScanData.peripheral maximumWriteValueLengthForType:CBCharacteristicWriteWithoutResponse];
-            self.selectedScanData.sendDataLenMax = sendDataMaxLen;
-            
-            
-            bResult = [self.ble synchronizedOpenNofity:self.selectedScanData.peripheral characteristic:[HJConfigInfo shareInstance].dataReceiveService time:5000];
         }
-        else {
-            
-            dispatch_async(dispatch_get_main_queue(), ^{
-                [SVProgressHUD dismiss];
-                [self.ble disconnect:self.selectedScanData.peripheral];
-                [self.view makeToast:@"连接超时"];
-            });
-            
+
+        if (initialized && [self.connectionCoordinator isSessionActive:token peripheral:scanData.peripheral]) {
+            scanData.sendDataLenMax = [scanData.peripheral maximumWriteValueLengthForType:CBCharacteristicWriteWithoutResponse];
+            initialized = [self.ble synchronizedOpenNofity:scanData.peripheral
+                                            characteristic:[HJConfigInfo shareInstance].dataReceiveService
+                                                      time:5000];
         }
-        
+
         dispatch_async(dispatch_get_main_queue(), ^{
-            [SVProgressHUD dismiss];
-            if (bResult) {
-                self.ble.nGroupSendDataLen = self.selectedScanData.sendDataLenMax;
-                BleViewController *bleView = [[BleViewController alloc] init];
-                bleView.scanData = self.selectedScanData;
-                [self.navigationController pushViewController:bleView animated:YES];
-            }
-            else {
-                [self.ble disconnect:self.selectedScanData.peripheral];
-                [self.view makeToast:@"打开通知失败"];
-            }
+            [self finishInitializationForScanData:scanData session:token success:initialized];
         });
-    });    
+    });
+}
+
+- (void)setConnectionInProgress:(BOOL)inProgress
+{
+    if (inProgress) {
+        self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"取消"
+                                                                                  style:UIBarButtonItemStylePlain
+                                                                                 target:self
+                                                                                 action:@selector(cancelConnection)];
+    }
+    else {
+        self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemRefresh
+                                                                                               target:self
+                                                                                               action:@selector(refresh)];
+    }
+}
+
+- (void)cancelConnection
+{
+    NSUUID *token = self.connectionSessionToken;
+    if (token == nil) {
+        return;
+    }
+    [self.connectionCoordinator cancelSession:token];
+    self.connectionSessionToken = nil;
+    [self setConnectionInProgress:NO];
+    [SVProgressHUD dismiss];
+    if (self.ble.loaclState == WWBleLocalStatePowerOn) {
+        [self refresh];
+    }
+}
+
+- (void)finishInitializationForScanData:(HJBleScanData *)scanData
+                                session:(NSUUID *)token
+                                success:(BOOL)success
+{
+    if (![self.connectionSessionToken isEqual:token] || self.selectedScanData != scanData) {
+        return;
+    }
+
+    BOOL active = [self.connectionCoordinator isSessionActive:token peripheral:scanData.peripheral] &&
+        scanData.peripheral.state == CBPeripheralStateConnected;
+    [SVProgressHUD dismiss];
+    if (!success || !active) {
+        if (active) {
+            [self.connectionCoordinator cancelSession:token];
+        }
+        self.connectionSessionToken = nil;
+        [self setConnectionInProgress:NO];
+        if (self.navigationController.topViewController == self) {
+            [self.view makeToast:@"打开通知失败"];
+        }
+        return;
+    }
+
+    scanData.connectionSessionIdentifier = token;
+    self.ble.nGroupSendDataLen = scanData.sendDataLenMax;
+    [self.connectionCoordinator transferSession:token];
+    self.connectionSessionToken = nil;
+    [self setConnectionInProgress:NO];
+
+    BleViewController *bleView = [[BleViewController alloc] init];
+    bleView.scanData = scanData;
+    [self.navigationController pushViewController:bleView animated:YES];
 }
 
 #pragma mark -- UITableViewDataSource

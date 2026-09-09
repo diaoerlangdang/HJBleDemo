@@ -10,6 +10,16 @@
 		5DFB04F727F4816D00E5D8B7 /* AppConfigSetViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DFB04F627F4816D00E5D8B7 /* AppConfigSetViewController.m */; };
 		5DFB04FA27F4908100E5D8B7 /* BleServiceConfigViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DFB04F927F4908100E5D8B7 /* BleServiceConfigViewController.m */; };
 		688F055A08CABB3B305CAD24 /* Pods_HJBleDemo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C86EE3FBCA8D96FE7A24D198 /* Pods_HJBleDemo.framework */; };
+		74F5B744A20BF73FAA423D58 /* Pods_HJBleDemoTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 99C53A30583397B6E572C5B3 /* Pods_HJBleDemoTests.framework */; };
+		A10000000000000000000001 /* HJBleConnectionCoordinator.m in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000011 /* HJBleConnectionCoordinator.m */; };
+		A10000000000000000000002 /* HJBleDevicePageLifecycle.m in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000013 /* HJBleDevicePageLifecycle.m */; };
+		A10000000000000000000003 /* HJBleConnectionCoordinatorTests.m in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000015 /* HJBleConnectionCoordinatorTests.m */; };
+		A10000000000000000000004 /* HJBleDevicePageLifecycleTests.m in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000016 /* HJBleDevicePageLifecycleTests.m */; };
+		A10000000000000000000005 /* WiseBleWaitRegressionTests.m in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000017 /* WiseBleWaitRegressionTests.m */; };
+		A10000000000000000000006 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A10000000000000000000019 /* XCTest.framework */; };
+		A10000000000000000000007 /* HJBleConnectionCoordinator.m in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000011 /* HJBleConnectionCoordinator.m */; };
+		A10000000000000000000008 /* HJBleDevicePageLifecycle.m in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000013 /* HJBleDevicePageLifecycle.m */; };
+		A10000000000000000000009 /* WiseBleConnectionRegressionTests.m in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001A /* WiseBleConnectionRegressionTests.m */; };
 		E944B39122E73A79007A358B /* SetViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = E944B39022E73A78007A358B /* SetViewController.m */; };
 		E944B39922E74340007A358B /* PopoverAction.m in Sources */ = {isa = PBXBuildFile; fileRef = E944B39622E74340007A358B /* PopoverAction.m */; };
 		E944B39A22E74340007A358B /* PopoverView.m in Sources */ = {isa = PBXBuildFile; fileRef = E944B39722E74340007A358B /* PopoverView.m */; };
@@ -54,6 +64,19 @@
 		5DFB04F627F4816D00E5D8B7 /* AppConfigSetViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppConfigSetViewController.m; sourceTree = "<group>"; };
 		5DFB04F827F4908100E5D8B7 /* BleServiceConfigViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BleServiceConfigViewController.h; sourceTree = "<group>"; };
 		5DFB04F927F4908100E5D8B7 /* BleServiceConfigViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = BleServiceConfigViewController.m; sourceTree = "<group>"; };
+		70BE10DBF2E195816EBB19F1 /* Pods-HJBleDemoTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-HJBleDemoTests.debug.xcconfig"; path = "Target Support Files/Pods-HJBleDemoTests/Pods-HJBleDemoTests.debug.xcconfig"; sourceTree = "<group>"; };
+		722ABA007787659E25B99CD0 /* Pods-HJBleDemoTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-HJBleDemoTests.release.xcconfig"; path = "Target Support Files/Pods-HJBleDemoTests/Pods-HJBleDemoTests.release.xcconfig"; sourceTree = "<group>"; };
+		99C53A30583397B6E572C5B3 /* Pods_HJBleDemoTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_HJBleDemoTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		A10000000000000000000011 /* HJBleConnectionCoordinator.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = HJBleConnectionCoordinator.m; sourceTree = "<group>"; };
+		A10000000000000000000012 /* HJBleConnectionCoordinator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HJBleConnectionCoordinator.h; sourceTree = "<group>"; };
+		A10000000000000000000013 /* HJBleDevicePageLifecycle.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = HJBleDevicePageLifecycle.m; sourceTree = "<group>"; };
+		A10000000000000000000014 /* HJBleDevicePageLifecycle.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HJBleDevicePageLifecycle.h; sourceTree = "<group>"; };
+		A10000000000000000000015 /* HJBleConnectionCoordinatorTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = HJBleConnectionCoordinatorTests.m; sourceTree = "<group>"; };
+		A10000000000000000000016 /* HJBleDevicePageLifecycleTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = HJBleDevicePageLifecycleTests.m; sourceTree = "<group>"; };
+		A10000000000000000000017 /* WiseBleWaitRegressionTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WiseBleWaitRegressionTests.m; sourceTree = "<group>"; };
+		A10000000000000000000018 /* HJBleDemoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = HJBleDemoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A10000000000000000000019 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = System/Library/Frameworks/XCTest.framework; sourceTree = SDKROOT; };
+		A1000000000000000000001A /* WiseBleConnectionRegressionTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WiseBleConnectionRegressionTests.m; sourceTree = "<group>"; };
 		C86EE3FBCA8D96FE7A24D198 /* Pods_HJBleDemo.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_HJBleDemo.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		E944B38F22E73A78007A358B /* SetViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SetViewController.h; sourceTree = "<group>"; };
 		E944B39022E73A78007A358B /* SetViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SetViewController.m; sourceTree = "<group>"; };
@@ -113,6 +136,15 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		A10000000000000000000021 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000000000000000000006 /* XCTest.framework in Frameworks */,
+				74F5B744A20BF73FAA423D58 /* Pods_HJBleDemoTests.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		E9E118AA22E49B5F00657309 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -124,10 +156,23 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		A10000000000000000000020 /* HJBleDemoTests */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000015 /* HJBleConnectionCoordinatorTests.m */,
+				A10000000000000000000016 /* HJBleDevicePageLifecycleTests.m */,
+				A10000000000000000000017 /* WiseBleWaitRegressionTests.m */,
+				A1000000000000000000001A /* WiseBleConnectionRegressionTests.m */,
+			);
+			path = HJBleDemoTests;
+			sourceTree = "<group>";
+		};
 		D018F4A734BAFA8D6DA7323E /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				A10000000000000000000019 /* XCTest.framework */,
 				C86EE3FBCA8D96FE7A24D198 /* Pods_HJBleDemo.framework */,
+				99C53A30583397B6E572C5B3 /* Pods_HJBleDemoTests.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -137,6 +182,8 @@
 			children = (
 				F7D9B5BDF994AC2421779CE9 /* Pods-HJBleDemo.debug.xcconfig */,
 				1117F08FFA5E0EA3524D2163 /* Pods-HJBleDemo.release.xcconfig */,
+				70BE10DBF2E195816EBB19F1 /* Pods-HJBleDemoTests.debug.xcconfig */,
+				722ABA007787659E25B99CD0 /* Pods-HJBleDemoTests.release.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -166,6 +213,7 @@
 		E9E118A422E49B5F00657309 = {
 			isa = PBXGroup;
 			children = (
+				A10000000000000000000020 /* HJBleDemoTests */,
 				E9E118C622E49B7200657309 /* Podfile */,
 				E9E118AF22E49B5F00657309 /* HJBleDemo */,
 				E9E118AE22E49B5F00657309 /* Products */,
@@ -178,6 +226,7 @@
 			isa = PBXGroup;
 			children = (
 				E9E118AD22E49B5F00657309 /* HJBle.app */,
+				A10000000000000000000018 /* HJBleDemoTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -229,6 +278,10 @@
 		E9E118D022E49E6B00657309 /* model */ = {
 			isa = PBXGroup;
 			children = (
+				A10000000000000000000012 /* HJBleConnectionCoordinator.h */,
+				A10000000000000000000011 /* HJBleConnectionCoordinator.m */,
+				A10000000000000000000014 /* HJBleDevicePageLifecycle.h */,
+				A10000000000000000000013 /* HJBleDevicePageLifecycle.m */,
 				E9E118D222E49E6B00657309 /* HJBleScanData.h */,
 				E9E118D322E49E6B00657309 /* HJBleScanData.m */,
 				E9E118D422E49E6B00657309 /* BleSendReceiveData.h */,
@@ -323,6 +376,25 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		A10000000000000000000024 /* HJBleDemoTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A10000000000000000000029 /* Build configuration list for PBXNativeTarget "HJBleDemoTests" */;
+			buildPhases = (
+				039943C7A26D955E5772B8A4 /* [CP] Check Pods Manifest.lock */,
+				A10000000000000000000023 /* Sources */,
+				A10000000000000000000021 /* Frameworks */,
+				A10000000000000000000022 /* Resources */,
+				A8A8B5C3ED4BCD7640829507 /* [CP] Embed Pods Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = HJBleDemoTests;
+			productName = HJBleDemoTests;
+			productReference = A10000000000000000000018 /* HJBleDemoTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		E9E118AC22E49B5F00657309 /* HJBleDemo */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = E9E118C322E49B6000657309 /* Build configuration list for PBXNativeTarget "HJBleDemo" */;
@@ -351,6 +423,10 @@
 				LastUpgradeCheck = 1240;
 				ORGANIZATIONNAME = wuruizhi;
 				TargetAttributes = {
+					A10000000000000000000024 = {
+						CreatedOnToolsVersion = 26.0;
+						TestTargetID = E9E118AC22E49B5F00657309;
+					};
 					E9E118AC22E49B5F00657309 = {
 						CreatedOnToolsVersion = 10.2.1;
 					};
@@ -370,11 +446,19 @@
 			projectRoot = "";
 			targets = (
 				E9E118AC22E49B5F00657309 /* HJBleDemo */,
+				A10000000000000000000024 /* HJBleDemoTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		A10000000000000000000022 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		E9E118AB22E49B5F00657309 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -402,6 +486,28 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		039943C7A26D955E5772B8A4 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-HJBleDemoTests-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
 		1FFA7EFB5C3E9828E7113A0A /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -445,13 +551,45 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
+		A8A8B5C3ED4BCD7640829507 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-HJBleDemoTests/Pods-HJBleDemoTests-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-HJBleDemoTests/Pods-HJBleDemoTests-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-HJBleDemoTests/Pods-HJBleDemoTests-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		A10000000000000000000023 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000000000000000000007 /* HJBleConnectionCoordinator.m in Sources */,
+				A10000000000000000000008 /* HJBleDevicePageLifecycle.m in Sources */,
+				A10000000000000000000003 /* HJBleConnectionCoordinatorTests.m in Sources */,
+				A10000000000000000000004 /* HJBleDevicePageLifecycleTests.m in Sources */,
+				A10000000000000000000005 /* WiseBleWaitRegressionTests.m in Sources */,
+				A10000000000000000000009 /* WiseBleConnectionRegressionTests.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		E9E118A922E49B5F00657309 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A10000000000000000000001 /* HJBleConnectionCoordinator.m in Sources */,
+				A10000000000000000000002 /* HJBleDevicePageLifecycle.m in Sources */,
 				E9E118F822E49E6C00657309 /* BleSendReceiveTableViewCell.m in Sources */,
 				E9B031D8241A59C7002E35F4 /* HJScanTableViewCell.m in Sources */,
 				E944B39A22E74340007A358B /* PopoverView.m in Sources */,
@@ -489,6 +627,46 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
+		A10000000000000000000027 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 70BE10DBF2E195816EBB19F1 /* Pods-HJBleDemoTests.debug.xcconfig */;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+					"$(PODS_CONFIGURATION_BUILD_DIR)/wiseBle",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.hongjia.HJBleTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		A10000000000000000000028 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 722ABA007787659E25B99CD0 /* Pods-HJBleDemoTests.release.xcconfig */;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+					"$(PODS_CONFIGURATION_BUILD_DIR)/wiseBle",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.hongjia.HJBleTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		E9E118C122E49B6000657309 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -613,7 +791,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = HGKNXNFB8W;
 				INFOPLIST_FILE = HJBleDemo/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -636,7 +814,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = HGKNXNFB8W;
 				INFOPLIST_FILE = HJBleDemo/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -652,6 +830,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		A10000000000000000000029 /* Build configuration list for PBXNativeTarget "HJBleDemoTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A10000000000000000000027 /* Debug */,
+				A10000000000000000000028 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		E9E118A822E49B5F00657309 /* Build configuration list for PBXProject "HJBleDemo" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
