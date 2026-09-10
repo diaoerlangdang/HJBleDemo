@@ -57,7 +57,6 @@ import com.wise.ble.scan.bluetoothcompat.ScanResultCompat;
 import com.wise.wisekit.activity.BaseActivity;
 import com.wise.wisekit.dialog.LoadingDialog;
 
-import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -67,7 +66,6 @@ import java.util.TimerTask;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import pub.devrel.easypermissions.AfterPermissionGranted;
@@ -106,22 +104,25 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
     private Timer timer = new Timer();
     private TimerTask timerTask;
 
-    private WiseWaitEvent stateEvent = new WiseWaitEvent();
-    private WiseWaitEvent mtuEvent = new WiseWaitEvent();
-    private WiseWaitEvent sendEvent = new WiseWaitEvent();
-    private WiseWaitEvent recvEvent = new WiseWaitEvent();
+    static final class ConnectionWork {
+        final AtomicBoolean cancelled = new AtomicBoolean();
+        final BleDevice device;
+        final BleDeviceSession session;
+        final WiseWaitEvent recvEvent = new WiseWaitEvent();
+        final StringBuilder response = new StringBuilder();
+        volatile boolean waitingForFlow;
+        volatile byte[] flowResponse;
+        volatile Thread worker;
+        ConnectionWork(BleDevice device) {
+            this.device = device;
+            session = BleDeviceSession.begin(device);
+        }
+    }
 
-    // mtu
-    private int mtuLength = 23;
-
-    private ByteArrayOutputStream recvBuffer = new ByteArrayOutputStream();
-
-    private BleDevice selectBleDevice;
     private final ExecutorService connectionExecutor = Executors.newSingleThreadExecutor();
     private final AtomicBoolean connectionRunning = new AtomicBoolean(false);
-    private volatile AtomicBoolean connectionCancellation;
-    private volatile Future<?> connectionFuture;
-    private volatile BluetoothGatt pendingConnectionGatt;
+    private volatile ConnectionWork connectionCancellation;
+
 
 
     @Override
@@ -232,7 +233,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
                 .setOnCancelListener(new DialogInterface.OnCancelListener() {
                     @Override
                     public void onCancel(DialogInterface dialogInterface) {
-                        cancelConnection(false);
+                        cancelConnection();
                     }
                 });
         loadingDialog = loadBuilder.create();
@@ -273,14 +274,14 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
     @Override
     public void onConnectClick(int position) {
         HJBleScanDevice scanDevice = mLeDeviceListAdapter.getScanDeviceInfo(position);
-        if (BleManager.getInstance().isConnected(scanDevice.device.getMac())) {
-            BleManager.getInstance().disconnect(scanDevice.device);
+        if (BleManager.getInstance().getBleBluetooth(scanDevice.device) != null) {
+            BleDeviceSession session = BleDeviceSession.find(scanDevice.device);
+            if (session != null) session.disconnect(scanDevice.device);
+            else BleManager.getInstance().disconnect(scanDevice.device);
         } else {
             if (connectionRunning.get()) return;
 
             loadingDialog.show();
-
-            selectBleDevice = scanDevice.device;
 
             scanLeDevice(false);
 
@@ -293,6 +294,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
     @Override
     public void onDetailClick(int position) {
         HJBleScanDevice scanDevice = mLeDeviceListAdapter.getScanDeviceInfo(position);
+        if (!BleDeviceSession.isReady(scanDevice.device)) return;
 
         final Intent intent = new Intent(ScanBleActivity.this, BluetoothDataActivity.class);
         intent.putExtra(BluetoothDataActivity.EXTRAS_DEVICE_IS_CONFIG, scanDevice.isConfig);
@@ -382,70 +384,56 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
         }
     };
 
-    // 同步连接
-    private int connectBleSynchronization(BleManager bleManager, BleDevice bleDevice,
-                                          AtomicBoolean cancellation) {
-        WiseWaitEvent connectEvent = new WiseWaitEvent();
-        connectEvent.init();
-
-        BleGattCallback callback = new BleGattCallback() {
-            @Override
-            public void onStartConnect() {
-
-            }
-
-            @Override
-            public void onConnectFail(BleDevice bleDevice, BleException e) {
-                connectEvent.setSignal(WiseWaitEvent.ERROR_FAILED);
-            }
-
-            @Override
-            public void onConnectSuccess(BleDevice bleDevice, BluetoothGatt bluetoothGatt, int i) {
-                if (cancellation.get()) {
-                    disconnectGatt(bluetoothGatt);
-                    connectEvent.setSignal(WiseWaitEvent.ERROR_FAILED);
-                } else {
-                    connectEvent.setSignal(WiseWaitEvent.SUCCESS);
-                }
-            }
-
-            @Override
-            public void onDisConnected(boolean b, BleDevice bleDevice, BluetoothGatt bluetoothGatt, int i) {
-                BleDeviceSession.remove(bleDevice);
-                FastBleListener.getInstance().removeDevice(bleDevice);
-                runIfActive(() -> mLeDeviceListAdapter.notifyDataSetChanged());
-            }
-        };
-
-        BluetoothGatt bluetoothGatt = bleManager.connect(bleDevice, callback);
-        pendingConnectionGatt = bluetoothGatt;
-        if (cancellation.get()) {
-            disconnectGatt(bluetoothGatt);
-            pendingConnectionGatt = null;
-            return WiseWaitEvent.ERROR_FAILED;
+    // Each attempt owns its callback and wait; the callback must not retain an Activity.
+    private static final class ConnectionCallback extends BleGattCallback {
+        final ConnectionWork work;
+        final WiseWaitEvent event;
+        final java.lang.ref.WeakReference<ScanBleActivity> activity;
+        ConnectionCallback(ConnectionWork work, WiseWaitEvent event, ScanBleActivity activity) {
+            this.work = work;
+            this.event = event;
+            this.activity = new java.lang.ref.WeakReference<>(activity);
         }
-
-        int result = connectEvent.waitSignal(16000);
-        pendingConnectionGatt = null;
-        if (result == WiseWaitEvent.ERROR_TIME_OUT) {
-            cancellation.set(true);
-            disconnectGatt(bluetoothGatt);
+        @Override public void onStartConnect() { }
+        @Override public void onConnectFail(BleDevice device, BleException error) {
+            event.setSignal(WiseWaitEvent.ERROR_FAILED);
         }
+        @Override public void onConnectSuccess(BleDevice device, BluetoothGatt gatt, int status) {
+            if (work.cancelled.get() || !work.session.isCurrent(device)) {
+                work.session.disconnect(device);
+                event.setSignal(WiseWaitEvent.ERROR_FAILED);
+            } else {
+                event.setSignal(WiseWaitEvent.SUCCESS);
+            }
+        }
+        @Override public void onDisConnected(boolean active, BleDevice device, BluetoothGatt gatt, int status) {
+            work.cancelled.set(true);
+            Thread worker = work.worker;
+            if (worker != null) worker.interrupt();
+            work.session.removeIfCurrent(device);
+            ScanBleActivity owner = activity.get();
+            if (owner != null) owner.runIfActive(() -> owner.mLeDeviceListAdapter.notifyDataSetChanged());
+        }
+    }
+
+    private int connectBleSynchronization(BleManager manager, BleDevice device, ConnectionWork work) {
+        WiseWaitEvent event = new WiseWaitEvent();
+        event.init();
+        ConnectionCallback callback = new ConnectionCallback(work, event, this);
+        runOnUiThread(() -> {
+            if (!work.cancelled.get() && work.session.isCurrent(device)) manager.connect(device, callback);
+            else event.setSignal(WiseWaitEvent.ERROR_FAILED);
+        });
+        int result = event.waitSignal(16000);
+        if (result == WiseWaitEvent.ERROR_TIME_OUT) work.cancelled.set(true);
         return result;
     }
 
-    @SuppressLint("MissingPermission")
-    private void disconnectGatt(BluetoothGatt bluetoothGatt) {
-        if (bluetoothGatt == null) return;
-        try {
-            bluetoothGatt.disconnect();
-        } catch (SecurityException ignored) {
-        }
-    }
-
     // 同步打开通知
-    private boolean openNotifyBleSynchronization(BleManager bleManager, BleDevice bleDevice, final WiseCharacteristic characteristic) {
+    static boolean openNotifyBleSynchronization(BleManager bleManager, BleDevice bleDevice, final WiseCharacteristic characteristic, ConnectionWork work) {
 
+        if (isConnectionCancelled(work)) return false;
+        WiseWaitEvent stateEvent = new WiseWaitEvent();
         stateEvent.init();
         FastBleListener.getInstance().setNotifyBleCallback(bleDevice, characteristic, new BleNotifyCallback() {
             @Override
@@ -460,13 +448,23 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
 
             @Override
             public void onCharacteristicChanged(byte[] bytes) {
-                if (characteristic.getCharacteristicID().equals(BleConfig.Ble_Config_Receive_Service.getCharacteristicID())) {
-                    if (bytes != null && bytes.length > 0) {
-                        recvBuffer.reset();
-                        recvBuffer.write(bytes, 0, bytes.length);
-                        recvEvent.setSignal(WiseWaitEvent.SUCCESS);
-                    } else {
-                        recvEvent.setSignal(WiseWaitEvent.ERROR_FAILED);
+                if (work.cancelled.get() || !work.session.isCurrent(bleDevice)) return;
+                if (characteristic.getServiceID().equalsIgnoreCase(BleConfig.Ble_Config_Receive_Service.getServiceID())
+                        && characteristic.getCharacteristicID().equalsIgnoreCase(BleConfig.Ble_Config_Receive_Service.getCharacteristicID())
+                        && bytes != null) {
+                    work.session.acceptConfigData(bytes);
+                    if (!work.waitingForFlow) return;
+                    synchronized (work.response) {
+                        if (!work.waitingForFlow) return;
+                        work.response.append(ConvertData.bytesToUtf8(bytes));
+                        String response = work.response.toString();
+                        String value = response.contains("<rd_uart_fc=1>") ? "<rd_uart_fc=1>"
+                                : response.contains("<rd_uart_fc=0>") ? "<rd_uart_fc=0>" : null;
+                        if (value != null) {
+                            work.flowResponse = ConvertData.utf8ToBytes(value);
+                            work.recvEvent.setSignal(WiseWaitEvent.SUCCESS);
+                        }
+                        if (work.response.length() > 256) work.response.delete(0, work.response.length() - 64);
                     }
                 }
             }
@@ -481,7 +479,9 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
         return true;
     }
 
-    private boolean sendDataSynchronization(BleManager bleManager, BleDevice bleDevice, WiseCharacteristic characteristic, byte[] data) {
+    private static boolean sendDataSynchronization(BleManager bleManager, BleDevice bleDevice, WiseCharacteristic characteristic, byte[] data, ConnectionWork work) {
+        if (isConnectionCancelled(work)) return false;
+        WiseWaitEvent sendEvent = new WiseWaitEvent();
         sendEvent.init();
         bleManager.write(bleDevice, characteristic.getServiceID(), characteristic.getCharacteristicID(), data, new BleWriteCallback() {
             @Override
@@ -503,22 +503,29 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
         return true;
     }
 
-    private byte[] sendRecvData(BleManager bleManager, BleDevice bleDevice, WiseCharacteristic sendChara, WiseCharacteristic recvChara, byte[] sendData) {
-        recvEvent.init();
-
-        if (sendDataSynchronization(bleManager, bleDevice, sendChara, sendData)) {
-            if(WiseWaitEvent.SUCCESS == recvEvent.waitSignal(5000)) {
-                byte[] tmp = recvBuffer.toByteArray();
-                recvBuffer.reset();
-                return tmp;
-            }
+    static byte[] sendRecvData(BleManager manager, BleDevice device, WiseCharacteristic send,
+                                       byte[] data, ConnectionWork work) {
+        if (isConnectionCancelled(work)) return null;
+        synchronized (work.response) {
+            work.response.setLength(0);
+            work.flowResponse = null;
+            work.recvEvent.init();
+            work.waitingForFlow = true;
         }
-        return null;
+        try {
+            if (sendDataSynchronization(manager, device, send, data, work)
+                    && !isConnectionCancelled(work)
+                    && work.recvEvent.waitSignal(5000) == WiseWaitEvent.SUCCESS) return work.flowResponse;
+            return null;
+        } finally {
+            work.waitingForFlow = false;
+        }
     }
 
     boolean isSupportConfigService(BleManager bleManager, BleDevice bleDevice) {
         List<BluetoothGattService> services = bleManager.getBluetoothGattServices(bleDevice);
 
+        if (services == null) return false;
         BluetoothGattService configService = null;
         for (BluetoothGattService service: services) {
             if (service.getUuid().toString().equals(BleConfig.Ble_Config_Receive_Service.getServiceID())) {
@@ -548,9 +555,11 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
      * @param len 想要设置的mtu
      * @return 真实mtu
      */
-    int requestMtu(BleManager bleManager, BleDevice bleDevice, int len) {
+    static int requestMtu(BleManager bleManager, BleDevice bleDevice, int len, ConnectionWork work) {
+        if (isConnectionCancelled(work)) return 23;
+        WiseWaitEvent mtuEvent = new WiseWaitEvent();
         mtuEvent.init();
-        mtuLength = 23;
+        java.util.concurrent.atomic.AtomicInteger mtuLength = new java.util.concurrent.atomic.AtomicInteger(23);
         bleManager.setMtu(bleDevice, len, new BleMtuChangedCallback() {
             @Override
             public void onSetMTUFailure(BleException e) {
@@ -559,29 +568,31 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
 
             @Override
             public void onMtuChanged(int i) {
-                mtuLength = i;
+                mtuLength.set(Math.max(23, i));
                 mtuEvent.setSignal(WiseWaitEvent.SUCCESS);
             }
         });
 
-        int result = mtuEvent.waitSignal(5000);
-        if(WiseWaitEvent.SUCCESS != result) {
-            return mtuLength;
-        }else {
-            return mtuLength;
-        }
+        mtuEvent.waitSignal(5000);
+        return mtuLength.get();
     }
 
 
     // 连接蓝牙
     void connectBle(final HJBleScanDevice scanDevice) {
         if (!connectionRunning.compareAndSet(false, true)) return;
-        AtomicBoolean cancellation = new AtomicBoolean(false);
+        ConnectionWork cancellation = new ConnectionWork(scanDevice.device);
+        if (cancellation.session == null) {
+            connectionRunning.set(false);
+            loadingDialog.dismiss();
+            return;
+        }
         connectionCancellation = cancellation;
         loadingDialog.setMessage(getResources().getString(R.string.ble_connecting));
-        connectionFuture = connectionExecutor.submit(new Runnable() {
+        connectionExecutor.submit(new Runnable() {
             @Override
             public void run() {
+                cancellation.worker = Thread.currentThread();
                 try {
                     BleManager bleManager = BleManager.getInstance();
 
@@ -592,7 +603,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
                         int result = connectBleSynchronization(bleManager, scanDevice.device, cancellation);
                         if (result == WiseWaitEvent.SUCCESS) break;
                         if (result == WiseWaitEvent.ERROR_TIME_OUT) {
-                            showConnectionFailure();
+                            showConnectionFailure(cancellation);
                             return;
                         }
                         if (isConnectionCancelled(cancellation)) return;
@@ -601,18 +612,18 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
                     }
                     if(i == 5)
                     {
-                        showConnectionFailure();
+                        showConnectionFailure(cancellation);
                         return ;
                     }
 
                     if (isConnectionCancelled(cancellation)) {
-                        bleManager.disconnect(scanDevice.device);
+                        cancellation.session.disconnect(scanDevice.device);
                         return;
                     }
 
 //                SystemClock.sleep(200);//200ms
 
-                    runIfActive(new Runnable() {
+                    runConnectionUi(cancellation, new Runnable() {
                         @Override
                         public void run() {
 
@@ -621,28 +632,30 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
                         }
                     });
 
+                    scanDevice.bFlowControl = false;
                     scanDevice.isConfig = isSupportConfigService(bleManager, scanDevice.device);
 
 
                     // 打开配置通知
-                    if(scanDevice.isConfig && !openNotifyBleSynchronization(bleManager, scanDevice.device, BleConfig.Ble_Config_Receive_Service))
+                    if(scanDevice.isConfig && !openNotifyBleSynchronization(bleManager, scanDevice.device, BleConfig.Ble_Config_Receive_Service, cancellation))
                     {
-                        bleManager.disconnect(scanDevice.device);
+                        cancellation.session.disconnect(scanDevice.device);
 
-                        showConnectionFailure();
+                        showConnectionFailure(cancellation);
                         return ;
                     }
 
                     if (isConnectionCancelled(cancellation)) {
-                        bleManager.disconnect(scanDevice.device);
+                        cancellation.session.disconnect(scanDevice.device);
                         return;
                     }
 
 
                     // 设置mtu
-                    int mtuLen = requestMtu(bleManager, scanDevice.device, 512) - 3;
+                    int mtuLen = requestMtu(bleManager, scanDevice.device, 512, cancellation) - 3;
+                    if (isConnectionCancelled(cancellation)) return;
                     scanDevice.mtuLen = mtuLen;
-                    BleDeviceSession.get(scanDevice.device).setPacketLength(mtuLen);
+                    cancellation.session.setPacketLength(mtuLen);
 
                     // 是否为流控模式
                     boolean bFlowControl = false;
@@ -651,7 +664,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
 
                     // 支持配置模式的设备，获取是否为流控模式
                     if (scanDevice.isConfig && supportFlowControl) {
-                        runIfActive(new Runnable() {
+                        runConnectionUi(cancellation, new Runnable() {
                             @Override
                             public void run() {
 
@@ -660,29 +673,28 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
                         });
 
                         byte[] cmd = ConvertData.utf8ToBytes("<RD_UART_FC>");
-                        byte[] recv = sendRecvData(bleManager, scanDevice.device, BleConfig.Ble_Config_Send_Service, BleConfig.Ble_Config_Receive_Service, cmd);
-                        if (recv != null) {
-                            String recvStr = ConvertData.bytesToUtf8(recv);
-                            if (recvStr.equals("<rd_uart_fc=1>")) {
-                                bFlowControl = true;
-                            } else {
-                                bFlowControl = false;
-                            }
+                        byte[] recv = sendRecvData(bleManager, scanDevice.device, BleConfig.Ble_Config_Send_Service, cmd, cancellation);
+                        if (recv == null) {
+                            showConnectionFailure(cancellation);
+                            return;
                         }
+                        bFlowControl = "<rd_uart_fc=1>".equals(ConvertData.bytesToUtf8(recv));
 
                         scanDevice.bFlowControl = bFlowControl;
 
                     }
 
                     if (isConnectionCancelled(cancellation)) {
-                        bleManager.disconnect(scanDevice.device);
+                        cancellation.session.disconnect(scanDevice.device);
                         return;
                     }
 
 
-                    if(openNotifyBleSynchronization(bleManager, scanDevice.device, BleConfig.Ble_Data_Receive_Service()))
+                    if(openNotifyBleSynchronization(bleManager, scanDevice.device, BleConfig.Ble_Data_Receive_Service(), cancellation))
                     {
-                        runIfActive(new Runnable() {
+                        if (isConnectionCancelled(cancellation)) return;
+                        cancellation.session.markReady(scanDevice);
+                        runConnectionUi(cancellation, new Runnable() {
                             @Override
                             public void run() {
 
@@ -694,54 +706,58 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
                     }
                     else
                     {
-                        BleManager.getInstance().disconnect(scanDevice.device);
+                        cancellation.session.disconnect(scanDevice.device);
 
-                        showConnectionFailure();
+                        showConnectionFailure(cancellation);
                     }
+                } catch (SecurityException error) {
+                    showConnectionFailure(cancellation);
                 } finally {
-                    pendingConnectionGatt = null;
-                    connectionRunning.set(false);
-                    if (connectionCancellation == cancellation) {
-                        connectionCancellation = null;
-                        connectionFuture = null;
-                    }
-                    if (cancellation.get()) {
-                        runIfActive(() -> {
-                            loadingDialog.dismiss();
-                            if (!mScanning) scanLeDevice(true);
-                        });
-                    }
+                    cancellation.worker = null;
+                    Thread.interrupted();
+                    runOnUiThread(() -> {
+                        if (!cancellation.session.isReady() || cancellation.cancelled.get()) {
+                            cancellation.session.disconnect(scanDevice.device);
+                            if (BleManager.getInstance().getBleBluetooth(scanDevice.device) == null) {
+                                cancellation.session.removeIfCurrent(scanDevice.device);
+                            }
+                        }
+                        if (connectionCancellation == cancellation) {
+                            connectionRunning.set(false);
+                            if (!isFinishing() && !isDestroyed()) {
+                                loadingDialog.dismiss();
+                                mLeDeviceListAdapter.notifyDataSetChanged();
+                                if (!mScanning) scanLeDevice(true);
+                            }
+                        }
+                    });
                 }
             }
         });
     }
 
-    private boolean isConnectionCancelled(AtomicBoolean cancellation) {
-        return cancellation.get() || Thread.currentThread().isInterrupted();
+    private static boolean isConnectionCancelled(ConnectionWork work) {
+        return work.cancelled.get() || Thread.currentThread().isInterrupted() || !work.session.isCurrent(work.device);
     }
 
-    private void showConnectionFailure() {
-        runIfActive(new Runnable() {
-            @Override
-            public void run() {
-                Toast.makeText(ScanBleActivity.this,getResources().getString(R.string.ble_connect_failed),Toast.LENGTH_SHORT).show();
-                loadingDialog.dismiss();
-                scanLeDevice(true);
-            }
+    private void showConnectionFailure(ConnectionWork work) {
+        runConnectionUi(work, () -> Toast.makeText(this, R.string.ble_connect_failed, Toast.LENGTH_SHORT).show());
+    }
+
+    private void runConnectionUi(ConnectionWork work, Runnable action) {
+        runIfActive(() -> {
+            if (connectionCancellation == work && !work.cancelled.get() && work.session.isCurrent(work.device)) action.run();
         });
     }
 
-    private void cancelConnection(boolean interrupt) {
-        AtomicBoolean cancellation = connectionCancellation;
-        if (cancellation != null) cancellation.set(true);
-        disconnectGatt(pendingConnectionGatt);
-        if (selectBleDevice != null && BleManager.getInstance().isConnected(selectBleDevice)) {
-            BleManager.getInstance().disconnect(selectBleDevice);
-        }
-        if (interrupt) {
-            Future<?> task = connectionFuture;
-            if (task != null) task.cancel(true);
-        }
+    private void cancelConnection() {
+        ConnectionWork work = connectionCancellation;
+        if (work == null || !connectionRunning.get()) return;
+        work.cancelled.set(true);
+        Thread worker = work.worker;
+        if (worker != null) worker.interrupt();
+        work.session.disconnect(work.device);
+        if (BleManager.getInstance().getBleBluetooth(work.device) == null) work.session.removeIfCurrent(work.device);
     }
 
     private void runIfActive(Runnable action) {
@@ -752,7 +768,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
 
     @Override
     protected void onDestroy() {
-        cancelConnection(true);
+        cancelConnection();
         connectionExecutor.shutdownNow();
         handler.removeCallbacksAndMessages(null);
         if (scanManager != null) {

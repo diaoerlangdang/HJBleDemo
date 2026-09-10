@@ -96,10 +96,28 @@ public class SetActivity extends BaseActivity {
 
     private BleDevice mBleDevice;
     private BleDeviceSession deviceSession;
+    private Runnable removeDisconnectListener;
 
     @Override
     protected int getPageLayoutId() {
         return R.layout.activity_set;
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (deviceSession == null || !deviceSession.isCurrent(mBleDevice) || !BleDeviceSession.isReady(mBleDevice)) {
+            finish();
+            return;
+        }
+        removeDisconnectListener = deviceSession.onDisconnected(() -> runOnUiThread(this::finish));
+    }
+
+    @Override
+    protected void onPause() {
+        if (removeDisconnectListener != null) removeDisconnectListener.run();
+        removeDisconnectListener = null;
+        super.onPause();
     }
 
     @Override
@@ -118,7 +136,8 @@ public class SetActivity extends BaseActivity {
             finish();
             return;
         }
-        deviceSession = BleDeviceSession.get(mBleDevice);
+        deviceSession = BleDeviceSession.find(mBleDevice);
+        if (deviceSession == null || !BleDeviceSession.isReady(mBleDevice)) { finish(); return; }
 
         setTitle(getResources().getString(R.string.setting_title));
 

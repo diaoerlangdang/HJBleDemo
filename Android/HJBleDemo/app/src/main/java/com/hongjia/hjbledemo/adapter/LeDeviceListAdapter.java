@@ -15,6 +15,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.clj.fastble.BleManager;
 import com.clj.fastble.data.BleDevice;
 import com.hongjia.hjbledemo.R;
+import com.hongjia.hjbledemo.BleDeviceSession;
 import com.hongjia.hjbledemo.bean.HJBleScanDevice;
 
 import java.text.SimpleDateFormat;
@@ -54,7 +55,14 @@ public class LeDeviceListAdapter extends RecyclerView.Adapter<LeDeviceListAdapte
         for (int i=0; i<mScanDevices.size(); i++) {
             if (mScanDevices.get(i).device.getMac().equals(scanDevice.device.getMac())) {
                 scanDevice.timeStamp = new Date().getTime();
-                mScanDevices.set(i, scanDevice);
+                if (BleManager.getInstance().getBleBluetooth(scanDevice.device) != null) {
+                    HJBleScanDevice current = mScanDevices.get(i);
+                    current.rssi = scanDevice.rssi;
+                    current.record = scanDevice.record;
+                    current.timeStamp = scanDevice.timeStamp;
+                } else {
+                    mScanDevices.set(i, scanDevice);
+                }
                 pos = i;
                 break;
             }
@@ -91,11 +99,18 @@ public class LeDeviceListAdapter extends RecyclerView.Adapter<LeDeviceListAdapte
         List<HJBleScanDevice> connectedDevices = new ArrayList<>();
         BleManager bleManager = BleManager.getInstance();
         for (HJBleScanDevice item : mScanDevices) {
-            if (bleManager.isConnected(item.device.getMac())) {
+            if (bleManager.getBleBluetooth(item.device) != null) {
                 connectedDevices.add(item);
             }
         }
 
+        for (HJBleScanDevice ready : BleDeviceSession.readyDevices()) {
+            boolean present = false;
+            for (HJBleScanDevice item : connectedDevices) {
+                if (item.device.getMac().equals(ready.device.getMac())) { present = true; break; }
+            }
+            if (!present && bleManager.getBleBluetooth(ready.device) != null) connectedDevices.add(ready);
+        }
         mScanDevices = connectedDevices;
 
         // 保留以连接的
@@ -118,9 +133,9 @@ public class LeDeviceListAdapter extends RecyclerView.Adapter<LeDeviceListAdapte
         else
             viewHolder.deviceName.setText(mContext.getResources().getString(R.string.unknow_device));
 
-        if (BleManager.getInstance().isConnected(scanDevice.device.getMac())) {
+        if (BleManager.getInstance().getBleBluetooth(scanDevice.device) != null) {
             viewHolder.connectBtn.setText(mContext.getResources().getString(R.string.device_disconnect));
-            viewHolder.detailBtn.setVisibility(View.VISIBLE);
+            viewHolder.detailBtn.setVisibility(BleDeviceSession.isReady(scanDevice.device) ? View.VISIBLE : View.GONE);
         } else {
             viewHolder.connectBtn.setText(mContext.getResources().getString(R.string.device_connect));
             viewHolder.detailBtn.setVisibility(View.GONE);

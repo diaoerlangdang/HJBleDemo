@@ -271,6 +271,7 @@ public class WiseBluetoothLe extends BluetoothLe
 		recvEvent.setSignal(WiseWaitEvent.ERROR_FAILED);
 		stateEvent.setSignal(WiseWaitEvent.ERROR_FAILED);
 		sendEvent.setSignal(WiseWaitEvent.ERROR_FAILED);
+		mtuEvent.setSignal(WiseWaitEvent.ERROR_FAILED);
 		super.disconnectDevice();
 		super.disconnectLocalDevice();
 	}
@@ -581,7 +582,7 @@ public class WiseBluetoothLe extends BluetoothLe
 					recvBuffer.write(recvTmp, 0, recvTmp.length);
 				}
 
-				if ((recvEvent.getWaitStatus() == WiseWaitEvent.Waitting || recvEvent.getWaitStatus() == WiseWaitEvent.WillWaitting) &&
+				if (recvEvent.getWaitStatus() == WiseWaitEvent.WillWaitting &&
 						mSendReceiveService.isEqualBleGattCharacteristic(characteristic)) {
 					recvEvent.setSignal(WiseWaitEvent.SUCCESS);
 				}

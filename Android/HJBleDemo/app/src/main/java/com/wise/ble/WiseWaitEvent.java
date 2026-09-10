@@ -5,14 +5,13 @@ public class WiseWaitEvent {
    public final static int ERROR_FAILED = 3;
    public final static int ERROR_TIME_OUT = 4;
    public final static int WillWaitting = 2;
-   public final static int Waitting = 1;
    public final static int SUCCESS = 0;
 
    private volatile int mResult = SUCCESS;
 
    private volatile boolean ready = false; // 如果是true，则表示是被唤醒
 
-   public void init() {
+   public synchronized void init() {
 
       // 防止等待之前先成功，所以在使用前先init，如果还没有waitSignal就调用setSignal，则会立即成功
       mResult = WillWaitting;
@@ -31,11 +30,13 @@ public class WiseWaitEvent {
       long begin = System.currentTimeMillis();
       long rest = mills;
       if (rest == 0) {
-         try {
-            wait();
-         } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return ERROR_FAILED;
+         while (!ready) {
+            try {
+               wait();
+            } catch (InterruptedException e) {
+               Thread.currentThread().interrupt();
+               return ERROR_FAILED;
+            }
          }
          return mResult;
       } else {

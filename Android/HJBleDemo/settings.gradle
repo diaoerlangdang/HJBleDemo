@@ -17,3 +17,4 @@ dependencyResolutionManagement {
 rootProject.name = "HJBleDemo"
 include ':app'
 include ':wisekit'
+include ':fastble'

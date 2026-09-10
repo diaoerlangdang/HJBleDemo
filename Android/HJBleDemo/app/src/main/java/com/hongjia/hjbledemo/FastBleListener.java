@@ -16,6 +16,8 @@ public class FastBleListener {
    // 通知回调
    private final ConcurrentHashMap<String, BleNotifyCallback> notifyBleCallbackMap = new ConcurrentHashMap<>();
 
+   private final ConcurrentHashMap<String, Object> subscriptions = new ConcurrentHashMap<>();
+
    // 高速
    private final ConcurrentHashMap<String, Boolean> highRateMap = new ConcurrentHashMap<>();
 
@@ -37,8 +39,10 @@ public class FastBleListener {
       return notifyBleCallbackMap.get(notifyKey(device, characteristic));
    }
 
-   public void setNotifyBleCallback(BleDevice device, WiseCharacteristic characteristic, BleNotifyCallback notifyBleCallback) {
-      notifyBleCallbackMap.put(notifyKey(device, characteristic), notifyBleCallback);
+   public Runnable setNotifyBleCallback(BleDevice device, WiseCharacteristic characteristic, BleNotifyCallback notifyBleCallback) {
+      String key = notifyKey(device, characteristic);
+      notifyBleCallbackMap.put(key, notifyBleCallback);
+      return () -> notifyBleCallbackMap.remove(key, notifyBleCallback);
    }
 
    public void removeNotifyBleCallback(BleDevice device, WiseCharacteristic characteristic) {
@@ -68,36 +72,47 @@ public class FastBleListener {
     * @param characteristic 特征
     */
    public void openNotify(BleDevice bleDevice, final WiseCharacteristic characteristic) {
+      String key = notifyKey(bleDevice, characteristic);
+      Object subscription = new Object();
+      subscriptions.put(key, subscription);
+      BleNotifyCallback setupCallback = getNotifyBleCallback(bleDevice, characteristic);
       BleManager.getInstance().notify(bleDevice, characteristic.getServiceID(), characteristic.getCharacteristicID(), new BleNotifyCallback() {
          @Override
          public void onNotifySuccess() {
-            BleNotifyCallback callback = getNotifyBleCallback(bleDevice, characteristic);
+            if (subscriptions.get(key) != subscription) return;
+            BleNotifyCallback callback = setupCallback;
             if (callback != null) callback.onNotifySuccess();
          }
 
          @Override
          public void onNotifyFailure(BleException e) {
-            BleNotifyCallback callback = getNotifyBleCallback(bleDevice, characteristic);
+            if (subscriptions.get(key) != subscription) return;
+            BleNotifyCallback callback = setupCallback;
             if (callback != null) callback.onNotifyFailure(e);
          }
 
          @Override
          public void onCharacteristicChanged(byte[] bytes) {
+            if (subscriptions.get(key) != subscription) return;
+            if (setupCallback != null) setupCallback.onCharacteristicChanged(bytes);
             BleNotifyCallback callback = getNotifyBleCallback(bleDevice, characteristic);
-            if (callback != null) callback.onCharacteristicChanged(bytes);
+            if (callback != null && callback != setupCallback) callback.onCharacteristicChanged(bytes);
          }
       });
    }
 
    private String notifyKey(BleDevice device, WiseCharacteristic characteristic) {
-      return device.getMac() + "|" + characteristic.getServiceID() + "|" + characteristic.getCharacteristicID();
+      return (device.getMac() + "|" + characteristic.getServiceID() + "|" + characteristic.getCharacteristicID()).toLowerCase(java.util.Locale.ROOT);
    }
 
    public void removeDevice(BleDevice device) {
       if (device == null) return;
-      String prefix = device.getMac() + "|";
+      String prefix = device.getMac().toLowerCase(java.util.Locale.ROOT) + "|";
       for (String key : notifyBleCallbackMap.keySet()) {
          if (key.startsWith(prefix)) notifyBleCallbackMap.remove(key);
+      }
+      for (String key : subscriptions.keySet()) {
+         if (key.startsWith(prefix)) subscriptions.remove(key);
       }
       highRateMap.remove(device.getMac());
    }

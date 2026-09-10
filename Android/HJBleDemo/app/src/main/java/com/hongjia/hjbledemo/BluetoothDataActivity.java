@@ -39,7 +39,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.clj.fastble.BleManager;
-import com.clj.fastble.callback.BleGattCallback;
 import com.clj.fastble.callback.BleNotifyCallback;
 import com.clj.fastble.callback.BleWriteCallback;
 import com.clj.fastble.data.BleDevice;
@@ -87,6 +86,9 @@ public class BluetoothDataActivity extends BaseActivity {
     private String mDeviceAddress;
     private BleDevice mBleDevice;
     private BleDeviceSession deviceSession;
+    private Runnable removeDisconnectListener;
+    private Runnable removeConfigListener;
+    private Runnable removeDataListener;
     private boolean isConfig;
     private Context context;
     private EditText sendEdit;
@@ -184,17 +186,21 @@ public class BluetoothDataActivity extends BaseActivity {
         if (mBleDevice != null) {
             mDeviceName = mBleDevice.getName();
             mDeviceAddress = mBleDevice.getMac().toUpperCase(Locale.ROOT);
-            deviceSession = BleDeviceSession.get(mBleDevice);
+            deviceSession = BleDeviceSession.find(mBleDevice);
         } else {
             mDeviceName = "";
             mDeviceAddress = "";
         }
         isConfig = intent.getBooleanExtra(EXTRAS_DEVICE_IS_CONFIG, false);
         bFlowControl = intent.getBooleanExtra(EXTRAS_DEVICE_IS_FLOW_CONTROL, false);
+        if (deviceSession != null && deviceSession.getReadyDevice() != null) {
+            isConfig = deviceSession.getReadyDevice().isConfig;
+            bFlowControl = deviceSession.getReadyDevice().bFlowControl;
+        }
 
         super.onCreate(savedInstanceState);
 
-        if (mBleDevice == null) return;
+        if (!hasReadySession()) { finish(); return; }
 
         fileNameSend = getSendFileName();
         fileNameReceive = getReceiveFileName();
@@ -235,35 +241,6 @@ public class BluetoothDataActivity extends BaseActivity {
                 mHandler.sendMessage(message);
             }
         };
-
-        if (mBleDevice != null) {
-            BleManager.getInstance().getBleBluetooth(mBleDevice).addConnectGattCallback(new BleGattCallback() {
-                @Override
-                public void onStartConnect() {
-
-                }
-
-                @Override
-                public void onConnectFail(BleDevice bleDevice, BleException e) {
-
-                }
-
-                @Override
-                public void onConnectSuccess(BleDevice bleDevice, BluetoothGatt bluetoothGatt, int i) {
-
-                }
-
-                @Override
-                public void onDisConnected(boolean b, BleDevice bleDevice, BluetoothGatt bluetoothGatt, int i) {
-                    BleDeviceSession.remove(bleDevice);
-                    FastBleListener.getInstance().removeDevice(bleDevice);
-                    SendReceiveDataBean dataBean = new SendReceiveDataBean(SendReceiveDataBean.DataTypeOther, getResources().getString(R.string.ble_disconnected));
-
-                    addDataInfoItem(dataBean);
-                    finish();
-                }
-            });
-        }
 
         mHandler = new Handler(new Handler.Callback() {
             @Override
@@ -458,6 +435,7 @@ public class BluetoothDataActivity extends BaseActivity {
     }
 
     private boolean sendDataSynchronization(BleManager bleManager, BleDevice bleDevice, WiseCharacteristic characteristic, byte[] data) {
+        if (Thread.currentThread().isInterrupted() || !hasReadySession()) return false;
         WiseWaitEvent sendEvent = new WiseWaitEvent();
         sendEvent.init();
         long startTime = System.currentTimeMillis(); // 获取开始时间戳
@@ -495,6 +473,7 @@ public class BluetoothDataActivity extends BaseActivity {
     }
 
     void startTest() {
+        if (!hasReadySession()) { finish(); return; }
         if (deviceSession.isBusy()) {
             Toast.makeText(this, R.string.ble_busy, Toast.LENGTH_SHORT).show();
             return;
@@ -545,6 +524,7 @@ public class BluetoothDataActivity extends BaseActivity {
                         while ((fileReadCount = inputStream.read(fileBuffer, 0, fileGroupLen)) != -1 && isTesting) {
                             int offset = 0;
                             while (offset < fileReadCount && isTesting) {
+                                if (!hasReadySession()) return;
                                 if (deviceSession.isBusy()) {
                                     stopTest();
                                     runOnUiThread(new Runnable() {
@@ -632,6 +612,7 @@ public class BluetoothDataActivity extends BaseActivity {
                         Arrays.fill(groupData, (byte) 0);
 
 
+                        if (!hasReadySession()) return;
                         if (deviceSession.isBusy()) {
                             SendReceiveDataBean dataBean = new SendReceiveDataBean(SendReceiveDataBean.DataTypeOther, getResources().getString(R.string.ble_busy));
                             addDataInfoItem(dataBean);
@@ -787,6 +768,13 @@ public class BluetoothDataActivity extends BaseActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        if (!hasReadySession()) { finish(); return; }
+        releaseConnectionListeners();
+        removeDisconnectListener = deviceSession.onDisconnected(() -> runOnUiThread(() -> {
+            cancelTest();
+            cancelManualSend();
+            finish();
+        }));
 
         if (deviceSession.isConfigMode()) {
             // 发送服务
@@ -830,7 +818,7 @@ public class BluetoothDataActivity extends BaseActivity {
             writeTypeBle(mSendCharact, HJBleApplication.shareInstance().isWriteTypeResponse());
         }
 
-        FastBleListener.getInstance().setNotifyBleCallback(mBleDevice, BleConfig.Ble_Config_Receive_Service, new BleNotifyCallback() {
+        removeConfigListener = FastBleListener.getInstance().setNotifyBleCallback(mBleDevice, BleConfig.Ble_Config_Receive_Service, new BleNotifyCallback() {
             @Override
             public void onNotifySuccess() {
 
@@ -851,7 +839,7 @@ public class BluetoothDataActivity extends BaseActivity {
         });
 
         if (!mReceiveCharact.getCharacteristicID().equals(BleConfig.Ble_Config_Receive_Service.getCharacteristicID())) {
-            FastBleListener.getInstance().setNotifyBleCallback(mBleDevice, mReceiveCharact, new BleNotifyCallback() {
+            removeDataListener = FastBleListener.getInstance().setNotifyBleCallback(mBleDevice, mReceiveCharact, new BleNotifyCallback() {
             @Override
             public void onNotifySuccess() {
 
@@ -916,7 +904,9 @@ public class BluetoothDataActivity extends BaseActivity {
     }
 
     public void writeTypeBle(WiseCharacteristic chara,  boolean bRespone){
-        BluetoothGattService service= BleManager.getInstance().getBluetoothGatt(mBleDevice).getService(UUID.fromString(chara.getServiceID()));
+        BluetoothGatt gatt = BleManager.getInstance().getBluetoothGatt(mBleDevice);
+        if (gatt == null || !hasReadySession()) { finish(); return; }
+        BluetoothGattService service = gatt.getService(UUID.fromString(chara.getServiceID()));
         if (service == null) {
             addDataInfoItem(new SendReceiveDataBean(SendReceiveDataBean.DataTypeOther,
                     chara.getServiceID() + "  " + chara.getCharacteristicID() + "该服务不存在"));
@@ -938,7 +928,7 @@ public class BluetoothDataActivity extends BaseActivity {
     @Override
     protected void onPause() {
         super.onPause();
-
+        releaseConnectionListeners();
         stopTimer();
         cancelTest();
         cancelManualSend();
@@ -1024,6 +1014,7 @@ public class BluetoothDataActivity extends BaseActivity {
             Toast.makeText(this, R.string.testing_command_blocked, Toast.LENGTH_SHORT).show();
             return;
         }
+        if (!hasReadySession()) { finish(); return; }
         if (deviceSession.isBusy()) {
             Toast.makeText(this, R.string.ble_busy, Toast.LENGTH_SHORT).show();
             return;
@@ -1143,11 +1134,7 @@ public class BluetoothDataActivity extends BaseActivity {
     protected void onDestroy() {
         cancelTest();
         cancelManualSend();
-        if (mBleDevice != null) {
-            FastBleListener listener = FastBleListener.getInstance();
-            listener.removeNotifyBleCallback(mBleDevice, BleConfig.Ble_Config_Receive_Service);
-            listener.removeNotifyBleCallback(mBleDevice, BleConfig.Ble_Data_Receive_Service());
-        }
+        releaseConnectionListeners();
 
         // 销毁蒙版管理器
         if (overlayManager != null) {
@@ -1156,6 +1143,19 @@ public class BluetoothDataActivity extends BaseActivity {
 //        BleManager.getInstance().getBleBluetooth(mBleDevice).removeWriteCallback(BleConfig.Ble_Config_Send_Service.getCharacteristicID());
 //        BleManager.getInstance().getBleBluetooth(mBleDevice).removeWriteCallback(BleConfig.Ble_Data_Send_Service().getCharacteristicID());
         super.onDestroy();
+    }
+
+    private boolean hasReadySession() {
+        return deviceSession != null && deviceSession.isCurrent(mBleDevice) && BleDeviceSession.isReady(mBleDevice);
+    }
+
+    private void releaseConnectionListeners() {
+        if (removeDisconnectListener != null) removeDisconnectListener.run();
+        if (removeConfigListener != null) removeConfigListener.run();
+        if (removeDataListener != null) removeDataListener.run();
+        removeDisconnectListener = null;
+        removeConfigListener = null;
+        removeDataListener = null;
     }
 
     private void cancelManualSend() {
