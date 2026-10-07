@@ -14,6 +14,9 @@
 #import "wiseBle/WWWaitEvent.h"
 #import "HJBleConnectionCoordinator.h"
 #import "HJBleDevicePageLifecycle.h"
+#import "HJCustomCommandViewController.h"
+#import "HJCustomCommandStore.h"
+#import "HJCustomCommandCodec.h"
  
 // header view 高度
 #define HEADER_VIEW_HEIGHT 85.f
@@ -100,7 +103,6 @@
     UIBarButtonItem *clearBtnItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemTrash target:self action:@selector(clearData)];
 
     UIBarButtonItem *setBtnItem = [[UIBarButtonItem alloc] initWithImage:[UIImage imageNamed:@"set"] style:UIBarButtonItemStylePlain target:self action:@selector(setBtnClicked)];
-
     self.navigationItem.rightBarButtonItems = @[setBtnItem, clearBtnItem];
     
     CGFloat chatToolBarHeight = [DXMessageToolBar defaultHeight];
@@ -276,8 +278,16 @@
         make.top.equalTo(_averageSendRateLabel.mas_bottom).offset(5);
         make.right.equalTo(_headerView).offset(-10);
     }];
-    
-    
+
+    UIButton *customCommandButton = [UIButton buttonWithType:UIButtonTypeSystem];
+    [customCommandButton setTitle:@"自定义指令" forState:UIControlStateNormal];
+    [customCommandButton addTarget:self action:@selector(customCommandBtnClicked) forControlEvents:UIControlEventTouchUpInside];
+    [_headerView addSubview:customCommandButton];
+    [customCommandButton mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(_testBtn);
+        make.right.equalTo(_testBtn.mas_left).offset(-12);
+    }];
+
 }
 
 - (void)setSendByteCount:(NSInteger)count
@@ -431,117 +441,130 @@
 - (void)toolBar:(DXMessageToolBar *)toolBar didSendText:(NSString *)text
 {
     [self.view endEditing:true];
-    
+
     if (!text || text.length <= 0 || _isTesting) {
-        return ;
+        return;
     }
-    
-    //hex值，需要输入2的倍数的长度
+
     if (_isShowHex) {
-        
-        if (text.length%2 != 0) {
+        if (text.length % 2 != 0) {
             [self.view makeToast:@"数据不为2的倍数"];
             return;
         }
-        
         text = text.uppercaseString;
-        
         if (![WWRegexUtils isValidateByRegex:@"^[A-Fa-f0-9]+$" value:text]) {
             [self.view makeToast:@"输入格式错误"];
             return;
         }
     }
-    
-    // 蓝牙繁忙
+
     if (_bBusyBle) {
         [self.view makeToast:@"蓝牙繁忙，请稍后在试"];
         return;
     }
-    
-    
-    WWCharacteristic *chart = nil;
-    //配置模式
-    if ([HJConfigInfo shareInstance].isBleConfig) {
-        chart = [HJConfigInfo shareInstance].configSendService;
+
+    HJCustomCommand *command = [[HJCustomCommand alloc] initWithName:@"手动输入"
+                                                               command:text
+                                                                  type:_isShowHex ? HJCustomCommandTypeHex : HJCustomCommandTypeASCII];
+    NSString *error = nil;
+    NSData *sendData = [HJCustomCommandCodec dataForCommand:command
+                                               appendReturn:[HJConfigInfo shareInstance].isAddReturn
+                                                      error:&error];
+    if (!sendData) {
+        [self.view makeToast:error ?: @"输入格式错误"];
+        return;
     }
-    else {
-        chart = [HJConfigInfo shareInstance].dataSendService;
+    [self sendPreparedData:sendData logText:text clearInput:[HJConfigInfo shareInstance].isClearInput toolbar:toolBar];
+}
+
+- (void)customCommandBtnClicked
+{
+    HJCustomCommandViewController *commandViewController =
+        [[HJCustomCommandViewController alloc] initWithStore:[[HJCustomCommandStore alloc] init]];
+    __weak typeof(self) weakSelf = self;
+    commandViewController.onCommandExecute = ^(HJCustomCommand *command) {
+        __strong typeof(weakSelf) self = weakSelf;
+        [self executeCustomCommand:command];
+    };
+    [self presentViewController:commandViewController animated:YES completion:nil];
+}
+
+- (void)executeCustomCommand:(HJCustomCommand *)command
+{
+    if (_isTesting) {
+        [self.view makeToast:@"正在测试中，无法执行指令"];
+        return;
     }
-    
-    NSData *sendData = nil;
-    if (_isShowHex) {
-        NSString *tempText = text;
-        if ([HJConfigInfo shareInstance].isAddReturn) {
-            tempText = [NSString stringWithFormat:@"%@0D0A", tempText];
-        }
-        sendData = [NSData stringToHex:tempText];
+    if (_bBusyBle) {
+        [self.view makeToast:@"蓝牙繁忙，请稍后再试"];
+        return;
     }
-    else {
-        NSString *tempText = text;
-        if ([HJConfigInfo shareInstance].isAddReturn) {
-            tempText = [NSString stringWithFormat:@"%@\r\n", tempText];
-        }
-        sendData = [NSData unicodeToUtf8:tempText];
+
+    NSString *error = nil;
+    NSData *sendData = [HJCustomCommandCodec dataForCommand:command
+                                               appendReturn:[HJConfigInfo shareInstance].isAddReturn
+                                                      error:&error];
+    if (!sendData) {
+        [self.view makeToast:error ?: @"指令格式错误"];
+        return;
     }
-    
-    
-    // 数据模式下统计
+    [self sendPreparedData:sendData logText:command.command clearInput:NO toolbar:nil];
+}
+
+- (void)sendPreparedData:(NSData *)sendData
+                 logText:(NSString *)logText
+             clearInput:(BOOL)clearInput
+                 toolbar:(DXMessageToolBar *)toolbar
+{
+    if (!sendData || !_connectionPageActive || _peripheral.state != CBPeripheralStateConnected) {
+        [self.view makeToast:@"蓝牙未连接"];
+        return;
+    }
+
+    WWCharacteristic *characteristic = [HJConfigInfo shareInstance].isBleConfig
+        ? [HJConfigInfo shareInstance].configSendService
+        : [HJConfigInfo shareInstance].dataSendService;
     if (![HJConfigInfo shareInstance].isBleConfig) {
         [self addSendByteCount:sendData.length];
     }
-    
-    @weakify(self)
+
+    __weak typeof(self) weakSelf = self;
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        
-        @strongify(self)
-        
-        BOOL bResult = false;
-        
-        // 获取当前时间
+        __strong typeof(weakSelf) self = weakSelf;
+        if (!self) return;
+
         NSDate *startTime = [NSDate date];
-        
-        bResult = [self synchronizedSendData:self.peripheral characteristic:chart value:sendData type:self.isRespone ? CBCharacteristicWriteWithResponse : CBCharacteristicWriteWithoutResponse];
-        // 再次获取当前时间
-        NSDate *endTime = [NSDate date];
-        // 计算时间间隔
-        NSTimeInterval interval = [endTime timeIntervalSinceDate:startTime];
-        
-        if (bResult) {
-            
-            
-            NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
-            NSDate* now = [NSDate date];
-            NSDateFormatter* fmt = [[NSDateFormatter alloc] init];
-            fmt.locale = [[NSLocale alloc] initWithLocaleIdentifier:@"zh_CN"];
-            fmt.dateFormat = @"HH:mm:ss SSS";
-            NSString* dateString = [NSString stringWithFormat:@"时间:%@",[fmt stringFromDate:now]];
-            [dict setValue:dateString forKey:@"time"];
-            [dict setValue:@"发送:" forKey:@"title"];
-            [dict setValue:text forKey:@"context"];
-            
-            [self.tableData addObject:[BleSendReceiveData BleSendReceiveDataWithDictionary:dict]];
-            
-            dispatch_async(dispatch_get_main_queue(), ^{
-                int rate = (int) (sendData.length / interval); // 计算速率（每秒字节数）
-                [self showAverageSendCountBySecond:rate];
-                
-                [self.tableView reloadData];
-                
-                NSIndexPath *indexPath = [NSIndexPath indexPathForRow:self.tableData.count-1 inSection:0];
-                [self.tableView scrollToRowAtIndexPath:indexPath atScrollPosition:UITableViewScrollPositionTop animated:YES];
-                
-                if ([HJConfigInfo shareInstance].isClearInput) {
-                    [toolBar clearText]; //清空发送的数据
-                }
-            });
-        }
-        else {
-            dispatch_async(dispatch_get_main_queue(), ^{
+        BOOL result = [self synchronizedSendData:self.peripheral
+                                      characteristic:characteristic
+                                               value:sendData
+                                                type:self.isRespone ? CBCharacteristicWriteWithResponse : CBCharacteristicWriteWithoutResponse];
+        NSTimeInterval interval = [[NSDate date] timeIntervalSinceDate:startTime];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (!result) {
                 [self.view makeToast:@"发送失败"];
-            });
-        }
+                return;
+            }
+
+            NSMutableDictionary *dict = [NSMutableDictionary dictionary];
+            NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+            formatter.locale = [[NSLocale alloc] initWithLocaleIdentifier:@"zh_CN"];
+            formatter.dateFormat = @"HH:mm:ss SSS";
+            dict[@"time"] = [NSString stringWithFormat:@"时间:%@", [formatter stringFromDate:[NSDate date]]];
+            dict[@"title"] = @"发送:";
+            dict[@"context"] = logText ?: @"";
+            [self.tableData addObject:[BleSendReceiveData BleSendReceiveDataWithDictionary:dict]];
+
+            int rate = interval > 0 ? (int)(sendData.length / interval) : 0;
+            [self showAverageSendCountBySecond:rate];
+            [self.tableView reloadData];
+            NSIndexPath *indexPath = [NSIndexPath indexPathForRow:self.tableData.count - 1 inSection:0];
+            [self.tableView scrollToRowAtIndexPath:indexPath atScrollPosition:UITableViewScrollPositionTop animated:YES];
+            if (clearInput && toolbar) {
+                [toolbar clearText];
+            }
+        });
     });
-    
 }
 
 // 测试
