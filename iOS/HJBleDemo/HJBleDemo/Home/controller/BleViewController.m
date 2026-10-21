@@ -11,8 +11,6 @@
 #import <Toast/Toast.h>
 #import "SetViewController.h"
 #import "HJConfigInfo.h"
-#import "wiseBle/WWWaitEvent.h"
-#import "HJBleConnectionCoordinator.h"
 #import "HJBleDevicePageLifecycle.h"
 #import "HJCustomCommandViewController.h"
 #import "HJCustomCommandStore.h"
@@ -73,10 +71,10 @@
 
 
 
-//接受数据等待
-@property (nonatomic, strong) WWWaitEvent *sendEvent;
-
-@property (nonatomic, assign) BOOL connectionPageActive;
+@property (nonatomic, assign) BOOL isSending;
+@property (nonatomic, strong) dispatch_queue_t sendQueue;
+@property (atomic, strong) NSUUID *testIdentifier;
+@property (atomic, assign) BOOL connectionPageActive;
 @property (nonatomic, assign) BOOL didCleanupConnection;
 
 @end
@@ -92,8 +90,8 @@
     _receiveByteCount = 0;
     _recCountBySecond = 0;
     _isTesting = false;
-    _sendEvent = [[WWWaitEvent alloc] init];
     _connectionPageActive = YES;
+    _sendQueue = dispatch_queue_create("com.hongjia.HJBleDemo.send", DISPATCH_QUEUE_SERIAL);
     
     _peripheral = _scanData.peripheral;
     if (!_scanData.isConfig) {
@@ -135,11 +133,14 @@
     
     _ble = [WWBluetoothLE shareBLE];
     _ble.managerDelegate = self;
-    _ble.bleDelegate = self;
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(peripheralDidDisconnect:)
-                                                 name:HJBlePeripheralDidDisconnectNotification
-                                               object:[HJBleConnectionCoordinator sharedCoordinator]];
+                                                 name:WWBLEConnectionDidDisconnectNotification
+                                               object:_ble];
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(peripheralDidReceiveData:)
+                                                 name:WWBLEDidReceiveDataNotification
+                                               object:_ble];
     
     _timer = [NSTimer timerWithTimeInterval:1
                                              target:self
@@ -158,7 +159,6 @@
     [super viewWillAppear:animated];
     if (!_didCleanupConnection) {
         _ble.managerDelegate = self;
-        _ble.bleDelegate = self;
     }
     
     if ([HJConfigInfo shareInstance].isBleConfig) {
@@ -336,30 +336,18 @@
     }
     BOOL shouldDisconnect = _connectionPageActive;
     _didCleanupConnection = YES;
-    _connectionPageActive = NO;
+    self.connectionPageActive = NO;
     _isTesting = NO;
     [_timer setFireDate:[NSDate distantFuture]];
-    [_sendEvent waitOver:WWWaitResultFailed];
+    self.testIdentifier = nil;
     [[NSNotificationCenter defaultCenter] removeObserver:self];
 
     if (_ble.managerDelegate == self) {
         _ble.managerDelegate = nil;
     }
-    if (_ble.bleDelegate == self) {
-        _ble.bleDelegate = nil;
-    }
     if (shouldDisconnect) {
-        [[HJBleConnectionCoordinator sharedCoordinator] disconnectPeripheral:_peripheral
-                                                                      session:_scanData.connectionSessionIdentifier];
+        [_ble disconnect:_peripheral session:_scanData.connectionSessionIdentifier error:NULL];
     }
-}
-
-- (BOOL)isCallbackForCurrentPeripheral:(CBPeripheral *)peripheral
-{
-    return _connectionPageActive && HJBleConnectionEventMatches(_peripheral,
-                                                                 _scanData.connectionSessionIdentifier,
-                                                                 peripheral,
-                                                                 nil);
 }
 
 // 清除数据
@@ -519,34 +507,56 @@
              clearInput:(BOOL)clearInput
                  toolbar:(DXMessageToolBar *)toolbar
 {
-    if (!sendData || !_connectionPageActive || _peripheral.state != CBPeripheralStateConnected) {
+    if (!sendData || !_connectionPageActive ||
+        ![_ble isSessionActive:_scanData.connectionSessionIdentifier peripheral:_peripheral]) {
         [self.view makeToast:@"蓝牙未连接"];
         return;
     }
-
-    WWCharacteristic *characteristic = [HJConfigInfo shareInstance].isBleConfig
-        ? [HJConfigInfo shareInstance].configSendService
-        : [HJConfigInfo shareInstance].dataSendService;
-    if (![HJConfigInfo shareInstance].isBleConfig) {
-        [self addSendByteCount:sendData.length];
+    if (_isSending || _isTesting) {
+        [self.view makeToast:@"正在发送，请稍后再试"];
+        return;
     }
 
+    BOOL isConfig = [HJConfigInfo shareInstance].isBleConfig;
+    WWCharacteristic *characteristic = isConfig
+        ? [HJConfigInfo shareInstance].configSendService
+        : [HJConfigInfo shareInstance].dataSendService;
+    CBCharacteristicWriteType type = _isRespone ? CBCharacteristicWriteWithResponse : CBCharacteristicWriteWithoutResponse;
+    NSUUID *session = _scanData.connectionSessionIdentifier;
+    NSUInteger packetSize = MAX(1, _scanData.sendDataLenMax);
+    _isSending = YES;
+
     __weak typeof(self) weakSelf = self;
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+    dispatch_async(self.sendQueue, ^{
         __strong typeof(weakSelf) self = weakSelf;
         if (!self) return;
 
         NSDate *startTime = [NSDate date];
-        BOOL result = [self synchronizedSendData:self.peripheral
-                                      characteristic:characteristic
-                                               value:sendData
-                                                type:self.isRespone ? CBCharacteristicWriteWithResponse : CBCharacteristicWriteWithoutResponse];
+        NSError *error = nil;
+        BOOL result = NO;
+        if (self.connectionPageActive) {
+            result = [self.ble synchronizedSend:self.peripheral
+                                characteristic:characteristic
+                                         value:sendData
+                                          type:type
+                                       session:session
+                                    packetSize:packetSize
+                                          time:2000
+                                         error:&error];
+        }
         NSTimeInterval interval = [[NSDate date] timeIntervalSinceDate:startTime];
 
         dispatch_async(dispatch_get_main_queue(), ^{
-            if (!result) {
-                [self.view makeToast:@"发送失败"];
+            self.isSending = NO;
+            if (!self.connectionPageActive || ![self.ble isSessionActive:session peripheral:self.peripheral]) {
                 return;
+            }
+            if (!result) {
+                [self showSendError:error];
+                return;
+            }
+            if (!isConfig) {
+                [self addSendByteCount:sendData.length];
             }
 
             NSMutableDictionary *dict = [NSMutableDictionary dictionary];
@@ -570,115 +580,103 @@
     });
 }
 
+- (void)showSendError:(NSError *)error
+{
+    NSString *message = @"发送失败";
+    if ([error.domain isEqualToString:WWBLEErrorDomain]) {
+        switch (error.code) {
+            case WWBLEErrorCancelled: return;
+            case WWBLEErrorBusy: message = @"蓝牙繁忙，请稍后再试"; break;
+            case WWBLEErrorTimedOut: message = @"发送超时，请重新连接后再试"; break;
+            case WWBLEErrorUnsupportedOperation: message = @"当前特征不支持此写入方式，请检查设置"; break;
+            case WWBLEErrorCharacteristicNotFound: message = @"未找到发送特征，请检查设置"; break;
+            default: break;
+        }
+    }
+    [self.view makeToast:message];
+}
+
 // 测试
 - (void)testBtnClicked
 {
     if (_isTesting) {
-        _isTesting = false;
+        self.isTesting = NO;
+        self.testIdentifier = nil;
+        [_ble cancelWaitingForPeripheral:_peripheral session:_scanData.connectionSessionIdentifier error:NULL];
         [_testBtn setTitle:@"开始测试" forState:UIControlStateNormal];
     } else {
-        _isTesting = true;
+        if (!_connectionPageActive || ![_ble isSessionActive:_scanData.connectionSessionIdentifier peripheral:_peripheral]) {
+            [self.view makeToast:@"蓝牙未连接"];
+            return;
+        }
+        if (_isSending || _bBusyBle) {
+            [self.view makeToast:@"蓝牙繁忙，请稍后再试"];
+            return;
+        }
+        self.isTesting = YES;
+        self.testIdentifier = [NSUUID UUID];
         [_testBtn setTitle:@"停止测试" forState:UIControlStateNormal];
         [self startTest];
     }
-    
 }
 
-- (void)startTest {
+- (void)startTest
+{
     [self showAverageSendCountBySecond:0];
-    @weakify(self)
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        
-        @strongify(self)
-        
-        // 获取当前时间
+    NSUUID *testIdentifier = self.testIdentifier;
+    NSUUID *session = _scanData.connectionSessionIdentifier;
+    NSUInteger packetSize = MAX(1, _scanData.sendDataLenMax);
+    NSInteger totalLen = MAX(0, [HJConfigInfo shareInstance].dataTotalLen);
+    int gap = MAX(0, [HJConfigInfo shareInstance].sendDataGap);
+    WWCharacteristic *characteristic = [HJConfigInfo shareInstance].dataSendService;
+    CBCharacteristicWriteType type = _isRespone ? CBCharacteristicWriteWithResponse : CBCharacteristicWriteWithoutResponse;
+    __weak typeof(self) weakSelf = self;
+    dispatch_async(self.sendQueue, ^{
+        __strong typeof(weakSelf) self = weakSelf;
+        if (!self) return;
         NSDate *startTime = [NSDate date];
-        
-        int totalLen = [HJConfigInfo shareInstance].dataTotalLen;
-        int gap = [HJConfigInfo shareInstance].sendDataGap;
-        
-        NSInteger BleDataLengthMax = self.ble.nGroupSendDataLen;
-        
-        NSUInteger nGroup = (totalLen + BleDataLengthMax - 1) / BleDataLengthMax;
-        
-        for (NSUInteger i=0; i<nGroup && self.isTesting; i++)
-        {
-            NSInteger tmpLen = 0;
-            if (i == (nGroup-1)) {
-                tmpLen = totalLen - i * BleDataLengthMax;
+        NSUInteger sentLength = 0;
+        NSError *error = nil;
+        while (sentLength < totalLen && self.connectionPageActive &&
+               [self.testIdentifier isEqual:testIdentifier]) {
+            NSUInteger length = MIN(packetSize, totalLen - sentLength);
+            NSData *data = [NSMutableData dataWithLength:length];
+            if (![self.ble synchronizedSend:self.peripheral
+                            characteristic:characteristic
+                                     value:data
+                                      type:type
+                                   session:session
+                                packetSize:packetSize
+                                      time:2000
+                                     error:&error]) {
+                break;
             }
-            else{
-                tmpLen = BleDataLengthMax;
-            }
-            
-            NSMutableData *temp= [NSMutableData dataWithLength:tmpLen];
-            memset(temp.mutableBytes, 0, tmpLen);
-            
-            BOOL bResult = [self synchronizedSendData:self.peripheral characteristic:[HJConfigInfo shareInstance].dataSendService value:temp type:self.isRespone ? CBCharacteristicWriteWithResponse : CBCharacteristicWriteWithoutResponse];
-            if (!bResult) {
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    [self.view makeToast:@"发送失败"];
-                });
-            }
-            
+            sentLength += length;
             dispatch_async(dispatch_get_main_queue(), ^{
-                [self addSendByteCount:tmpLen];
+                if (self.connectionPageActive) {
+                    [self addSendByteCount:length];
+                }
             });
-            
-            if (gap > 0) {
-                usleep(1000 * gap);
+            // 分段等待，停止测试或退出页面后不再等待整个发送间隔。
+            for (int remaining = gap; remaining > 0 && self.connectionPageActive &&
+                 [self.testIdentifier isEqual:testIdentifier]; remaining -= MIN(remaining, 50)) {
+                usleep(1000 * MIN(remaining, 50));
             }
-            
-            
         }
-        
-        // 再次获取当前时间
-        NSDate *endTime = [NSDate date];
-        // 计算时间间隔
-        NSTimeInterval interval = [endTime timeIntervalSinceDate:startTime];
-        
+        NSTimeInterval interval = [[NSDate date] timeIntervalSinceDate:startTime];
         dispatch_async(dispatch_get_main_queue(), ^{
-            int rate = (int) ([HJConfigInfo shareInstance].dataTotalLen / interval); // 计算速率（每秒字节数）
-            [self showAverageSendCountBySecond:rate];
-            
-            self.isTesting = false;
+            if (!self.connectionPageActive || ![self.testIdentifier isEqual:testIdentifier]) {
+                return;
+            }
+            if (error != nil) {
+                [self showSendError:error];
+            }
+            [self showAverageSendCountBySecond:interval > 0 ? (int)(sentLength / interval) : 0];
+            self.isTesting = NO;
+            self.testIdentifier = nil;
             [self.testBtn setTitle:@"开始测试" forState:UIControlStateNormal];
         });
     });
-}
-
-- (BOOL)synchronizedSendData:(CBPeripheral *)peripheral characteristic:(WWCharacteristic *)characteristic value:(NSData *)data type:(CBCharacteristicWriteType)type
-{
-    if (!_connectionPageActive || peripheral.state != CBPeripheralStateConnected) {
-        return false;
-    }
-
-    WWWaitEvent *event = nil;
-    if (type == CBCharacteristicWriteWithResponse) {
-        @synchronized (self) {
-            if ([_sendEvent getWaitStatus] == WWWaitResultWaiting) {
-                return false;
-            }
-            event = [[WWWaitEvent alloc] init];
-            [event prepareWait];
-            _sendEvent = event;
-        }
-    }
-    bool bResult = [_ble send:peripheral characteristic:characteristic value:data type:type];
-    if (!bResult) {
-        [event waitOver:WWWaitResultFailed];
-        return false;
-    }
-    
-    // respone等待
-    if (type == CBCharacteristicWriteWithResponse) {
-        WWWaitResult result = [event waitPrepared:2000];
-        if (result != WWWaitResultSuccess) {
-            return false;
-        }
-    }
-    
-    return true;
 }
 
 #pragma mark -- WWBluetoothLEManagerDelegate
@@ -712,16 +710,17 @@
 
 - (void)peripheralDidDisconnect:(NSNotification *)notification
 {
-    CBPeripheral *peripheral = notification.userInfo[HJBlePeripheralKey];
-    NSUUID *token = notification.userInfo[HJBleSessionTokenKey];
+    CBPeripheral *peripheral = notification.userInfo[WWBLEPeripheralKey];
+    NSUUID *token = notification.userInfo[WWBLESessionKey];
     if (!_connectionPageActive ||
         !HJBleConnectionEventMatches(_peripheral, _scanData.connectionSessionIdentifier, peripheral, token)) {
         return;
     }
-    _connectionPageActive = NO;
-    _isTesting = NO;
+    self.connectionPageActive = NO;
+    self.isTesting = NO;
+    [_testBtn setTitle:@"开始测试" forState:UIControlStateNormal];
     [_timer setFireDate:[NSDate distantFuture]];
-    [_sendEvent waitOver:WWWaitResultFailed];
+    self.testIdentifier = nil;
     NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
     NSDate* now = [NSDate date];
     NSDateFormatter* fmt = [[NSDateFormatter alloc] init];
@@ -736,49 +735,16 @@
     [self.tableView reloadData];
 }
 
-/**
- *  蓝牙发送数据回调
- *
- *  @param ble                  蓝牙
- *  @param peripheral           蓝牙设备
- *  @param characteristic       发送的服务
- *  @param isSuccess            成功true或失败false
- *
- */
-- (void)ble:(WWBluetoothLE *)ble didSendData:(CBPeripheral *)peripheral characteristic:(WWCharacteristic *)characteristic result:(BOOL)isSuccess
+- (void)peripheralDidReceiveData:(NSNotification *)notification
 {
-    if (![self isCallbackForCurrentPeripheral:peripheral]) {
+    CBPeripheral *peripheral = notification.userInfo[WWBLEPeripheralKey];
+    NSUUID *session = notification.userInfo[WWBLESessionKey];
+    if (!_connectionPageActive ||
+        !HJBleConnectionEventMatches(_peripheral, _scanData.connectionSessionIdentifier, peripheral, session)) {
         return;
     }
-    if (isSuccess) {
-        if ([_sendEvent getWaitStatus] == WWWaitResultWaiting) {
-            [_sendEvent waitOver:WWWaitResultSuccess];
-        }
-        
-//        [self.view makeToast:@"发送成功"];
-    }
-    else{
-        if ([_sendEvent getWaitStatus] == WWWaitResultWaiting) {
-            [_sendEvent waitOver:WWWaitResultFailed];
-        }
-        [self.view makeToast:@"发送失败"];
-    }
-}
-
-/**
- *  蓝牙接收数据回调
- *
- *  @param ble                  蓝牙
- *  @param peripheral           蓝牙设备
- *  @param characteristic       接收的服务
- *  @param data                 接收的数据
- *
- */
-- (void)ble:(WWBluetoothLE *)ble didReceiveData:(CBPeripheral *)peripheral characteristic:(WWCharacteristic *)characteristic  data:(NSData *)data
-{
-    if (![self isCallbackForCurrentPeripheral:peripheral]) {
-        return;
-    }
+    WWCharacteristic *characteristic = notification.userInfo[WWBLECharacteristicKey];
+    NSData *data = notification.userInfo[WWBLEDataKey];
     // 配置服务
     if ([characteristic isEqual:[HJConfigInfo shareInstance].configReceiveService]) {
         NSString *recvStr = [NSString utf8ToUnicode:data];

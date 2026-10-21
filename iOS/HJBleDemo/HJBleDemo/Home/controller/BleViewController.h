@@ -15,7 +15,7 @@
 @class BleViewController;
 
 
-@interface BleViewController : WWBaseTableViewController<DXMessageToolBarDelegate,WWBluetoothLEManagerDelegate,WWBluetoothLEDelegate>
+@interface BleViewController : WWBaseTableViewController<DXMessageToolBarDelegate,WWBluetoothLEManagerDelegate>
 
 @property (nonatomic, strong) HJBleScanData *scanData;
 

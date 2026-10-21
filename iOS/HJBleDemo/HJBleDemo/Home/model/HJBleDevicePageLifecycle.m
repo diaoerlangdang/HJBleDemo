@@ -11,7 +11,7 @@ BOOL HJBleConnectionEventMatches(CBPeripheral *expectedPeripheral,
                                  NSUUID *actualSession)
 {
     if (expectedPeripheral == nil || actualPeripheral == nil ||
-        (actualSession != nil && ![expectedSession isEqual:actualSession])) {
+        expectedSession == nil || ![expectedSession isEqual:actualSession]) {
         return NO;
     }
     return expectedPeripheral == actualPeripheral ||

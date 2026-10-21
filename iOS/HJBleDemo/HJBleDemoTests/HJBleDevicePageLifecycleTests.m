@@ -47,6 +47,24 @@
                                                currentSession,
                                                (CBPeripheral *)peripheralB,
                                                [NSUUID UUID]));
+    XCTAssertFalse(HJBleConnectionEventMatches((CBPeripheral *)peripheralB,
+                                               currentSession,
+                                               (CBPeripheral *)peripheralB,
+                                               nil));
+}
+
+- (void)testSameDeviceWithRefreshedSystemObjectStillRequiresCurrentSession
+{
+    HJLifecycleFakePeripheral *oldPeripheral = [[HJLifecycleFakePeripheral alloc] init];
+    oldPeripheral.identifier = [NSUUID UUID];
+    HJLifecycleFakePeripheral *newPeripheral = [[HJLifecycleFakePeripheral alloc] init];
+    newPeripheral.identifier = oldPeripheral.identifier;
+    NSUUID *session = [NSUUID UUID];
+
+    XCTAssertTrue(HJBleConnectionEventMatches((CBPeripheral *)newPeripheral, session,
+                                             (CBPeripheral *)oldPeripheral, session));
+    XCTAssertFalse(HJBleConnectionEventMatches((CBPeripheral *)newPeripheral, session,
+                                              (CBPeripheral *)oldPeripheral, [NSUUID UUID]));
 }
 
 @end

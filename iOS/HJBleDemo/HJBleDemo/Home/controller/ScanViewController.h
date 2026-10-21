@@ -10,6 +10,6 @@
 #import "WiseBle.h"
 #import "BleViewController.h"
 
-@interface ScanViewController : WWBaseTableViewController<WWBluetoothLEManagerDelegate, WWBluetoothLEDelegate>
+@interface ScanViewController : WWBaseTableViewController<WWBluetoothLEManagerDelegate>
 
 @end

@@ -15,7 +15,6 @@
 #import "HJScanTableViewCell.h"
 #import "WWAlertView.h"
 #import "AppConfigSetViewController.h"
-#import "HJBleConnectionCoordinator.h"
 
 
 @interface ScanViewController ()
@@ -27,8 +26,8 @@
 
 @property(nonatomic,strong) HJBleScanData *selectedScanData;
 @property(nonatomic, strong) NSDate *lastReloadTime;
-@property(nonatomic, strong) HJBleConnectionCoordinator *connectionCoordinator;
-@property(nonatomic, strong) NSUUID *connectionSessionToken;
+@property(atomic, strong) NSUUID *connectionSessionToken;
+@property(nonatomic, strong) dispatch_group_t connectionWork;
 
 @end
 
@@ -49,7 +48,6 @@
     self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemRefresh target:self action:@selector(refresh)];
     
     _hjBleArray = [[NSMutableArray alloc] init];
-    _connectionCoordinator = [HJBleConnectionCoordinator sharedCoordinator];
 }
 
 - (void)viewWillAppear:(BOOL)animated
@@ -58,7 +56,6 @@
     [self setConnectionInProgress:NO];
     _ble = [WWBluetoothLE shareBLE];
     _ble.managerDelegate = self;
-    _ble.bleDelegate = self;
     _hjBleArray = [NSMutableArray array];
     [self.tableView reloadData];
     
@@ -75,8 +72,7 @@
     [super viewWillDisappear:animated];
     [_ble stopScan];
     if (_connectionSessionToken != nil) {
-        [_connectionCoordinator cancelSession:_connectionSessionToken];
-        _connectionSessionToken = nil;
+        [self cancelConnectionWork];
         [SVProgressHUD dismiss];
     }
 }
@@ -162,72 +158,87 @@
     [self setConnectionInProgress:YES];
     [SVProgressHUD showWithStatus:@"正在连接中..."];
 
-    __weak typeof(self) weakSelf = self;
-    _connectionSessionToken = [_connectionCoordinator connectPeripheral:scanData.peripheral completion:^(HJBleConnectionResult result) {
-        __strong typeof(weakSelf) self = weakSelf;
-        if (self == nil || self.selectedScanData != scanData || self.connectionSessionToken == nil) {
-            return;
-        }
-        if (result == HJBleConnectionResultSuccess) {
-            [self initializeScanData:scanData session:self.connectionSessionToken];
-            return;
-        }
-
-        self.connectionSessionToken = nil;
-        [self setConnectionInProgress:NO];
-        [SVProgressHUD dismiss];
-        if (result == HJBleConnectionResultTimedOut) {
-            [self.view makeToast:@"连接超时"];
-        }
-        else if (result == HJBleConnectionResultFailed) {
-            [self.view makeToast:@"连接失败"];
-        }
-    }];
+    self.connectionSessionToken = [NSUUID UUID];
+    [self initializeScanData:scanData session:self.connectionSessionToken];
 }
 
 - (void)initializeScanData:(HJBleScanData *)scanData session:(NSUUID *)token
 {
+    WWCharacteristic *configCharacteristic = [HJConfigInfo shareInstance].configReceiveService;
+    WWCharacteristic *dataCharacteristic = [HJConfigInfo shareInstance].dataReceiveService;
+    self.connectionWork = dispatch_group_create();
     __weak typeof(self) weakSelf = self;
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+    dispatch_group_async(self.connectionWork, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         __strong typeof(weakSelf) self = weakSelf;
-        if (self == nil || ![self.connectionCoordinator isSessionActive:token peripheral:scanData.peripheral]) {
+        // 取消可能发生在后台任务真正启动之前，此时不能再发起连接。
+        if (self == nil || ![self.connectionSessionToken isEqual:token]) {
             return;
         }
 
-        scanData.bFlowControl = NO;
-        CBCharacteristicProperties properties = [self.ble getCharacteristicProperties:scanData.peripheral
-                                                                        characteristic:[HJConfigInfo shareInstance].configReceiveService];
-        scanData.isConfig = (properties & CBCharacteristicPropertyNotify) &&
-            ((properties & CBCharacteristicPropertyWrite) ||
-             (properties & CBCharacteristicPropertyWriteWithoutResponse));
+        NSError *error = nil;
+        NSString *failureMessage = @"连接失败";
+        BOOL initialized = [self.ble synchronizedConnect:scanData.peripheral
+                                                session:token
+                                                   time:5000
+                                            maxAttempts:5
+                                            cleanupTime:2000
+                                                  error:&error];
+        if (initialized && [self.connectionSessionToken isEqual:token]) {
+            failureMessage = @"打开通知失败";
+            scanData.bFlowControl = NO;
+            CBCharacteristicProperties properties = [self.ble getCharacteristicProperties:scanData.peripheral
+                                                                            characteristic:configCharacteristic];
+            scanData.isConfig = (properties & CBCharacteristicPropertyNotify) &&
+                ((properties & CBCharacteristicPropertyWrite) ||
+                 (properties & CBCharacteristicPropertyWriteWithoutResponse));
 
-        BOOL initialized = YES;
-        if (scanData.isConfig) {
-            initialized = [self.ble synchronizedOpenNofity:scanData.peripheral
-                                           characteristic:[HJConfigInfo shareInstance].configReceiveService
-                                                     time:5000];
-            if (initialized && [self.connectionCoordinator isSessionActive:token peripheral:scanData.peripheral]) {
-                NSData *sendData = [NSData unicodeToUtf8:@"<RD_UART_FC>"];
-                self.ble.commonResponeNotifyCharacteristic = [HJConfigInfo shareInstance].configReceiveService;
-                NSData *recvData = [self.ble sendReceive:scanData.peripheral
-                                          characteristic:[HJConfigInfo shareInstance].configReceiveService
-                                                   value:sendData
-                                                    time:5000];
-                if (recvData != nil) {
-                    scanData.bFlowControl = [[NSString utf8ToUnicode:recvData] isEqualToString:@"<rd_uart_fc=1>"];
+            if (scanData.isConfig) {
+                initialized = [self.ble synchronizedSetNotify:scanData.peripheral
+                                              characteristic:configCharacteristic
+                                                      enable:YES
+                                                     session:token
+                                                        time:5000
+                                                       error:&error];
+                if (initialized && [self.connectionSessionToken isEqual:token]) {
+                    CBCharacteristicWriteType type = (properties & CBCharacteristicPropertyWrite)
+                        ? CBCharacteristicWriteWithResponse : CBCharacteristicWriteWithoutResponse;
+                    NSData *recvData = [self.ble sendReceive:scanData.peripheral
+                                            characteristic:configCharacteristic
+                                                     value:[NSData unicodeToUtf8:@"<RD_UART_FC>"]
+                                                      type:type
+                                    responseCharacteristic:configCharacteristic
+                                                   session:token
+                                                packetSize:20
+                                                      time:5000
+                                                     error:&error];
+                    // 请求失败后停止初始化，避免继续使用仍隔离着迟到响应的连接。
+                    initialized = recvData != nil;
+                    if (recvData != nil) {
+                        scanData.bFlowControl = [[NSString utf8ToUnicode:recvData] isEqualToString:@"<rd_uart_fc=1>"];
+                    }
+                    failureMessage = @"查询流控失败";
                 }
+            }
+
+            if (initialized && [self.connectionSessionToken isEqual:token]) {
+                scanData.sendDataLenMax = MAX(1, [scanData.peripheral maximumWriteValueLengthForType:CBCharacteristicWriteWithoutResponse]);
+                failureMessage = @"打开通知失败";
+                initialized = [self.ble synchronizedSetNotify:scanData.peripheral
+                                              characteristic:dataCharacteristic
+                                                      enable:YES
+                                                     session:token
+                                                        time:5000
+                                                       error:&error];
             }
         }
 
-        if (initialized && [self.connectionCoordinator isSessionActive:token peripheral:scanData.peripheral]) {
-            scanData.sendDataLenMax = [scanData.peripheral maximumWriteValueLengthForType:CBCharacteristicWriteWithoutResponse];
-            initialized = [self.ble synchronizedOpenNofity:scanData.peripheral
-                                            characteristic:[HJConfigInfo shareInstance].dataReceiveService
-                                                      time:5000];
+        // 同时覆盖任务启动与取消交错的情况；旧任务只清理自己拥有的会话。
+        if (!initialized || ![self.connectionSessionToken isEqual:token]) {
+            [self.ble disconnect:scanData.peripheral session:token error:NULL];
         }
-
         dispatch_async(dispatch_get_main_queue(), ^{
-            [self finishInitializationForScanData:scanData session:token success:initialized];
+            [self finishInitializationForScanData:scanData session:token success:initialized
+                                           error:error failureMessage:failureMessage];
         });
     });
 }
@@ -247,17 +258,45 @@
     }
 }
 
+- (void)cancelConnectionWork
+{
+    NSUUID *token = self.connectionSessionToken;
+    if (token == nil) {
+        return;
+    }
+    CBPeripheral *peripheral = self.selectedScanData.peripheral;
+    WWBluetoothLE *ble = self.ble;
+    dispatch_group_t work = self.connectionWork;
+    BOOL registered = [ble isSessionActive:token peripheral:peripheral];
+    self.connectionSessionToken = nil;
+    self.connectionWork = nil;
+    [ble disconnect:peripheral session:token error:NULL];
+
+    // 库只能取消已登记的连接。若后台任务正要登记，补发取消直至该任务结束。
+    if (!registered && work != nil && dispatch_group_wait(work, DISPATCH_TIME_NOW) != 0) {
+        dispatch_source_t cancellation = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, dispatch_get_main_queue());
+        dispatch_source_set_timer(cancellation, DISPATCH_TIME_NOW, 50 * NSEC_PER_MSEC, 5 * NSEC_PER_MSEC);
+        dispatch_source_set_event_handler(cancellation, ^{
+            [ble disconnect:peripheral session:token error:NULL];
+        });
+        dispatch_group_notify(work, dispatch_get_main_queue(), ^{
+            dispatch_source_cancel(cancellation);
+        });
+        dispatch_resume(cancellation);
+    }
+}
+
 - (void)cancelConnection
 {
     NSUUID *token = self.connectionSessionToken;
     if (token == nil) {
         return;
     }
-    [self.connectionCoordinator cancelSession:token];
-    self.connectionSessionToken = nil;
+    [self cancelConnectionWork];
     [self setConnectionInProgress:NO];
     [SVProgressHUD dismiss];
-    if (self.ble.loaclState == WWBleLocalStatePowerOn) {
+    if (self.navigationController.topViewController == self &&
+        self.ble.loaclState == WWBleLocalStatePowerOn) {
         [self refresh];
     }
 }
@@ -265,29 +304,41 @@
 - (void)finishInitializationForScanData:(HJBleScanData *)scanData
                                 session:(NSUUID *)token
                                 success:(BOOL)success
+                                  error:(NSError *)error
+                         failureMessage:(NSString *)failureMessage
 {
     if (![self.connectionSessionToken isEqual:token] || self.selectedScanData != scanData) {
         return;
     }
 
-    BOOL active = [self.connectionCoordinator isSessionActive:token peripheral:scanData.peripheral] &&
+    BOOL active = [self.ble isSessionActive:token peripheral:scanData.peripheral] &&
         scanData.peripheral.state == CBPeripheralStateConnected;
+    self.connectionWork = nil;
     [SVProgressHUD dismiss];
     if (!success || !active) {
-        if (active) {
-            [self.connectionCoordinator cancelSession:token];
-        }
+        [self.ble disconnect:scanData.peripheral session:token error:NULL];
         self.connectionSessionToken = nil;
         [self setConnectionInProgress:NO];
         if (self.navigationController.topViewController == self) {
-            [self.view makeToast:@"打开通知失败"];
+            if ([error.domain isEqualToString:WWBLEErrorDomain]) {
+                switch (error.code) {
+                    case WWBLEErrorCancelled: return;
+                    case WWBLEErrorTimedOut: failureMessage = [failureMessage stringByAppendingString:@"：操作超时，请重试"]; break;
+                    case WWBLEErrorBusy: failureMessage = @"设备忙，请稍后重试"; break;
+                    case WWBLEErrorCleanupPending: failureMessage = @"正在清理连接，请稍后重试"; break;
+                    case WWBLEErrorUnauthorized: failureMessage = @"请在系统设置中允许蓝牙权限"; break;
+                    case WWBLEErrorBluetoothUnavailable: failureMessage = @"蓝牙不可用，请检查系统蓝牙"; break;
+                    case WWBLEErrorDisconnected: failureMessage = @"蓝牙已断开"; break;
+                    case WWBLEErrorCharacteristicNotFound: failureMessage = @"未找到配置的服务或特征，请检查设置"; break;
+                    default: break;
+                }
+            }
+            [self.view makeToast:failureMessage];
         }
         return;
     }
 
     scanData.connectionSessionIdentifier = token;
-    self.ble.nGroupSendDataLen = scanData.sendDataLenMax;
-    [self.connectionCoordinator transferSession:token];
     self.connectionSessionToken = nil;
     [self setConnectionInProgress:NO];
 
@@ -475,13 +526,6 @@
         _lastReloadTime = now;
         [self.tableView reloadData];
     }
-}
-
-#pragma mark -- WWBluetoothLEDelegate
-
-- (void)ble:(WWBluetoothLE *)ble didDisconnect:(CBPeripheral *)peripheral
-{
-    
 }
 
 @end

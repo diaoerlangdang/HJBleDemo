@@ -13,13 +13,10 @@
 		688F055A08CABB3B305CAD24 /* Pods_HJBleDemo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C86EE3FBCA8D96FE7A24D198 /* Pods_HJBleDemo.framework */; };
 		74D9A3CB8FD86E3AA5904A04 /* HJCustomCommandStore.m in Sources */ = {isa = PBXBuildFile; fileRef = 661EEC604398372E6747394B /* HJCustomCommandStore.m */; };
 		74F5B744A20BF73FAA423D58 /* Pods_HJBleDemoTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 99C53A30583397B6E572C5B3 /* Pods_HJBleDemoTests.framework */; };
-		A10000000000000000000001 /* HJBleConnectionCoordinator.m in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000011 /* HJBleConnectionCoordinator.m */; };
 		A10000000000000000000002 /* HJBleDevicePageLifecycle.m in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000013 /* HJBleDevicePageLifecycle.m */; };
-		A10000000000000000000003 /* HJBleConnectionCoordinatorTests.m in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000015 /* HJBleConnectionCoordinatorTests.m */; };
 		A10000000000000000000004 /* HJBleDevicePageLifecycleTests.m in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000016 /* HJBleDevicePageLifecycleTests.m */; };
 		A10000000000000000000005 /* WiseBleWaitRegressionTests.m in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000017 /* WiseBleWaitRegressionTests.m */; };
 		A10000000000000000000006 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A10000000000000000000019 /* XCTest.framework */; };
-		A10000000000000000000007 /* HJBleConnectionCoordinator.m in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000011 /* HJBleConnectionCoordinator.m */; };
 		A10000000000000000000008 /* HJBleDevicePageLifecycle.m in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000013 /* HJBleDevicePageLifecycle.m */; };
 		A10000000000000000000009 /* WiseBleConnectionRegressionTests.m in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001A /* WiseBleConnectionRegressionTests.m */; };
 		DA152496F354AEE88A4D9636 /* HJCustomCommandCodec.m in Sources */ = {isa = PBXBuildFile; fileRef = 454CC7523FE529365D17D2FD /* HJCustomCommandCodec.m */; };
@@ -76,11 +73,8 @@
 		722ABA007787659E25B99CD0 /* Pods-HJBleDemoTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-HJBleDemoTests.release.xcconfig"; path = "Target Support Files/Pods-HJBleDemoTests/Pods-HJBleDemoTests.release.xcconfig"; sourceTree = "<group>"; };
 		8E8F452E8E0778ACEDD41BA5 /* HJCustomCommandCodec.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = HJCustomCommandCodec.h; sourceTree = "<group>"; };
 		99C53A30583397B6E572C5B3 /* Pods_HJBleDemoTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_HJBleDemoTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		A10000000000000000000011 /* HJBleConnectionCoordinator.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = HJBleConnectionCoordinator.m; sourceTree = "<group>"; };
-		A10000000000000000000012 /* HJBleConnectionCoordinator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HJBleConnectionCoordinator.h; sourceTree = "<group>"; };
 		A10000000000000000000013 /* HJBleDevicePageLifecycle.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = HJBleDevicePageLifecycle.m; sourceTree = "<group>"; };
 		A10000000000000000000014 /* HJBleDevicePageLifecycle.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HJBleDevicePageLifecycle.h; sourceTree = "<group>"; };
-		A10000000000000000000015 /* HJBleConnectionCoordinatorTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = HJBleConnectionCoordinatorTests.m; sourceTree = "<group>"; };
 		A10000000000000000000016 /* HJBleDevicePageLifecycleTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = HJBleDevicePageLifecycleTests.m; sourceTree = "<group>"; };
 		A10000000000000000000017 /* WiseBleWaitRegressionTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WiseBleWaitRegressionTests.m; sourceTree = "<group>"; };
 		A10000000000000000000018 /* HJBleDemoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = HJBleDemoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -171,7 +165,6 @@
 		A10000000000000000000020 /* HJBleDemoTests */ = {
 			isa = PBXGroup;
 			children = (
-				A10000000000000000000015 /* HJBleConnectionCoordinatorTests.m */,
 				A10000000000000000000016 /* HJBleDevicePageLifecycleTests.m */,
 				A10000000000000000000017 /* WiseBleWaitRegressionTests.m */,
 				A1000000000000000000001A /* WiseBleConnectionRegressionTests.m */,
@@ -292,8 +285,6 @@
 		E9E118D022E49E6B00657309 /* model */ = {
 			isa = PBXGroup;
 			children = (
-				A10000000000000000000012 /* HJBleConnectionCoordinator.h */,
-				A10000000000000000000011 /* HJBleConnectionCoordinator.m */,
 				A10000000000000000000014 /* HJBleDevicePageLifecycle.h */,
 				A10000000000000000000013 /* HJBleDevicePageLifecycle.m */,
 				E9E118D222E49E6B00657309 /* HJBleScanData.h */,
@@ -599,9 +590,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A10000000000000000000007 /* HJBleConnectionCoordinator.m in Sources */,
 				A10000000000000000000008 /* HJBleDevicePageLifecycle.m in Sources */,
-				A10000000000000000000003 /* HJBleConnectionCoordinatorTests.m in Sources */,
 				A10000000000000000000004 /* HJBleDevicePageLifecycleTests.m in Sources */,
 				A10000000000000000000005 /* WiseBleWaitRegressionTests.m in Sources */,
 				A10000000000000000000009 /* WiseBleConnectionRegressionTests.m in Sources */,
@@ -612,7 +601,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A10000000000000000000001 /* HJBleConnectionCoordinator.m in Sources */,
 				A10000000000000000000002 /* HJBleDevicePageLifecycle.m in Sources */,
 				E9E118F822E49E6C00657309 /* BleSendReceiveTableViewCell.m in Sources */,
 				E9B031D8241A59C7002E35F4 /* HJScanTableViewCell.m in Sources */,
@@ -824,7 +812,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 4.4.0;
+				MARKETING_VERSION = 4.4.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.hongjia.HJBle;
 				PRODUCT_NAME = HJBle;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -849,7 +837,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 4.4.0;
+				MARKETING_VERSION = 4.4.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.hongjia.HJBle;
 				PRODUCT_NAME = HJBle;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
