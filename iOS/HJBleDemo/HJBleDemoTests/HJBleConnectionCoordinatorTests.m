@@ -231,4 +231,72 @@
     [self waitForExpectations:@[notification] timeout:0.2];
 }
 
+- (void)testCleanupAfterUnexpectedDisconnectAllowsReconnection
+{
+    NSUUID *token = [self.coordinator connectPeripheral:(CBPeripheral *)self.peripheralA completion:nil];
+    [self.transport finishConnect:(CBPeripheral *)self.peripheralA success:YES];
+    [self.coordinator transferSession:token];
+    [self.transport finishDisconnect:(CBPeripheral *)self.peripheralA];
+
+    // Leaving the device page must not wait for a second disconnect callback.
+    [self.coordinator disconnectPeripheral:(CBPeripheral *)self.peripheralA session:token];
+    XCTAssertEqual(self.transport.disconnectedPeripherals.count, 0u);
+
+    XCTestExpectation *reconnected = [self expectationWithDescription:@"reconnected after page cleanup"];
+    [self.coordinator connectPeripheral:(CBPeripheral *)self.peripheralA completion:^(HJBleConnectionResult result) {
+        XCTAssertEqual(result, HJBleConnectionResultSuccess);
+        [reconnected fulfill];
+    }];
+    XCTAssertEqual(self.transport.connectedPeripherals.count, 2u);
+    [self.transport finishConnect:(CBPeripheral *)self.peripheralA success:YES];
+    [self waitForExpectations:@[reconnected] timeout:0.2];
+}
+
+- (void)testRepeatedDisconnectRequestsOnlyDisconnectOnce
+{
+    NSUUID *token = [self.coordinator connectPeripheral:(CBPeripheral *)self.peripheralA completion:nil];
+    [self.transport finishConnect:(CBPeripheral *)self.peripheralA success:YES];
+    [self.coordinator transferSession:token];
+
+    [self.coordinator disconnectPeripheral:(CBPeripheral *)self.peripheralA session:token];
+    [self.coordinator disconnectPeripheral:(CBPeripheral *)self.peripheralA session:token];
+    XCTAssertEqual(self.transport.disconnectedPeripherals.count, 1u);
+
+    [self.transport finishDisconnect:(CBPeripheral *)self.peripheralA];
+    [self.coordinator disconnectPeripheral:(CBPeripheral *)self.peripheralA session:token];
+    XCTAssertEqual(self.transport.disconnectedPeripherals.count, 1u);
+    [self.coordinator connectPeripheral:(CBPeripheral *)self.peripheralA completion:nil];
+    XCTAssertEqual(self.transport.connectedPeripherals.count, 2u);
+}
+
+- (void)testOldPageCleanupCannotDisconnectNewConnectingSessionForSameDevice
+{
+    NSUUID *oldToken = [self.coordinator connectPeripheral:(CBPeripheral *)self.peripheralA completion:nil];
+    [self.transport finishConnect:(CBPeripheral *)self.peripheralA success:YES];
+    [self.coordinator transferSession:oldToken];
+    [self.transport finishDisconnect:(CBPeripheral *)self.peripheralA];
+
+    NSUUID *newToken = [self.coordinator connectPeripheral:(CBPeripheral *)self.peripheralA completion:nil];
+    [self.coordinator disconnectPeripheral:(CBPeripheral *)self.peripheralA session:oldToken];
+    XCTAssertEqual(self.transport.disconnectedPeripherals.count, 0u);
+    XCTAssertTrue([self.coordinator isSessionActive:newToken peripheral:(CBPeripheral *)self.peripheralA]);
+}
+
+- (void)testOldPageCleanupCannotDisconnectNewTransferredSessionForSameDevice
+{
+    NSUUID *oldToken = [self.coordinator connectPeripheral:(CBPeripheral *)self.peripheralA completion:nil];
+    [self.transport finishConnect:(CBPeripheral *)self.peripheralA success:YES];
+    [self.coordinator transferSession:oldToken];
+    [self.transport finishDisconnect:(CBPeripheral *)self.peripheralA];
+
+    NSUUID *newToken = [self.coordinator connectPeripheral:(CBPeripheral *)self.peripheralA completion:nil];
+    [self.transport finishConnect:(CBPeripheral *)self.peripheralA success:YES];
+    [self.coordinator transferSession:newToken];
+
+    [self.coordinator disconnectPeripheral:(CBPeripheral *)self.peripheralA session:oldToken];
+    XCTAssertEqual(self.transport.disconnectedPeripherals.count, 0u);
+    [self.coordinator disconnectPeripheral:(CBPeripheral *)self.peripheralA session:newToken];
+    XCTAssertEqual(self.transport.disconnectedPeripherals.count, 1u);
+}
+
 @end

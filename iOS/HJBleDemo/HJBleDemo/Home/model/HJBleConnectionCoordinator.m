@@ -198,7 +198,11 @@ typedef NS_ENUM(NSUInteger, HJBleSessionState) {
         (matchesCurrentPeripheral && ![currentSession.token isEqual:token])) {
         return;
     }
-    NSUUID *disconnectToken = ownedToken ?: token ?: [NSUUID UUID];
+    // A completed session must not wait for another disconnect callback.
+    if (disconnectingToken != nil || (ownedToken == nil && !matchesCurrentPeripheral)) {
+        return;
+    }
+    NSUUID *disconnectToken = ownedToken ?: currentSession.token;
     [self.ownedSessions removeObjectForKey:key];
     self.disconnectingSessions[key] = disconnectToken;
     [self.transport disconnectPeripheral:peripheral];

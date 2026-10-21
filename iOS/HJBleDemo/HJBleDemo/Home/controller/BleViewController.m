@@ -334,6 +334,7 @@
     if (_didCleanupConnection) {
         return;
     }
+    BOOL shouldDisconnect = _connectionPageActive;
     _didCleanupConnection = YES;
     _connectionPageActive = NO;
     _isTesting = NO;
@@ -347,8 +348,10 @@
     if (_ble.bleDelegate == self) {
         _ble.bleDelegate = nil;
     }
-    [[HJBleConnectionCoordinator sharedCoordinator] disconnectPeripheral:_peripheral
-                                                                  session:_scanData.connectionSessionIdentifier];
+    if (shouldDisconnect) {
+        [[HJBleConnectionCoordinator sharedCoordinator] disconnectPeripheral:_peripheral
+                                                                      session:_scanData.connectionSessionIdentifier];
+    }
 }
 
 - (BOOL)isCallbackForCurrentPeripheral:(CBPeripheral *)peripheral
