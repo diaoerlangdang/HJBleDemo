@@ -7,13 +7,12 @@
 //
 
 #import "SetViewController.h"
-#import "PopoverView.h"
 #import "HJConfigInfo.h"
-#import <Toast/Toast.h>
+#import "HJFeedback.h"
 
 @interface SetViewController ()
 
-@property (nonatomic, strong) IconButton *asciiBtn;
+@property (nonatomic, strong) UIButton *asciiBtn;
 
 @end
 
@@ -31,15 +30,15 @@
 - (void)initView
 {
     UIView *inputClearBgView = [UIView new];
-    [self.view addSubview:inputClearBgView];
+    [self.contentView addSubview:inputClearBgView];
     [inputClearBgView mas_makeConstraints:^(MASConstraintMaker *make) {
-        make.left.equalTo(self.view);
-        make.right.equalTo(self.view);
+        make.left.equalTo(self.contentView);
+        make.right.equalTo(self.contentView);
         make.height.equalTo(@45);
-        make.top.equalTo(self.view).offset(10);
+        make.top.equalTo(self.contentView).offset(10);
     }];
     
-    UILabel *inputClearLabel = [UILabel labelWithTextColor:WW_COLOR_HexRGB(0x333333) font:WW_Font(15)];
+    UILabel *inputClearLabel = HJLabel(HJColor(0x333333), [UIFont systemFontOfSize:15]);
     inputClearLabel.text = @"是否清除输入框";
     [inputClearBgView addSubview:inputClearLabel];
     [inputClearLabel mas_makeConstraints:^(MASConstraintMaker *make) {
@@ -55,26 +54,30 @@
         title = @"否";
     }
     
-    IconButton *inputClearBtn = [self createIconBtn:title];
+    UIButton *inputClearBtn = [self createIconBtn:title];
     [inputClearBtn addTarget:self action:@selector(showInputClearMenu:) forControlEvents:UIControlEventTouchUpInside];
     [inputClearBgView addSubview:inputClearBtn];
     [inputClearBtn mas_makeConstraints:^(MASConstraintMaker *make) {
         make.right.equalTo(inputClearBgView).offset(-15);
         make.centerY.equalTo(inputClearLabel);
-        make.height.equalTo(@30);
+        make.height.equalTo(@44);
         make.width.equalTo(@60);
+    }];
+    inputClearLabel.numberOfLines = 2;
+    [inputClearLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.right.lessThanOrEqualTo(inputClearBtn.mas_left).offset(-8);
     }];
     
     UIView *asciiBgView = [UIView new];
-    [self.view addSubview:asciiBgView];
+    [self.contentView addSubview:asciiBgView];
     [asciiBgView mas_makeConstraints:^(MASConstraintMaker *make) {
-        make.left.equalTo(self.view);
-        make.right.equalTo(self.view);
+        make.left.equalTo(self.contentView);
+        make.right.equalTo(self.contentView);
         make.height.equalTo(@45);
         make.top.equalTo(inputClearBgView.mas_bottom).offset(10);
     }];
     
-    UILabel *asciiLabel = [UILabel labelWithTextColor:WW_COLOR_HexRGB(0x333333) font:WW_Font(15)];
+    UILabel *asciiLabel = HJLabel(HJColor(0x333333), [UIFont systemFontOfSize:15]);
     asciiLabel.text = @"当前字符";
     [asciiBgView addSubview:asciiLabel];
     [asciiLabel mas_makeConstraints:^(MASConstraintMaker *make) {
@@ -90,27 +93,31 @@
         title = @"Ascii";
     }
     
-    IconButton *asciiBtn = [self createIconBtn:title];
+    UIButton *asciiBtn = [self createIconBtn:title];
     [asciiBtn addTarget:self action:@selector(showAsciiMenu:) forControlEvents:UIControlEventTouchUpInside];
     _asciiBtn = asciiBtn;
     [asciiBgView addSubview:asciiBtn];
     [asciiBtn mas_makeConstraints:^(MASConstraintMaker *make) {
         make.right.equalTo(asciiBgView).offset(-15);
         make.centerY.equalTo(asciiLabel);
-        make.height.equalTo(@30);
+        make.height.equalTo(@44);
         make.width.equalTo(@60);
+    }];
+    asciiLabel.numberOfLines = 2;
+    [asciiLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.right.lessThanOrEqualTo(asciiBtn.mas_left).offset(-8);
     }];
     
     UIView *modeBgView = [UIView new];
-    [self.view addSubview:modeBgView];
+    [self.contentView addSubview:modeBgView];
     [modeBgView mas_makeConstraints:^(MASConstraintMaker *make) {
-        make.left.equalTo(self.view);
-        make.right.equalTo(self.view);
+        make.left.equalTo(self.contentView);
+        make.right.equalTo(self.contentView);
         make.height.equalTo(@45);
         make.top.equalTo(asciiBgView.mas_bottom).offset(10);
     }];
     
-    UILabel *modeLabel = [UILabel labelWithTextColor:WW_COLOR_HexRGB(0x333333) font:WW_Font(15)];
+    UILabel *modeLabel = HJLabel(HJColor(0x333333), [UIFont systemFontOfSize:15]);
     modeLabel.text = @"当前模式";
     [modeBgView addSubview:modeLabel];
     [modeLabel mas_makeConstraints:^(MASConstraintMaker *make) {
@@ -124,14 +131,18 @@
     else {
         title = @"数据模式";
     }
-    IconButton *modeBtn = [self createIconBtn:title];
+    UIButton *modeBtn = [self createIconBtn:title];
     [modeBtn addTarget:self action:@selector(showModeMenu:) forControlEvents:UIControlEventTouchUpInside];
     [modeBgView addSubview:modeBtn];
     [modeBtn mas_makeConstraints:^(MASConstraintMaker *make) {
         make.right.equalTo(modeBgView).offset(-15);
         make.centerY.equalTo(modeLabel);
-        make.height.equalTo(@30);
+        make.height.equalTo(@44);
         make.width.equalTo(@90);
+    }];
+    modeLabel.numberOfLines = 2;
+    [modeLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.right.lessThanOrEqualTo(modeBtn.mas_left).offset(-8);
     }];
     
     modeBgView.hidden = !_isBleConfig;
@@ -140,15 +151,15 @@
     
     // 回车
     UIView *addReturnBgView = [UIView new];
-    [self.view addSubview:addReturnBgView];
+    [self.contentView addSubview:addReturnBgView];
     [addReturnBgView mas_makeConstraints:^(MASConstraintMaker *make) {
-        make.left.equalTo(self.view);
-        make.right.equalTo(self.view);
+        make.left.equalTo(self.contentView);
+        make.right.equalTo(self.contentView);
         make.height.equalTo(@45);
         make.top.equalTo(lastView.mas_bottom).offset(10);
     }];
     
-    UILabel *addReturnLabel = [UILabel labelWithTextColor:WW_COLOR_HexRGB(0x333333) font:WW_Font(15)];
+    UILabel *addReturnLabel = HJLabel(HJColor(0x333333), [UIFont systemFontOfSize:15]);
     addReturnLabel.text = @"是否添加回车";
     [addReturnBgView addSubview:addReturnLabel];
     [addReturnLabel mas_makeConstraints:^(MASConstraintMaker *make) {
@@ -163,27 +174,31 @@
         title = @"否";
     }
     
-    IconButton *addReturnBtn = [self createIconBtn:title];
+    UIButton *addReturnBtn = [self createIconBtn:title];
     [addReturnBtn addTarget:self action:@selector(showAddReturnMenu:) forControlEvents:UIControlEventTouchUpInside];
     [addReturnBgView addSubview:addReturnBtn];
     [addReturnBtn mas_makeConstraints:^(MASConstraintMaker *make) {
         make.right.equalTo(addReturnBgView).offset(-15);
         make.centerY.equalTo(addReturnLabel);
-        make.height.equalTo(@30);
+        make.height.equalTo(@44);
         make.width.equalTo(@60);
+    }];
+    addReturnLabel.numberOfLines = 2;
+    [addReturnLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.right.lessThanOrEqualTo(addReturnBtn.mas_left).offset(-8);
     }];
     
     // respone 模式
     UIView *responeBgView = [UIView new];
-    [self.view addSubview:responeBgView];
+    [self.contentView addSubview:responeBgView];
     [responeBgView mas_makeConstraints:^(MASConstraintMaker *make) {
-        make.left.equalTo(self.view);
-        make.right.equalTo(self.view);
+        make.left.equalTo(self.contentView);
+        make.right.equalTo(self.contentView);
         make.height.equalTo(@45);
         make.top.equalTo(addReturnBgView.mas_bottom).offset(10);
     }];
     
-    UILabel *responeLabel = [UILabel labelWithTextColor:WW_COLOR_HexRGB(0x333333) font:WW_Font(15)];
+    UILabel *responeLabel = HJLabel(HJColor(0x333333), [UIFont systemFontOfSize:15]);
     responeLabel.text = @"Respone模式";
     [responeBgView addSubview:responeLabel];
     [responeLabel mas_makeConstraints:^(MASConstraintMaker *make) {
@@ -197,27 +212,31 @@
     else {
         title = @"否";
     }
-    IconButton *responeBtn = [self createIconBtn:title];
+    UIButton *responeBtn = [self createIconBtn:title];
     [responeBtn addTarget:self action:@selector(showResponeMenu:) forControlEvents:UIControlEventTouchUpInside];
     [responeBgView addSubview:responeBtn];
     [responeBtn mas_makeConstraints:^(MASConstraintMaker *make) {
         make.right.equalTo(responeBgView).offset(-15);
         make.centerY.equalTo(responeLabel);
-        make.height.equalTo(@30);
+        make.height.equalTo(@44);
         make.width.equalTo(@90);
+    }];
+    responeLabel.numberOfLines = 2;
+    [responeLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.right.lessThanOrEqualTo(responeBtn.mas_left).offset(-8);
     }];
     
     // 测试数据长度
     UIView *testDataLenBgView = [UIView new];
-    [self.view addSubview:testDataLenBgView];
+    [self.contentView addSubview:testDataLenBgView];
     [testDataLenBgView mas_makeConstraints:^(MASConstraintMaker *make) {
-        make.left.equalTo(self.view);
-        make.right.equalTo(self.view);
+        make.left.equalTo(self.contentView);
+        make.right.equalTo(self.contentView);
         make.height.equalTo(@45);
         make.top.equalTo(responeBgView.mas_bottom).offset(10);
     }];
     
-    UILabel *testDataLenTitleLabel = [UILabel labelWithTextColor:WW_COLOR_HexRGB(0x333333) font:WW_Font(15)];
+    UILabel *testDataLenTitleLabel = HJLabel(HJColor(0x333333), [UIFont systemFontOfSize:15]);
     testDataLenTitleLabel.text = @"测试数据总长度";
     [testDataLenBgView addSubview:testDataLenTitleLabel];
     [testDataLenTitleLabel mas_makeConstraints:^(MASConstraintMaker *make) {
@@ -226,27 +245,31 @@
     }];
     
     title = [NSString stringWithFormat:@"%d", [HJConfigInfo shareInstance].dataTotalLen];
-    IconButton *testDataLenBtn = [self createIconBtn:title];
+    UIButton *testDataLenBtn = [self createIconBtn:title];
     [testDataLenBtn addTarget:self action:@selector(showTestDataLenDialog:) forControlEvents:UIControlEventTouchUpInside];
     [testDataLenBgView addSubview:testDataLenBtn];
     [testDataLenBtn mas_makeConstraints:^(MASConstraintMaker *make) {
         make.right.equalTo(testDataLenBgView).offset(-15);
         make.centerY.equalTo(testDataLenTitleLabel);
-        make.height.equalTo(@30);
+        make.height.equalTo(@44);
         make.width.equalTo(@90);
+    }];
+    testDataLenTitleLabel.numberOfLines = 2;
+    [testDataLenTitleLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.right.lessThanOrEqualTo(testDataLenBtn.mas_left).offset(-8);
     }];
     
     // 下发数据时间间隙
     UIView *sendDataGapBgView = [UIView new];
-    [self.view addSubview:sendDataGapBgView];
+    [self.contentView addSubview:sendDataGapBgView];
     [sendDataGapBgView mas_makeConstraints:^(MASConstraintMaker *make) {
-        make.left.equalTo(self.view);
-        make.right.equalTo(self.view);
+        make.left.equalTo(self.contentView);
+        make.right.equalTo(self.contentView);
         make.height.equalTo(@45);
         make.top.equalTo(testDataLenBgView.mas_bottom).offset(10);
     }];
     
-    UILabel *sendDataGapTitleLabel = [UILabel labelWithTextColor:WW_COLOR_HexRGB(0x333333) font:WW_Font(15)];
+    UILabel *sendDataGapTitleLabel = HJLabel(HJColor(0x333333), [UIFont systemFontOfSize:15]);
     sendDataGapTitleLabel.text = @"下发数据时间间隙(ms)";
     [sendDataGapBgView addSubview:sendDataGapTitleLabel];
     [sendDataGapTitleLabel mas_makeConstraints:^(MASConstraintMaker *make) {
@@ -255,136 +278,90 @@
     }];
     
     title = [NSString stringWithFormat:@"%d", [HJConfigInfo shareInstance].sendDataGap];
-    IconButton *sendDataGapBtn = [self createIconBtn:title];
+    UIButton *sendDataGapBtn = [self createIconBtn:title];
     [sendDataGapBtn addTarget:self action:@selector(showSendDataGapDialog:) forControlEvents:UIControlEventTouchUpInside];
     [sendDataGapBgView addSubview:sendDataGapBtn];
     [sendDataGapBtn mas_makeConstraints:^(MASConstraintMaker *make) {
         make.right.equalTo(sendDataGapBgView).offset(-15);
         make.centerY.equalTo(sendDataGapTitleLabel);
-        make.height.equalTo(@30);
+        make.height.equalTo(@44);
         make.width.equalTo(@90);
     }];
+    sendDataGapTitleLabel.numberOfLines = 2;
+    [sendDataGapTitleLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.right.lessThanOrEqualTo(sendDataGapBtn.mas_left).offset(-8);
+    }];
+    [sendDataGapBgView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.bottom.equalTo(self.contentView).offset(-15);
+    }];
+
     
     
 }
 
 // 创建iconbtn
-- (IconButton *)createIconBtn:(NSString *)title
+- (UIButton *)createIconBtn:(NSString *)title
 {
-    IconButton *btn = [[IconButton alloc] init];
-    btn.iconStyle = IconButtonStyleIconRight;
-    btn.titleLabel.font = WW_Font(14);
+    UIButton *btn = [[UIButton alloc] init];
+    btn.titleLabel.font = [UIFont systemFontOfSize:14];
+    btn.titleLabel.adjustsFontSizeToFitWidth = YES;
+    btn.titleLabel.minimumScaleFactor = 0.7;
     [btn setTitle:title forState:UIControlStateNormal];
     
-    [btn setTitleColor:WW_COLOR_HexRGB(0xFFFFFF) forState:UIControlStateNormal];
-    [btn setBackgroundImage:[UIImage imageWithColor:WW_COLOR_HexRGB(0x649fea)] forState:UIControlStateNormal];
-    [btn setImage:[UIImage imageNamed:@"down_white"] forState:UIControlStateNormal];
-    btn.imageEdgeOffsets = UIEdgeOffsetsMake(-8, 0, 0, 0);
+    [btn setTitleColor:HJColor(0xFFFFFF) forState:UIControlStateNormal];
+    [btn setBackgroundImage:HJColorImage(HJColor(0x649fea)) forState:UIControlStateNormal];
+    btn.semanticContentAttribute = UISemanticContentAttributeForceRightToLeft;
+    [btn setImage:[UIImage systemImageNamed:@"chevron.down"] forState:UIControlStateNormal];
+    btn.tintColor = UIColor.whiteColor;
     btn.layer.cornerRadius = 5;
     btn.layer.masksToBounds = true;
     
     return btn;
 }
 
-//是否清空输入框
-- (void)showInputClearMenu:(UIButton *)sender
+// UIKit action sheet 在 iPad 上锚定触发按钮，避免缺少 popover 来源。
+- (void)showChoices:(NSArray<NSString *> *)choices sender:(UIButton *)sender selected:(void (^)(NSUInteger))selected
 {
-    // 不带图片
-    PopoverAction *yesAction = [PopoverAction actionWithTitle:@"是" handler:^(PopoverAction *action) {
-        [sender setTitle:@"是" forState:UIControlStateNormal];
-        [HJConfigInfo shareInstance].isClearInput = true;
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+    [choices enumerateObjectsUsingBlock:^(NSString *title, NSUInteger index, BOOL *stop) {
+        [alert addAction:[UIAlertAction actionWithTitle:title style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+            [sender setTitle:title forState:UIControlStateNormal];
+            selected(index);
+        }]];
     }];
-    PopoverAction *falseAction = [PopoverAction actionWithTitle:@"否" handler:^(PopoverAction *action) {
-        [sender setTitle:@"否" forState:UIControlStateNormal];
-        [HJConfigInfo shareInstance].isClearInput = false;
-    }];
-    
-    PopoverView *popoverView = [PopoverView popoverView];
-    popoverView.style = PopoverViewStyleDefault;
-    popoverView.hideAfterTouchOutside = true; // 点击外部时不允许隐藏
-    
-    [popoverView showToView:sender withActions:@[yesAction, falseAction]];
+    [alert addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:nil]];
+    alert.popoverPresentationController.sourceView = sender;
+    alert.popoverPresentationController.sourceRect = sender.bounds;
+    [self presentViewController:alert animated:YES completion:nil];
 }
-
-//显示字符菜单
-- (void)showAsciiMenu:(UIButton *)sender
-{
-    // 不带图片
-    PopoverAction *asciiAction = [PopoverAction actionWithTitle:@"ASCII" handler:^(PopoverAction *action) {
-        [sender setTitle:@"ASCII" forState:UIControlStateNormal];
-        [HJConfigInfo shareInstance].isBleHex = false;
+- (void)showInputClearMenu:(UIButton *)sender {
+    [self showChoices:@[@"是", @"否"] sender:sender selected:^(NSUInteger index) {
+        HJConfigInfo.shareInstance.isClearInput = index == 0;
     }];
-    PopoverAction *hexAction = [PopoverAction actionWithTitle:@"Hex" handler:^(PopoverAction *action) {
-        [sender setTitle:@"Hex" forState:UIControlStateNormal];
-        [HJConfigInfo shareInstance].isBleHex = true;
-    }];
-    
-    PopoverView *popoverView = [PopoverView popoverView];
-    popoverView.style = PopoverViewStyleDefault;
-    popoverView.hideAfterTouchOutside = true; // 点击外部时不允许隐藏
-    
-    [popoverView showToView:sender withActions:@[asciiAction, hexAction]];
 }
-
-//显示模式菜单
-- (void)showModeMenu:(UIButton *)sender
-{
-    // 不带图片
-    PopoverAction *dataAction = [PopoverAction actionWithTitle:@"数据模式" handler:^(PopoverAction *action) {
-        [sender setTitle:@"数据模式" forState:UIControlStateNormal];
-        [HJConfigInfo shareInstance].isBleConfig = false;
+- (void)showAsciiMenu:(UIButton *)sender {
+    [self showChoices:@[@"ASCII", @"HEX"] sender:sender selected:^(NSUInteger index) {
+        HJConfigInfo.shareInstance.isBleHex = index == 1;
     }];
-    PopoverAction *configAction = [PopoverAction actionWithTitle:@"配置模式" handler:^(PopoverAction *action) {
-        [sender setTitle:@"配置模式" forState:UIControlStateNormal];
-        [HJConfigInfo shareInstance].isBleConfig = true;
-        
-        [self.asciiBtn setTitle:@"ASCII" forState:UIControlStateNormal];
-        [HJConfigInfo shareInstance].isBleHex = false;
-    }];
-    
-    PopoverView *popoverView = [PopoverView popoverView];
-    popoverView.style = PopoverViewStyleDefault;
-    popoverView.hideAfterTouchOutside = true; // 点击外部时不允许隐藏
-    
-    [popoverView showToView:sender withActions:@[dataAction, configAction]];
 }
-
-- (void)showAddReturnMenu:(UIButton *)sender
-{
-    // 不带图片
-    PopoverAction *yesAction = [PopoverAction actionWithTitle:@"是" handler:^(PopoverAction *action) {
-        [sender setTitle:@"是" forState:UIControlStateNormal];
-        [HJConfigInfo shareInstance].isAddReturn = true;
+- (void)showModeMenu:(UIButton *)sender {
+    [self showChoices:@[@"数据模式", @"配置模式"] sender:sender selected:^(NSUInteger index) {
+        HJConfigInfo.shareInstance.isBleConfig = index == 1;
+        if (index == 1) {
+            HJConfigInfo.shareInstance.isBleHex = NO;
+            [self.asciiBtn setTitle:@"ASCII" forState:UIControlStateNormal];
+        }
     }];
-    PopoverAction *falseAction = [PopoverAction actionWithTitle:@"否" handler:^(PopoverAction *action) {
-        [sender setTitle:@"否" forState:UIControlStateNormal];
-        [HJConfigInfo shareInstance].isAddReturn = false;
-    }];
-    
-    PopoverView *popoverView = [PopoverView popoverView];
-    popoverView.style = PopoverViewStyleDefault;
-    popoverView.hideAfterTouchOutside = true; // 点击外部时不允许隐藏
-    
-    [popoverView showToView:sender withActions:@[yesAction, falseAction]];
 }
-
-- (void)showResponeMenu:(UIButton *)sender
-{
-    // 不带图片
-    PopoverAction *yesAction = [PopoverAction actionWithTitle:@"是" handler:^(PopoverAction *action) {
-        [sender setTitle:@"是" forState:UIControlStateNormal];
-        [HJConfigInfo shareInstance].isRespone = true;
+- (void)showAddReturnMenu:(UIButton *)sender {
+    [self showChoices:@[@"是", @"否"] sender:sender selected:^(NSUInteger index) {
+        HJConfigInfo.shareInstance.isAddReturn = index == 0;
     }];
-    PopoverAction *falseAction = [PopoverAction actionWithTitle:@"否" handler:^(PopoverAction *action) {
-        [sender setTitle:@"否" forState:UIControlStateNormal];
-        [HJConfigInfo shareInstance].isRespone = false;
+}
+- (void)showResponeMenu:(UIButton *)sender {
+    [self showChoices:@[@"是", @"否"] sender:sender selected:^(NSUInteger index) {
+        HJConfigInfo.shareInstance.isRespone = index == 0;
     }];
-    
-    PopoverView *popoverView = [PopoverView popoverView];
-    popoverView.style = PopoverViewStyleDefault;
-    popoverView.hideAfterTouchOutside = true; // 点击外部时不允许隐藏
-    
-    [popoverView showToView:sender withActions:@[yesAction, falseAction]];
 }
 
 - (void)showTestDataLenDialog:(UIButton *)sender {
@@ -394,7 +371,7 @@
             [sender setTitle:text forState:UIControlStateNormal];
             [[HJConfigInfo shareInstance] setDataTotalLen:[self stringToInt:text]];
         } else {
-            [self.view makeToast: @"输入格式异常"];
+            [self.view hj_showMessage: @"输入格式异常"];
         }
     }];
         
@@ -407,7 +384,7 @@
             [sender setTitle:text forState:UIControlStateNormal];
             [[HJConfigInfo shareInstance] setSendDataGap:[self stringToInt:text]];
         } else {
-            [self.view makeToast: @"输入格式异常"];
+            [self.view hj_showMessage: @"输入格式异常"];
         }
     }];
         
@@ -439,6 +416,7 @@
     [alertController addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
         // 可以在这里配置textField的属性，例如placeholder等
         textField.placeholder = [NSString stringWithFormat: @"请输入%@", title];
+        textField.keyboardType = UIKeyboardTypeNumberPad;
     }];
     
     // 添加确定按钮

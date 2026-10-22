@@ -2,11 +2,13 @@
 #import "HJCustomCommand.h"
 #import "HJCustomCommandStore.h"
 #import "HJCustomCommandCodec.h"
+#import "HJScrollViewController.h"
+#import "HJFeedback.h"
 
-@interface HJCustomCommandEditorViewController : UIViewController
+@interface HJCustomCommandEditorViewController : HJScrollViewController
 
 - (instancetype)initWithCommand:(HJCustomCommand * _Nullable)command
-                      completion:(void (^)(HJCustomCommand *command))completion;
+                      completion:(BOOL (^)(HJCustomCommand *command))completion;
 
 @end
 
@@ -48,6 +50,7 @@
 
     UIButton *dismissButton = [UIButton buttonWithType:UIButtonTypeCustom];
     dismissButton.translatesAutoresizingMaskIntoConstraints = NO;
+    dismissButton.accessibilityLabel = @"关闭自定义指令";
     [dismissButton addTarget:self action:@selector(close) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:dismissButton];
     [NSLayoutConstraint activateConstraints:@[
@@ -65,8 +68,13 @@
         [panel.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor],
         [panel.topAnchor constraintEqualToAnchor:self.view.topAnchor],
         [panel.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor],
-        [panel.widthAnchor constraintEqualToAnchor:self.view.widthAnchor multiplier:0.85],
+        [panel.widthAnchor constraintLessThanOrEqualToAnchor:self.view.widthAnchor multiplier:0.92],
+        [panel.widthAnchor constraintLessThanOrEqualToConstant:520.0],
     ]];
+
+    NSLayoutConstraint *preferredWidth = [panel.widthAnchor constraintEqualToAnchor:self.view.widthAnchor multiplier:0.85];
+    preferredWidth.priority = UILayoutPriorityDefaultHigh;
+    preferredWidth.active = YES;
 
     UILabel *titleLabel = [[UILabel alloc] initWithFrame:CGRectZero];
     titleLabel.translatesAutoresizingMaskIntoConstraints = NO;
@@ -104,15 +112,26 @@
         [titleLabel.heightAnchor constraintEqualToConstant:24.0],
         [closeButton.trailingAnchor constraintEqualToAnchor:safeArea.trailingAnchor constant:-16.0],
         [closeButton.centerYAnchor constraintEqualToAnchor:titleLabel.centerYAnchor],
+        [closeButton.widthAnchor constraintGreaterThanOrEqualToConstant:44.0],
+        [closeButton.heightAnchor constraintGreaterThanOrEqualToConstant:44.0],
+        [titleLabel.trailingAnchor constraintLessThanOrEqualToAnchor:closeButton.leadingAnchor constant:-8.0],
         [addButton.leadingAnchor constraintEqualToAnchor:safeArea.leadingAnchor constant:16.0],
         [addButton.trailingAnchor constraintEqualToAnchor:safeArea.trailingAnchor constant:-16.0],
         [addButton.topAnchor constraintEqualToAnchor:titleLabel.bottomAnchor constant:14.0],
-        [addButton.heightAnchor constraintEqualToConstant:38.0],
+        [addButton.heightAnchor constraintEqualToConstant:44.0],
         [self.tableView.leadingAnchor constraintEqualToAnchor:safeArea.leadingAnchor],
         [self.tableView.trailingAnchor constraintEqualToAnchor:safeArea.trailingAnchor],
         [self.tableView.topAnchor constraintEqualToAnchor:addButton.bottomAnchor constant:10.0],
         [self.tableView.bottomAnchor constraintEqualToAnchor:safeArea.bottomAnchor],
     ]];
+    if (self.store.lastError) {
+        UILabel *errorLabel = HJLabel(UIColor.secondaryLabelColor, [UIFont systemFontOfSize:15]);
+        errorLabel.text = @"指令数据读取失败，原文件已保留。请重试或联系开发者。";
+        errorLabel.numberOfLines = 0;
+        errorLabel.textAlignment = NSTextAlignmentCenter;
+        self.tableView.backgroundView = errorLabel;
+    }
+
 }
 
 - (void)close
@@ -132,14 +151,15 @@
         [[HJCustomCommandEditorViewController alloc] initWithCommand:command
                                                             completion:^(HJCustomCommand *updatedCommand) {
         __strong typeof(weakSelf) self = weakSelf;
-        if (!self) return;
-        [self dismissViewControllerAnimated:YES completion:^{
-            BOOL saved = command ? [self.store updateCommand:updatedCommand] : [self.store addCommand:updatedCommand];
-            if (saved) {
-                self.commands = [[self.store allCommands] mutableCopy];
-                [self.tableView reloadData];
-            }
-        }];
+        if (!self) return NO;
+        BOOL saved = command ? [self.store updateCommand:updatedCommand] : [self.store addCommand:updatedCommand];
+        if (saved) {
+            self.commands = [[self.store allCommands] mutableCopy];
+            self.tableView.backgroundView = nil;
+            [self.tableView reloadData];
+            [self dismissViewControllerAnimated:YES completion:nil];
+        }
+        return saved;
     }];
     UINavigationController *navigationController = [[UINavigationController alloc] initWithRootViewController:editor];
     navigationController.modalPresentationStyle = UIModalPresentationFormSheet;
@@ -157,7 +177,10 @@
         __strong typeof(weakSelf) self = weakSelf;
         if ([self.store deleteCommandWithID:command.commandID]) {
             self.commands = [[self.store allCommands] mutableCopy];
+            self.tableView.backgroundView = nil;
             [self.tableView reloadData];
+        } else {
+            [self.view hj_showMessage:@"删除失败，原指令已保留"];
         }
     }]];
     [self presentViewController:alert animated:YES completion:nil];
@@ -201,7 +224,7 @@
 
 @interface HJCustomCommandEditorViewController ()
 @property (nonatomic, strong) HJCustomCommand *editingCommand;
-@property (nonatomic, copy) void (^completion)(HJCustomCommand *command);
+@property (nonatomic, copy) BOOL (^completion)(HJCustomCommand *command);
 @property (nonatomic, strong) UITextField *nameField;
 @property (nonatomic, strong) UISegmentedControl *typeControl;
 @property (nonatomic, strong) UITextView *commandTextView;
@@ -210,7 +233,7 @@
 @implementation HJCustomCommandEditorViewController
 
 - (instancetype)initWithCommand:(HJCustomCommand *)command
-                      completion:(void (^)(HJCustomCommand *command))completion
+                      completion:(BOOL (^)(HJCustomCommand *command))completion
 {
     self = [super initWithNibName:nil bundle:nil];
     if (self) {
@@ -255,9 +278,9 @@
     NSArray *views = @[nameLabel, self.nameField, typeLabel, self.typeControl, contentLabel, self.commandTextView];
     for (UIView *view in views) {
         view.translatesAutoresizingMaskIntoConstraints = NO;
-        [self.view addSubview:view];
+        [self.contentView addSubview:view];
     }
-    UILayoutGuide *safeArea = self.view.safeAreaLayoutGuide;
+    UIView *safeArea = self.contentView;
     [NSLayoutConstraint activateConstraints:@[
         [nameLabel.leadingAnchor constraintEqualToAnchor:safeArea.leadingAnchor constant:20.0],
         [nameLabel.trailingAnchor constraintEqualToAnchor:safeArea.trailingAnchor constant:-20.0],
@@ -265,21 +288,22 @@
         [self.nameField.leadingAnchor constraintEqualToAnchor:nameLabel.leadingAnchor],
         [self.nameField.trailingAnchor constraintEqualToAnchor:nameLabel.trailingAnchor],
         [self.nameField.topAnchor constraintEqualToAnchor:nameLabel.bottomAnchor constant:8.0],
-        [self.nameField.heightAnchor constraintEqualToConstant:40.0],
+        [self.nameField.heightAnchor constraintEqualToConstant:44.0],
         [typeLabel.leadingAnchor constraintEqualToAnchor:nameLabel.leadingAnchor],
         [typeLabel.trailingAnchor constraintEqualToAnchor:nameLabel.trailingAnchor],
         [typeLabel.topAnchor constraintEqualToAnchor:self.nameField.bottomAnchor constant:20.0],
         [self.typeControl.leadingAnchor constraintEqualToAnchor:nameLabel.leadingAnchor],
         [self.typeControl.trailingAnchor constraintEqualToAnchor:nameLabel.trailingAnchor],
         [self.typeControl.topAnchor constraintEqualToAnchor:typeLabel.bottomAnchor constant:8.0],
-        [self.typeControl.heightAnchor constraintEqualToConstant:32.0],
+        [self.typeControl.heightAnchor constraintEqualToConstant:44.0],
         [contentLabel.leadingAnchor constraintEqualToAnchor:nameLabel.leadingAnchor],
         [contentLabel.trailingAnchor constraintEqualToAnchor:nameLabel.trailingAnchor],
         [contentLabel.topAnchor constraintEqualToAnchor:self.typeControl.bottomAnchor constant:20.0],
         [self.commandTextView.leadingAnchor constraintEqualToAnchor:nameLabel.leadingAnchor],
         [self.commandTextView.trailingAnchor constraintEqualToAnchor:nameLabel.trailingAnchor],
         [self.commandTextView.topAnchor constraintEqualToAnchor:contentLabel.bottomAnchor constant:8.0],
-        [self.commandTextView.heightAnchor constraintGreaterThanOrEqualToConstant:140.0],
+        [self.commandTextView.heightAnchor constraintEqualToConstant:160.0],
+        [self.commandTextView.bottomAnchor constraintEqualToAnchor:safeArea.bottomAnchor constant:-20.0],
     ]];
 }
 
@@ -306,7 +330,7 @@
         return;
     }
 
-    HJCustomCommand *command = self.editingCommand ?: [[HJCustomCommand alloc] initWithName:name
+    HJCustomCommand *command = self.editingCommand ? [[HJCustomCommand alloc] initWithDictionary:self.editingCommand.dictionaryRepresentation] : [[HJCustomCommand alloc] initWithName:name
                                                                                        command:content
                                                                                           type:self.typeControl.selectedSegmentIndex];
     command.name = name;
@@ -319,8 +343,8 @@
         return;
     }
 
-    if (self.completion) {
-        self.completion(command);
+    if (self.completion && !self.completion(command)) {
+        [self showError:@"保存失败，原指令已保留，请稍后重试"];
     }
 }
 
@@ -371,20 +395,26 @@
             view.translatesAutoresizingMaskIntoConstraints = NO;
             [self.contentView addSubview:view];
         }
+        self.nameLabel.numberOfLines = 2;
         [NSLayoutConstraint activateConstraints:@[
-            [self.nameLabel.leadingAnchor constraintEqualToAnchor:self.contentView.leadingAnchor constant:12.0],
-            [self.nameLabel.topAnchor constraintEqualToAnchor:self.contentView.topAnchor constant:12.0],
-            [self.typeLabel.leadingAnchor constraintEqualToAnchor:self.nameLabel.trailingAnchor constant:8.0],
-            [self.typeLabel.centerYAnchor constraintEqualToAnchor:self.nameLabel.centerYAnchor],
-            [self.editButton.leadingAnchor constraintGreaterThanOrEqualToAnchor:self.typeLabel.trailingAnchor constant:8.0],
-            [self.editButton.centerYAnchor constraintEqualToAnchor:self.nameLabel.centerYAnchor],
-            [self.deleteButton.leadingAnchor constraintEqualToAnchor:self.editButton.trailingAnchor constant:8.0],
-            [self.deleteButton.trailingAnchor constraintEqualToAnchor:self.contentView.trailingAnchor constant:-12.0],
-            [self.deleteButton.centerYAnchor constraintEqualToAnchor:self.nameLabel.centerYAnchor],
+            [self.nameLabel.leadingAnchor constraintEqualToAnchor:self.contentView.leadingAnchor constant:12],
+            [self.nameLabel.trailingAnchor constraintEqualToAnchor:self.contentView.trailingAnchor constant:-12],
+            [self.nameLabel.topAnchor constraintEqualToAnchor:self.contentView.topAnchor constant:12],
             [self.commandLabel.leadingAnchor constraintEqualToAnchor:self.nameLabel.leadingAnchor],
-            [self.commandLabel.trailingAnchor constraintEqualToAnchor:self.contentView.trailingAnchor constant:-12.0],
-            [self.commandLabel.topAnchor constraintEqualToAnchor:self.nameLabel.bottomAnchor constant:8.0],
-            [self.commandLabel.bottomAnchor constraintEqualToAnchor:self.contentView.bottomAnchor constant:-12.0],
+            [self.commandLabel.trailingAnchor constraintEqualToAnchor:self.nameLabel.trailingAnchor],
+            [self.commandLabel.topAnchor constraintEqualToAnchor:self.nameLabel.bottomAnchor constant:8],
+            [self.typeLabel.leadingAnchor constraintEqualToAnchor:self.nameLabel.leadingAnchor],
+            [self.typeLabel.centerYAnchor constraintEqualToAnchor:self.editButton.centerYAnchor],
+            [self.editButton.topAnchor constraintEqualToAnchor:self.commandLabel.bottomAnchor constant:4],
+            [self.editButton.leadingAnchor constraintGreaterThanOrEqualToAnchor:self.typeLabel.trailingAnchor constant:8],
+            [self.editButton.widthAnchor constraintEqualToConstant:44],
+            [self.editButton.heightAnchor constraintEqualToConstant:44],
+            [self.editButton.bottomAnchor constraintEqualToAnchor:self.contentView.bottomAnchor constant:-4],
+            [self.deleteButton.leadingAnchor constraintEqualToAnchor:self.editButton.trailingAnchor constant:8],
+            [self.deleteButton.trailingAnchor constraintEqualToAnchor:self.contentView.trailingAnchor constant:-12],
+            [self.deleteButton.centerYAnchor constraintEqualToAnchor:self.editButton.centerYAnchor],
+            [self.deleteButton.widthAnchor constraintEqualToConstant:44],
+            [self.deleteButton.heightAnchor constraintEqualToConstant:44],
         ]];
     }
     return self;

@@ -6,16 +6,16 @@
 //  Copyright (c) 2015年 wurz. All rights reserved.
 //
 
-#import <UIKit/UIKit.h>
-#import "WiseBaseKit.h"
-#import "DXMessageToolBar.h"
+#import "HJTableViewController.h"
+#import "HJUI.h"
+#import "HJMessageInputBar.h"
 #import "WiseBle.h"
 #import "HJBleScanData.h"
 
 @class BleViewController;
 
 
-@interface BleViewController : WWBaseTableViewController<DXMessageToolBarDelegate,WWBluetoothLEManagerDelegate>
+@interface BleViewController : HJTableViewController<HJMessageInputBarDelegate,WWBluetoothLEManagerDelegate>
 
 @property (nonatomic, strong) HJBleScanData *scanData;
 

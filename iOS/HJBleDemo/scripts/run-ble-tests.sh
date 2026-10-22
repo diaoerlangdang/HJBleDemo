@@ -23,11 +23,12 @@ cat > "$HJ_BLE_TEST_DIR/HJBleRegressions.xctest/Contents/Info.plist" <<'PLIST'
 PLIST
 xcrun --sdk macosx clang -fobjc-arc -fmodules -bundle \
     -I "$HJ_BLE_TEST_DIR/include" -I "$HJ_BLE_POD_DIR" -I "$HJ_BLE_POD_DIR/category" \
-    -I HJBleDemo/Home/model -F "$HJ_BLE_TEST_FRAMEWORKS" \
-    -framework Foundation -framework CoreBluetooth -framework XCTest \
+    -I HJBleDemo/Storage -I HJBleDemo/Home/model -F "$HJ_BLE_TEST_FRAMEWORKS" \
+    -framework Foundation -framework CoreBluetooth -framework XCTest -lsqlite3 \
     -Wl,-rpath,"$HJ_BLE_TEST_FRAMEWORKS" \
     "$HJ_BLE_POD_DIR"/*.m "$HJ_BLE_POD_DIR"/category/*.m \
-    HJBleDemo/Home/model/HJBleDevicePageLifecycle.m HJBleDemoTests/*.m \
+    HJBleDemo/Home/model/HJBleDevicePageLifecycle.m HJBleDemo/Storage/*.m \
+    HJBleDemo/Home/model/HJCustomCommand.m HJBleDemo/Home/model/HJCustomCommandStore.m HJBleDemoTests/*.m \
     -o "$HJ_BLE_TEST_DIR/HJBleRegressions.xctest/Contents/MacOS/HJBleRegressions"
 "$HJ_BLE_DEVELOPER_DIR/Platforms/MacOSX.platform/Developer/Library/Xcode/Agents/xctest" \
     "$HJ_BLE_TEST_DIR/HJBleRegressions.xctest"

@@ -7,12 +7,7 @@
 //
 
 #import "AppDelegate.h"
-#import "WiseBaseKit.h"
-#import "WiseBle.h"
-#import <IQKeyboardManager/IQKeyboardManager.h>
-#import <Toast/Toast.h>
-#import "ScanViewController.h"
-#import <SVProgressHUD/SVProgressHUD.h>
+#import "HJUI.h"
 
 @interface AppDelegate ()
 
@@ -24,52 +19,26 @@
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     // Override point for customization after application launch.
     
-    [self initWindows];
+    [self configureAppearance];
     
     return YES;
 }
 
-- (void)initWindows
+- (void)configureAppearance
 {
-    [SVProgressHUD appearance].defaultStyle = SVProgressHUDStyleDark;
-    [SVProgressHUD appearance].defaultMaskType = SVProgressHUDMaskTypeClear;
-    //设置toast位置
-    [CSToastManager setDefaultPosition:CSToastPositionCenter];
-    
-    //设置默认背景颜色
-    WWBaseViewController.defaultBgColor = WW_COLOR_HexRGB(0xf8f8f8);
-    WWBaseTableViewController.defaultTableViewBgColor = WW_COLOR_HexRGB(0xf8f8f8);
-    
-    //设置默认状态栏风格
-    WWBaseViewController.defaultStatusBarStyle = UIStatusBarStyleLightContent;
-    
-    //设置NavigationBar
-    [UINavigationBar appearance].backgroundColor = WW_COLOR_HexRGB(0x649fea);
-    [[UINavigationBar appearance] setBackgroundImage:[UIImage imageWithColor:WW_COLOR_HexRGB(0x649fea)] forBarMetrics:UIBarMetricsDefault];
-    [UINavigationBar appearance].barTintColor = WW_COLOR_HexRGB(0x649fea);
-    [UINavigationBar appearance].tintColor = [UIColor whiteColor];
-    NSDictionary *attr = @{NSFontAttributeName:WW_Font(18), NSForegroundColorAttributeName:WW_COLOR_HexRGB(0xFFFFFF)};
-    [[UINavigationBar appearance] setTitleTextAttributes:attr];
-    [[UINavigationBar appearance] setShadowImage:[UIImage new]];
-    
-    //1.创建Window
-    self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
-    self.window.backgroundColor = WW_COLOR_HexRGB(0x649fea);
-    
-    if (@available(iOS 13.0, *)) {
-        self.window.overrideUserInterfaceStyle = UIUserInterfaceStyleLight;
-    } else {
-        // Fallback on earlier versions
-    }
-    
-    //首页
-    WWNavigationController *homeNav = [[WWNavigationController alloc] initWithRootViewController:[[ScanViewController alloc] init]];
-    
-    //设置控制器为Window的根控制器
-    self.window.rootViewController = homeNav;
-    
-    //2.设置Window为主窗口并显示出来
-    [self.window makeKeyAndVisible];
+    UINavigationBarAppearance *appearance = [UINavigationBarAppearance new];
+    [appearance configureWithOpaqueBackground];
+    appearance.backgroundColor = HJColor(0x649fea);
+    appearance.titleTextAttributes = @{NSFontAttributeName:[UIFont systemFontOfSize:18], NSForegroundColorAttributeName:UIColor.whiteColor};
+    appearance.shadowColor = UIColor.clearColor;
+    [UINavigationBar appearance].standardAppearance = appearance;
+    [UINavigationBar appearance].scrollEdgeAppearance = appearance;
+    [UINavigationBar appearance].compactAppearance = appearance;
+    [UINavigationBar appearance].compactScrollEdgeAppearance = appearance;
+    [UINavigationBar appearance].tintColor = UIColor.whiteColor;
+    [UINavigationBar appearance].barStyle = UIBarStyleBlack;
+
+
 }
 
 - (void)applicationWillResignActive:(UIApplication *)application {

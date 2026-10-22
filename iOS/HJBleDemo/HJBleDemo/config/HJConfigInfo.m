@@ -7,11 +7,11 @@
 //
 
 #import "HJConfigInfo.h"
-#import <YYCache/YYCache.h>
+#import "HJSettingsStore.h"
 
 @interface HJConfigInfo()
 
-@property (nonatomic, strong) YYCache *cache;
+@property (nonatomic, strong) HJSettingsStore *cache;
 
 @end
 
@@ -42,7 +42,9 @@
     
     if (self) {
         
-        _cache = [YYCache cacheWithName:@"bleCache"];
+        NSString *caches = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES).firstObject;
+        _cache = [[HJSettingsStore alloc] initWithDefaults:NSUserDefaults.standardUserDefaults
+                                         legacyDirectory:[caches stringByAppendingPathComponent:@"bleCache"]];
         
         // 数据发送服务
         _dataDefaultSendService = [[WWCharacteristic alloc] initWithServiceID:@"FFF0" characteristicID:@"FFF2"];

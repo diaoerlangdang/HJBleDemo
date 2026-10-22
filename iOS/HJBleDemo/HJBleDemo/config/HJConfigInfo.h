@@ -42,7 +42,7 @@ NS_ASSUME_NONNULL_BEGIN
 // 是否添加回车，默认false
 @property (nonatomic, assign) BOOL isAddReturn;
 
-// 是否清除输入框，默认true
+// 是否清除输入框，默认false
 @property (nonatomic, assign) BOOL isClearInput;
 
 // 是否过滤，默认true

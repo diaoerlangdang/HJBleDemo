@@ -6,11 +6,11 @@
 //  Copyright © 2022 wuruizhi. All rights reserved.
 //
 
-#import <WiseBaseKit/WiseBaseKit.h>
+#import "HJScrollViewController.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface BleServiceConfigViewController : WWBaseScrollViewController
+@interface BleServiceConfigViewController : HJScrollViewController
 
 @end
 

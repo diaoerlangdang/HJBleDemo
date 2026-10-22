@@ -58,7 +58,7 @@
     
     // 数据服务
     UIView *dataServiceView = [self createItemView:@"数据服务"];
-    [dataServiceView addTapAction:self selector:@selector(gotoServiceConfig)];
+    [dataServiceView addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(gotoServiceConfig)]];
     UIImageView *rightImgView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"right_gray"]];
     [dataServiceView addSubview:rightImgView];
     [rightImgView mas_makeConstraints:^(MASConstraintMaker *make) {
@@ -76,7 +76,7 @@
     
     // 版本信息
     UIView *versionView = [self createItemView:@"版本信息"];
-    UILabel *versionLabel = [UILabel labelWithTextColor:WW_COLOR_HexRGB(0x666666) font:WW_Font(15)];
+    UILabel *versionLabel = HJLabel(HJColor(0x666666), [UIFont systemFontOfSize:15]);
     NSString *appCurVersionNum = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleShortVersionString"];
     versionLabel.text = [NSString stringWithFormat:@"V%@", appCurVersionNum];
     [versionView addSubview:versionLabel];
@@ -91,7 +91,7 @@
         make.height.equalTo(@(VIEW_HEIGHT));
     }];
     
-    lastView = versionLabel;
+    lastView = versionView;
     
     [lastView mas_makeConstraints:^(MASConstraintMaker *make) {
         make.bottom.equalTo(self.contentView).offset(-15);
@@ -103,9 +103,9 @@
 - (UIView *)createItemView:(NSString *)title {
     
     UIView *view = [UIView new];
-    view.backgroundColor = WW_COLOR_HexRGB(0xececec);
+    view.backgroundColor = HJColor(0xececec);
     
-    UILabel *titleLabel = [UILabel labelWithTextColor:WW_COLOR_HexRGB(0x666666) font:WW_Font(15)];
+    UILabel *titleLabel = HJLabel(HJColor(0x666666), [UIFont systemFontOfSize:15]);
     [view addSubview:titleLabel];
     [titleLabel mas_makeConstraints:^(MASConstraintMaker *make) {
         make.left.equalTo(view).offset(15);

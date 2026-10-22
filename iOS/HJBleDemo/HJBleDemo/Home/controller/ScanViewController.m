@@ -10,15 +10,14 @@
 #import "HJBleScanData.h"
 #import "BleViewController.h"
 #import "HJConfigInfo.h"
-#import <Toast/Toast.h>
-#import <SVProgressHUD/SVProgressHUD.h>
+#import "HJFeedback.h"
 #import "HJScanTableViewCell.h"
-#import "WWAlertView.h"
 #import "AppConfigSetViewController.h"
 
 
 @interface ScanViewController ()
 
+@property(nonatomic, strong) HJLoadingView *connectionLoadingView;
 @property(nonatomic,strong) UIActivityIndicatorView *scanIndicatorView; //扫描的菊花
 
 @property(nonatomic,strong) NSMutableArray<HJBleScanData *> *hjBleArray;
@@ -43,7 +42,7 @@
     
     self.view.backgroundColor = [UIColor colorWithRed:239.0/255 green:236.0/255 blue:237.0/255 alpha:1];
     
-    _scanIndicatorView = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
+    _scanIndicatorView = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleMedium];
     
     self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemRefresh target:self action:@selector(refresh)];
     
@@ -73,18 +72,14 @@
     [_ble stopScan];
     if (_connectionSessionToken != nil) {
         [self cancelConnectionWork];
-        [SVProgressHUD dismiss];
+        [self.connectionLoadingView removeFromSuperview];
+        self.connectionLoadingView = nil;
     }
 }
 
 // 配置信息
 - (void)onClickConfigInfo
 {
-//    NSString *appCurVersionNum = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleShortVersionString"];
-//    WWAlertView *alertView = [[WWAlertView alloc] initWithTipsTitle:@"版本信息" detail:[NSString stringWithFormat:@"V%@", appCurVersionNum]];
-//    alertView.attachedView = self.navigationController.view;
-//    [alertView showWithBlock:nil];
-    
     AppConfigSetViewController *vc = [[AppConfigSetViewController alloc] init];
     [self.navigationController pushViewController:vc animated:true];
     
@@ -98,7 +93,7 @@
     [self.tableView reloadData];
     switch (_ble.loaclState) {
         case WWBleLocalStatePowerOff:
-            [self.view makeToast:@"本地蓝牙已关闭"];
+            [self.view hj_showMessage:@"本地蓝牙已关闭"];
             [_scanIndicatorView stopAnimating];
             break;
         case WWBleLocalStatePowerOn:
@@ -107,7 +102,7 @@
             break;
             
         default:
-            [self.view makeToast:@"本地设备不支持蓝牙4.0"];
+            [self.view hj_showMessage:@"本地设备不支持蓝牙4.0"];
             [_scanIndicatorView stopAnimating];
             break;
     }
@@ -156,8 +151,13 @@
     HJBleScanData *scanData = _hjBleArray[indexPath.row];
     _selectedScanData = scanData;
     [self setConnectionInProgress:YES];
-    [SVProgressHUD showWithStatus:@"正在连接中..."];
+    self.connectionLoadingView = [[HJLoadingView alloc] initWithText:@"正在连接中..."];
+    [self.view addSubview:self.connectionLoadingView];
+    [self.connectionLoadingView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.center.equalTo(self.view);
+    }];
 
+    [self.connectionLoadingView.widthAnchor constraintLessThanOrEqualToAnchor:self.view.safeAreaLayoutGuide.widthAnchor constant:-32].active = YES;
     self.connectionSessionToken = [NSUUID UUID];
     [self initializeScanData:scanData session:self.connectionSessionToken];
 }
@@ -294,7 +294,8 @@
     }
     [self cancelConnectionWork];
     [self setConnectionInProgress:NO];
-    [SVProgressHUD dismiss];
+    [self.connectionLoadingView removeFromSuperview];
+    self.connectionLoadingView = nil;
     if (self.navigationController.topViewController == self &&
         self.ble.loaclState == WWBleLocalStatePowerOn) {
         [self refresh];
@@ -314,7 +315,8 @@
     BOOL active = [self.ble isSessionActive:token peripheral:scanData.peripheral] &&
         scanData.peripheral.state == CBPeripheralStateConnected;
     self.connectionWork = nil;
-    [SVProgressHUD dismiss];
+    [self.connectionLoadingView removeFromSuperview];
+    self.connectionLoadingView = nil;
     if (!success || !active) {
         [self.ble disconnect:scanData.peripheral session:token error:NULL];
         self.connectionSessionToken = nil;
@@ -333,7 +335,7 @@
                     default: break;
                 }
             }
-            [self.view makeToast:failureMessage];
+            [self.view hj_showMessage:failureMessage];
         }
         return;
     }

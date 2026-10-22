@@ -2,7 +2,9 @@
 
 制定日期：2026-10-21
 
-状态：App 断电重连修复已实机通过；wiseBle 库端改造已完成，1.4.0 代码与 tag 已推送 GitHub，CocoaPods 发布受服务端错误阻塞；App 已通过 GitHub tag 接入 1.4.0 并完成同步接口迁移，用户已于 2026-10-22 确认 App 实机测试无问题；其他依赖整理待完成。
+最近核对：2026-10-22；App 基线提交 `29c2324`，版本 `4.4.1`。
+
+状态：App 断电重连修复已实机通过；wiseBle 库端改造已完成，1.4.0 代码与 tag 已推送 GitHub，公开 CocoaPods 发布此前遇到服务端错误，本次未重新查询发布状态；App 已通过 GitHub tag 接入 1.4.0 并完成同步接口迁移，用户已于 2026-10-22 确认 App 实机测试无问题；本轮六批代码已完成，保留 Masonry；依赖、存储、输入和布局变更的自动验证与待实机验收项见第 7 节。
 
 ## 1. 目标和范围
 
@@ -22,7 +24,7 @@
 | HJBleDemo | `/Users/wise/Desktop/github/HJBleDemo` | `iOS/HJBleDemo/` |
 | wiseBle 库 | `/Users/wise/Desktop/github/WiseBle` | `WiseBle/`、`wiseBle.podspec`、库的测试及文档 |
 
-wiseBle 当前 podspec 版本为 `1.4.0`、最低 iOS 版本为 `12.0`。Demo 和测试 target 已通过 CocoaPods 直接引用 GitHub 的 `1.4.0` tag，避免依赖 Trunk 发布状态。其他 Pod 保持原版本，本批不清理 Podfile。
+wiseBle 当前 podspec 版本为 `1.4.0`、最低 iOS 版本为 `12.0`。Demo 和测试 target 已通过 CocoaPods 直接引用 GitHub 的 `1.4.0` tag，避免依赖 Trunk 发布状态。本轮继续使用该 tag，其他依赖按下方六批计划整理。
 
 实施规则：
 
@@ -58,7 +60,7 @@ wiseBle 当前 podspec 版本为 `1.4.0`、最低 iOS 版本为 `12.0`。Demo �
 
 现状：App 已修复异常断开后退出页面残留“正在断开”记录的问题，并补充回归测试。修复已提交为 `5ab7503 修复被动断开问题`，用户已确认实机验证通过；此前 20 项逻辑测试及 iOS 真机 SDK 构建通过。
 
-涉及文件：
+基线提交中的涉及文件（协调器及专属测试已在第 2 步迁移后删除）：
 
 - `Home/model/HJBleConnectionCoordinator.m`
 - `Home/controller/BleViewController.m`
@@ -86,6 +88,8 @@ wiseBle 当前 podspec 版本为 `1.4.0`、最低 iOS 版本为 `12.0`。Demo �
 7. 完善同步请求响应的显式特征参数及调用级错误；响应匹配和拼包扩展按实际协议需求再确定。
 8. 更新库的同步用法说明、版本安排及 Demo 依赖记录。
 
+实际完成情况：库端为 `1c7c46c` / tag `1.4.0`，App 迁移和版本号为提交 `29c2324` / `4.4.1`，用户已确认测试无问题。实际联调直接使用已推送的 GitHub tag，没有采用原计划中的本地开发 Pod；App 和测试 target 使用同一版本，其他依赖保持原样。
+
 验收：
 
 - 正常连接和主动断开成功。
@@ -100,11 +104,7 @@ wiseBle 当前 podspec 版本为 `1.4.0`、最低 iOS 版本为 `12.0`。Demo �
 
 ### 第 3 步：核对并移除无用依赖
 
-候选项：
-
-- SDWebImage：当前未发现业务调用。
-- MBProgressHUD：当前未发现业务调用。
-- WWAlertView / MMPopupView：当前未发现有效的业务弹窗调用，需确认后移除本地代码及依赖。
+已核实并移除 SDWebImage、MBProgressHUD、MMPopupView，以及未使用的 WWAlertView 本地源码和工程引用。
 
 先检查直接调用、基类调用及间接依赖，再调整 Podfile、锁文件和工程引用。每批移除后完成构建及页面功能检查。
 
@@ -112,7 +112,7 @@ wiseBle 当前 podspec 版本为 `1.4.0`、最低 iOS 版本为 `12.0`。Demo �
 
 ### 第 4 步：替换 WiseBaseKit，并清理间接依赖
 
-涉及 AppDelegate、5 个继承 WiseBaseKit 基类的页面，以及使用其工具方法、分类和宏的视图。
+已将 AppDelegate 的 `WWNavigationController` 替换为原生导航，并将 5 个页面（`ScanViewController`、`BleViewController`、`SetViewController`、`AppConfigSetViewController`、`BleServiceConfigViewController`）迁至本地 UIKit 表格 / 滚动容器；工具调用已替换。WiseBaseKit 及其间接依赖 MJRefresh 已移除。
 
 执行内容：
 
@@ -126,7 +126,7 @@ wiseBle 当前 podspec 版本为 `1.4.0`、最低 iOS 版本为 `12.0`。Demo �
 
 ### 第 5 步：替换 YYCache，迁移已有数据
 
-涉及 `config/HJConfigInfo.m` 和 `Home/model/HJCustomCommandStore.m`。
+已完成 `config/HJConfigInfo.m` 和 `Home/model/HJCustomCommandStore.m` 的存储迁移，移除 YYCache Pod。旧格式读取器保留在 `Storage/HJLegacyCacheReader`，支持跳过中间版本直接升级。
 
 目标：
 
@@ -138,15 +138,17 @@ wiseBle 当前 podspec 版本为 `1.4.0`、最低 iOS 版本为 `12.0`。Demo �
 
 1. 列出旧设置键、默认值、旧缓存位置，以及指令字段、标识和顺序。
 2. 实现新存储，补充读取、保存、错误及迁移验证。
-3. 保留 YYCache 读取旧数据的过渡版本；新存储尚未迁移时读取旧数据，确认新数据保存成功后才标记迁移完成。
+3. 使用系统 SQLite + Foundation 只读读取旧 YYCache，确认新数据保存成功后才标记迁移完成，保留直接跨版本升级通道。
 4. 新存储已存在的数据不得被旧缓存反复覆盖；失败迁移允许后续重试。
-5. 迁移代码经过升级验证后，再安排彻底移除 YYCache 的版本。
+5. 完成旧格式回归测试后移除 YYCache 依赖，保留旧格式读取代码。
 
 不能仅按时间删除迁移能力：用户可能跳过过渡版本直接升级，彻底移除前必须明确此类升级路径的数据保留方案。
 
 验收：旧版升级后设置、指令内容、类型、标识和顺序保留；新安装默认值正确；增删改、重启恢复、重复启动及写入失败处理正常。
 
 ### 第 6 步：整理输入栏、键盘、选择弹窗和提示
+
+已使用项目内 `HJMessageInputBar`、`HJFeedback` 和 UIKit action sheet 替换相关实现；DXMessageToolBar、PopoverView 本地代码及 IQKeyboardManager、Toast、SVProgressHUD 依赖已移除。
 
 执行内容：
 
@@ -158,16 +160,6 @@ wiseBle 当前 podspec 版本为 `1.4.0`、最低 iOS 版本为 `12.0`。Demo �
 
 验收：iPhone、iPad 的输入区域不被键盘遮挡，长文本与多行输入正常；设置输入、自定义指令编辑、连接加载及消息提示均正常。界面调整不改变数据编码和发送语义。
 
-### 第 7 步：最后替换 Masonry
-
-执行内容：
-
-- 逐页将现有约束改为系统 Auto Layout。
-- 优先按当前布局还原，不同时重新设计界面。
-- 所有直接和间接依赖清除后再移除 Masonry。
-
-验收：扫描页、发送页、设置页、自定义指令及编辑页面布局正常，安全区域和支持的横竖屏尺寸变化正常，无新增约束冲突。
-
 ## 5. 验证与交付规则
 
 - 每一步独立形成可检查、可回退的变更，记录修改范围和验证结果。
@@ -177,16 +169,83 @@ wiseBle 当前 podspec 版本为 `1.4.0`、最低 iOS 版本为 `12.0`。Demo �
 - App 与库分别管理变更，最终能确定 Demo 对应的库源码版本。
 - 保留现有不相关的工作区改动，不顺带修改 Android、Web BLE 文档或 Xcode 用户状态。
 
-## 6. 进度跟踪
+## 6. 本轮六批实施（2026-10-22）
 
-| 步骤 | 当前状态 | 完成证据 |
+原第 1、2 步已完成；本轮按以下顺序开发，保留 Masonry。Masonry 是 Auto Layout 的封装，可以正常处理安全区域、横竖屏和窗口变化，无需为适配新设备更换布局库。
+
+| 批次 | 修改范围 | 验证 |
 | --- | --- | --- |
-| 1. 修复基线 | 已完成，用户确认实机通过 | `5ab7503`；断电重连实机通过，此前 20 项逻辑测试及 iOS 真机 SDK 构建通过 |
-| 2. wiseBle 连接管理与同步接口 | 已完成，用户确认实机测试无问题 | GitHub tag `1.4.0`（`1c7c46c`）；库端 65 项回归通过；App 本机 11 项测试、iOS 真机 SDK App 及测试 target 构建通过；已删除 App 协调器及发送等待包装；2026-10-22 用户确认测试无问题，App 版本更新为 4.4.1；详见库更新方案第 9、10 节 |
-| 3. 无用依赖清理 | 未开始 | 待补充 |
-| 4. WiseBaseKit 替换 | 未开始 | 待补充 |
-| 5. YYCache 数据迁移 | 未开始 | 待补充 |
-| 6. 输入、键盘及提示整理 | 未开始 | 待补充 |
-| 7. Masonry 替换 | 未开始 | 待补充 |
+| 1 | 移除 SDWebImage、MBProgressHUD、MMPopupView 和未使用的 WWAlertView | 依赖安装、真机 SDK 构建 |
+| 2 | UIKit 替换 WiseBaseKit、导航、基类与工具，移除 MJRefresh 间接依赖 | 真机 SDK 构建、导航生命周期回归 |
+| 3 | 设置迁至 NSUserDefaults，指令迁至 JSON；系统 SQLite 只读迁移旧 YYCache | 旧归档内联/外置、升级、重复迁移、损坏及写入失败测试 |
+| 4 | 原生输入栏、键盘布局、选择菜单、加载和提示；移除旧 UI 库 | 构建，实机检查输入与连接取消 |
+| 5 | 安全区域、横竖屏、可变窗口、滚动表单、独立指令遮罩 | 构建，实机检查窄窗口、横屏及键盘 |
+| 6 | wiseBle 添加 SPM 分发入口，保持同步调用核心；统一回归并更新文档 | 包结构、SDK 编译、App 逻辑测试及构建 |
 
-后续每完成一步，更新本表，并记录实际变更、验证结果和仍需实机确认的事项。
+### 用户所称 iPhone Duo 的适配范围
+
+2026-10-22 核对 Apple 官方要求页 https://developer.apple.com/news/upcoming-requirements/ ，未查到 iPhone Duo 或“2027 年 4 月后必须支持”的正式要求。页面列出的 SDK 要求包含自 2026-04-28 起使用 Xcode 26 / iOS 26 SDK。后续以 Apple 正式设备、SDK 和审核要求为准。
+
+当前按可变尺寸设备准备：布局依据所在窗口和 safe area，不硬编码新机尺寸；解除 iPhone 仅竖屏、iPad 强制全屏限制；输入区跟随键盘；表单在紧凑高度下可滚动；自定义指令仍为独立全屏半透明页面。最低系统保持现有 App 的 iOS 15.6。不能据此宣称已通过尚未确认机型的适配或审核。
+
+不启动模拟器；真机 SDK 构建和本机逻辑测试由代码侧完成，设备旋转、窗口变化、蓝牙与升级数据由用户实机验收。不自动提交、发布或升级版本。
+
+## 7. 六批实施结果与验收记录（2026-10-22）
+
+本轮源码修改已完成，尚未提交。App 版本保持 `4.4.1`，wiseBle 保持 `1.4.0`；没有创建新 tag、push 或执行 CocoaPods 发布。
+
+| 批次 | 代码结果 | 验证状态 |
+| --- | --- | --- |
+| 1 | 无用 Pod、WWAlertView 及旧弹窗引用已删除 | 最终依赖安装及构建通过 |
+| 2 | UIKit 导航、本地表格 / 滚动容器及必要 UI 辅助替换 WiseBaseKit；MJRefresh 随之移除 | 真机 SDK 构建、原有页面生命周期回归通过；导航手势待实机 |
+| 3 | 设置使用 NSUserDefaults，指令使用 JSON 原子写入；保留系统 SQLite 只读迁移 | 9 项存储回归通过；真实安装覆盖升级待实机 |
+| 4 | 原生多行输入栏、键盘布局、选择弹窗、中文提示与局部连接加载 | 真机 SDK 构建通过；输入、键盘及取消待实机 |
+| 5 | 单窗口 SceneDelegate、安全区域、横屏、iPad 可变窗口、滚动设置 / 编辑页与窄屏列表 | 真机 SDK 构建通过；旋转、分屏和缩放待实机；具体 Duo 机型未验证 |
+| 6 | wiseBle 仓库添加 Package.swift 与公共头入口；App 继续使用 Pod Git tag | 库 65 项回归通过；SPM 本机构建与独立 Objective-C / Swift 示例的 iOS SDK 构建通过 |
+
+### 最终依赖与接口
+
+- App 仅保留 Masonry `1.1.0`、wiseBle `1.4.0`。测试 target 使用同一 wiseBle Git tag。
+- Masonry 继续负责页面约束，safe area 使用明确的 top / bottom / left / right 属性；键盘和滚动布局使用 UIKit layout guides。
+- `UIWindowScene` 创建当前窗口，不从物理屏幕取固定尺寸；仍为单窗口，避免让多窗口争用现有蓝牙单例。iPad 可调整该窗口的尺寸，不声明支持多个独立连接窗口。
+- 蓝牙的同步顺序调用、会话隔离、发送队列和协议保持原有实现；本轮没有改成业务回调编排。
+- 自定义指令按钮仍在“开始测试”左侧；指令面板仍是独立 `overFullScreen` 页面，半透明背景，面板随窗口宽度变化且限制大屏最大宽度。编辑页在键盘出现时可滚动。
+- 手动输入保留 HEX 校验、键盘回车发送、按钮发送和粘贴多行后的高度变化；高度上限后在输入框内滚动。
+
+### 数据迁移细节
+
+- 旧设置：`Caches/bleCache/manifest.sqlite`，读取 `isBleHex`、`isClearInput`、`isAddReturn`、`isScanFilter`、`dataMainService`、`dataSendSubService`、`dataReceiveSubService`、`isRespone`、`dataTotalLen`、`sendDataGap`。新设置写入 `NSUserDefaults` 的 `HJSettings.` 命名空间。
+- App 已加入 `PrivacyInfo.xcprivacy`，为仅供本 App 保存 / 读取设置的 NSUserDefaults 声明 `CA92.1` 使用理由。
+- 各设置已有新值时优先使用新值；旧文件读取失败不写入默认值作为迁移结果，后续可重试。默认值沿用旧实现（包括清空输入默认为否）；配置模式继续为内存状态。
+- 旧指令位于 `Application Support/HJBleDemo/CustomCommands` 的 YYCache，键为 `commands.v1`。新文件为同目录 `commands.v1.json`。新文件存在时不再回退到旧列表，避免已删除指令被重新导入。
+- 只读旧 SQLite 的 `filename` / `inline_data`，支持外置 `data/<filename>` 归档。旧缓存文件保留，不删除。迁移成功写入新 JSON 后才使用新结果；损坏、缺文件、保存失败均不以空列表覆盖旧数据。
+- ID、类型、创建时间及列表顺序保留。新增、编辑和删除返回真实保存结果；保存失败保留编辑内容并提示，不提前关闭编辑页。
+- 9 项回归覆盖设置全部键、新值优先、损坏重试、内联 / 外置指令、CRUD 与重启、损坏 JSON 拒绝覆盖、非法旧列表保护及文件系统失败。
+
+### 自动验证
+
+```bash
+cd iOS/HJBleDemo
+pod install
+./scripts/run-ble-tests.sh
+xcodebuild -workspace HJBleDemo.xcworkspace -scheme HJBleDemo \
+  -configuration Debug -destination 'generic/platform=iOS' \
+  -derivedDataPath /tmp/HJBleModernizationDerivedData \
+  CODE_SIGNING_ALLOWED=NO build-for-testing
+```
+
+- App 本机 XCTest：20 项、0 失败（原有 11 项 + 存储 9 项）。真机 SDK 的 App 和测试 target 构建通过，未执行 iOS 测试、未启动模拟器。
+- wiseBle：`scripts/run-tests.sh`，65 项、0 失败。`swift package dump-package`、`swift build --scratch-path /tmp/WiseBleSPMBuild` 通过。
+- 独立临时包 `/tmp/WiseBlePackageCheck` 使用本地 wiseBle，Objective-C 通过 `@import wiseBle` 调用接口，Swift 导入库并调用 Objective-C 示例；`xcodebuild -scheme Consumer -destination 'generic/platform=iOS'` 构建通过，最低 iOS 12。
+- 日志：`/tmp/hjble-modernization-tests.log`、`/tmp/hjble-modernization-build.log`、`/tmp/wiseble-modernization-tests.log`、`/tmp/wiseble-spm-ios-build.log`。
+
+### 请用 Pad 实机验收
+
+1. **先直接覆盖安装，保留旧 App 数据**：检查原有设置及指令名称、内容、类型、排序；重启再检查。确认后再测试增删改，避免先卸载导致迁移无法验收。
+2. 正常扫描连接，HEX / ASCII、CRLF、自定义指令、有 / 无响应发送、吞吐开始 / 停止正常。
+3. 板子断电、返回扫描、上电重连；连接中取消 / 离开再连接；进入设置和指令页面后返回仍可收发；侧滑取消和完成返回符合原行为。
+4. 横屏 / 竖屏及调整 iPad 窗口宽度，扫描长设备名、收发长日志、全部设置项可见或可滚动；统计与输入栏不侵入系统栏。
+5. 输入栏粘贴长文本、多行、发送、清空及弹出 / 收起键盘；服务 UUID 和指令编辑的输入位置可见，保存 / 取消中文按钮可操作。
+6. 指令遮罩覆盖当前 App 窗口，点击背景或关闭退出；窄窗口长指令名、编辑 / 删除按钮可用；iPad 设置选择弹窗锚定按钮。
+
+以上是待用户验证的检查项，不表示已逐项完成。iPhone 尺寸和具体新机需要对应设备 / 正式 SDK 再验收；构建通过不能代替这些结果。

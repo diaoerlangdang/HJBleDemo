@@ -8,18 +8,18 @@
 
 #import "BleServiceConfigViewController.h"
 #import "HJConfigInfo.h"
-#import <Toast/Toast.h>
+#import "HJFeedback.h"
 
 @interface BleServiceConfigViewController ()
 
 //主服务
-@property (nonatomic, strong) WWTextField *mainServiceTF;
+@property (nonatomic, strong) UITextField *mainServiceTF;
 
 // 通知服务
-@property (nonatomic, strong) WWTextField *notifyServiceTF;
+@property (nonatomic, strong) UITextField *notifyServiceTF;
 
 // 发送服务
-@property (nonatomic, strong) WWTextField *sendServiceTF;
+@property (nonatomic, strong) UITextField *sendServiceTF;
 
 @end
 
@@ -41,7 +41,7 @@
 
 - (void)initView {
     
-    _mainServiceTF = [[WWTextField alloc] init];
+    _mainServiceTF = [[UITextField alloc] init];
     _mainServiceTF.placeholder = @"请输入主服务";
     UIView *mainServieView = [self createItemView:@"主服务：" textField:_mainServiceTF];
     
@@ -51,7 +51,7 @@
         make.left.right.equalTo(self.contentView);
     }];
     
-    _notifyServiceTF = [[WWTextField alloc] init];
+    _notifyServiceTF = [[UITextField alloc] init];
     _notifyServiceTF.placeholder = @"请输入通知服务";
     UIView *notifyServiceView = [self createItemView:@"通知服务：" textField:_notifyServiceTF];
     [self.contentView addSubview:notifyServiceView];
@@ -60,7 +60,7 @@
         make.left.right.equalTo(self.contentView);
     }];
     
-    _sendServiceTF = [[WWTextField alloc] init];
+    _sendServiceTF = [[UITextField alloc] init];
     _sendServiceTF.placeholder = @"请输入发送服务";
     UIView *sendServiceView = [self createItemView:@"发送服务：" textField:_sendServiceTF];
     [self.contentView addSubview:sendServiceView];
@@ -69,7 +69,7 @@
         make.left.right.equalTo(self.contentView);
     }];
     
-    UILabel *tipsLabel = [UILabel labelWithTextColor:WW_COLOR_HexRGB(0xf20c00) font:WW_Font(12)];
+    UILabel *tipsLabel = HJLabel(HJColor(0xf20c00), [UIFont systemFontOfSize:12]);
     [self.contentView addSubview:tipsLabel];
     tipsLabel.numberOfLines = 0;
     tipsLabel.text = @"* 输入的格式为xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx\n*若服务格式为0000xxxx-0000-1000-8000-00805f9b34fb的数据，请输入xxxx两字节服务";
@@ -81,8 +81,8 @@
     
     UIButton *recoveryBtn = [[UIButton alloc] init];
     [recoveryBtn setTitle:@"恢复默认" forState:UIControlStateNormal];
-    [recoveryBtn setBackgroundImage:[UIImage imageWithColor:WW_COLOR_HexRGB(0xa0a0a0)] forState:UIControlStateNormal];
-    [recoveryBtn setBackgroundImage:[UIImage imageWithColor:WW_COLOR_HexRGB(0x808080)] forState:UIControlStateHighlighted];
+    [recoveryBtn setBackgroundImage:HJColorImage(HJColor(0xa0a0a0)) forState:UIControlStateNormal];
+    [recoveryBtn setBackgroundImage:HJColorImage(HJColor(0x808080)) forState:UIControlStateHighlighted];
     recoveryBtn.layer.cornerRadius = 5;
     recoveryBtn.layer.masksToBounds = true;
     [recoveryBtn addTarget:self action:@selector(onClickRecoveryBtn) forControlEvents:UIControlEventTouchUpInside];
@@ -97,11 +97,11 @@
     
 }
 
-- (UIView *)createItemView: (NSString *)title textField:(WWTextField *) textField {
+- (UIView *)createItemView: (NSString *)title textField:(UITextField *) textField {
     
     UIView *view = [UIView new];
     
-    UILabel *titleLabel = [UILabel labelWithTextColor:WW_COLOR_HexRGB(0x666666) font:WW_Font(15)];
+    UILabel *titleLabel = HJLabel(HJColor(0x666666), [UIFont systemFontOfSize:15]);
     titleLabel.text = title;
     [view addSubview:titleLabel];
     [titleLabel mas_makeConstraints:^(MASConstraintMaker *make) {
@@ -110,8 +110,11 @@
     }];
     
     [view addSubview:textField];
-    textField.textColor = WW_COLOR_HexRGB(0x333333);
-    textField.layer.borderColor = WW_COLOR_HexRGB(0xc0c0c0).CGColor;
+    textField.autocapitalizationType = UITextAutocapitalizationTypeAllCharacters;
+    textField.autocorrectionType = UITextAutocorrectionTypeNo;
+    textField.keyboardType = UIKeyboardTypeASCIICapable;
+    textField.textColor = HJColor(0x333333);
+    textField.layer.borderColor = HJColor(0xc0c0c0).CGColor;
     textField.layer.borderWidth = 1;
     textField.layer.cornerRadius = 5;
     [textField mas_makeConstraints:^(MASConstraintMaker *make) {
@@ -119,7 +122,7 @@
         make.right.equalTo(view).offset(-15);
         make.top.equalTo(titleLabel.mas_bottom).offset(5);
         make.bottom.equalTo(view).offset(-10);
-        make.height.equalTo(@35);
+        make.height.equalTo(@44);
     }];
     
     return view;
@@ -153,17 +156,17 @@
     NSString *notifyService = _notifyServiceTF.text;
     
     if (![self verfiyService:mainService]) {
-        [self.view makeToast:@"主服务格式不正确"];
+        [self.view hj_showMessage:@"主服务格式不正确"];
         return;
     }
     
     if (![self verfiyService:sendService]) {
-        [self.view makeToast:@"发送服务格式不正确"];
+        [self.view hj_showMessage:@"发送服务格式不正确"];
         return;
     }
     
     if (![self verfiyService:notifyService]) {
-        [self.view makeToast:@"通知服务格式不正确"];
+        [self.view hj_showMessage:@"通知服务格式不正确"];
         return;
     }
     
@@ -171,7 +174,7 @@
     [HJConfigInfo shareInstance].dataSendSubService = [sendService uppercaseString];
     [HJConfigInfo shareInstance].dataReceiveSubService = [notifyService uppercaseString];
     
-    [self.navigationController.view makeToast:@"保存成功"];
+    [self.navigationController.view hj_showMessage:@"保存成功"];
     
     [self.navigationController popViewControllerAnimated:true];
 }

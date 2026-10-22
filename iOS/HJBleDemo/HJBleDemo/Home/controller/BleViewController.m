@@ -8,7 +8,7 @@
 
 #import "BleViewController.h"
 #import "BleSendReceiveTableViewCell.h"
-#import <Toast/Toast.h>
+#import "HJFeedback.h"
 #import "SetViewController.h"
 #import "HJConfigInfo.h"
 #import "HJBleDevicePageLifecycle.h"
@@ -16,14 +16,12 @@
 #import "HJCustomCommandStore.h"
 #import "HJCustomCommandCodec.h"
  
-// header view 高度
-#define HEADER_VIEW_HEIGHT 85.f
 
 @interface BleViewController ()
 
 @property (nonatomic,strong) CBPeripheral *peripheral;
 
-@property (nonatomic, strong) DXMessageToolBar *chatToolBar;
+@property (nonatomic, strong) HJMessageInputBar *chatToolBar;
 
 @property (nonatomic, strong) NSMutableArray<BleSendReceiveData *> *tableData;
 
@@ -34,6 +32,7 @@
 @property (nonatomic, assign) BOOL isRespone;
 
 @property (nonatomic, strong) UIView *headerView;
+@property (nonatomic, strong) MASConstraint *collapsedHeaderHeight;
 
 // 发送字节数
 @property (nonatomic, strong) UILabel *sendByteCountLabel;
@@ -103,32 +102,25 @@
     UIBarButtonItem *setBtnItem = [[UIBarButtonItem alloc] initWithImage:[UIImage imageNamed:@"set"] style:UIBarButtonItemStylePlain target:self action:@selector(setBtnClicked)];
     self.navigationItem.rightBarButtonItems = @[setBtnItem, clearBtnItem];
     
-    CGFloat chatToolBarHeight = [DXMessageToolBar defaultHeight];
-    _chatToolBar = [[DXMessageToolBar alloc] initWithFrame:CGRectMake(0, self.view.frame.size.height - [DXMessageToolBar defaultHeight], self.view.frame.size.width, chatToolBarHeight)];
-    _chatToolBar.backgroundColor = [UIColor whiteColor];
-    _chatToolBar.autoresizingMask = UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleRightMargin;
+    _chatToolBar = [HJMessageInputBar new];
     _chatToolBar.delegate = self;
     [self.view addSubview:_chatToolBar];
-    self.isShowHex = true;
-    
-    [self setupHeaderView];
-    
-    [self.tableView mas_remakeConstraints:^(MASConstraintMaker *make) {
-        if (@available(iOS 11.0, *)) {
-            make.left.equalTo(self.view.mas_safeAreaLayoutGuideLeft);
-            make.right.equalTo(self.view.mas_safeAreaLayoutGuideRight);
-            make.top.equalTo(_headerView.mas_bottom);
-            make.bottom.equalTo(self.view).offset(-5-chatToolBarHeight);
-        } else {
-            make.left.right.equalTo(self.view);
-            make.top.equalTo(_headerView.mas_bottom);
-            make.bottom.equalTo(self.view).offset(-5-chatToolBarHeight);
-        }
+    [_chatToolBar mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(self.view.mas_safeAreaLayoutGuideLeft);
+        make.right.equalTo(self.view.mas_safeAreaLayoutGuideRight);
     }];
-    
-    UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(keyBoardHidden)];
-    [self.view addGestureRecognizer:tap];
-    
+    [_chatToolBar.bottomAnchor constraintEqualToAnchor:self.view.keyboardLayoutGuide.topAnchor].active = YES;
+    self.isShowHex = true;
+    [self setupHeaderView];
+    [_headerView.bottomAnchor constraintLessThanOrEqualToAnchor:_chatToolBar.topAnchor].active = YES;
+    [self.tableView mas_remakeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(self.view.mas_safeAreaLayoutGuideLeft);
+        make.right.equalTo(self.view.mas_safeAreaLayoutGuideRight);
+        make.top.equalTo(_headerView.mas_bottom);
+        make.height.greaterThanOrEqualTo(@0);
+        make.bottom.equalTo(_chatToolBar.mas_top);
+    }];
+
     _tableData = [[NSMutableArray alloc] init];
     
     _ble = [WWBluetoothLE shareBLE];
@@ -163,7 +155,7 @@
     
     if ([HJConfigInfo shareInstance].isBleConfig) {
         self.navigationItem.title = [NSString stringWithFormat:@"%@-配置",_peripheral.name];
-        _headerView.height = CGFLOAT_MIN;
+        [self.collapsedHeaderHeight install];
         _headerView.hidden = true;
         
         // 定时器停止
@@ -172,7 +164,7 @@
     else {
         self.navigationItem.title = [NSString stringWithFormat:@"%@-数据",_peripheral.name];
         
-        _headerView.height = HEADER_VIEW_HEIGHT;
+        [self.collapsedHeaderHeight uninstall];
         _headerView.hidden = false;
         
         //启动定时器
@@ -219,75 +211,62 @@
 - (void)setupHeaderView
 {
     _headerView = [UIView new];
+    _headerView.clipsToBounds = YES;
     [self.view addSubview:_headerView];
     [_headerView mas_makeConstraints:^(MASConstraintMaker *make) {
-        make.left.right.top.equalTo(self.view);
-        make.height.equalTo(@(HEADER_VIEW_HEIGHT));
+        make.left.equalTo(self.view.mas_safeAreaLayoutGuideLeft);
+        make.right.equalTo(self.view.mas_safeAreaLayoutGuideRight);
+        make.top.equalTo(self.view.mas_safeAreaLayoutGuideTop);
+        self.collapsedHeaderHeight = make.height.mas_equalTo(0);
     }];
-    
-    _sendByteCountLabel = [UILabel labelWithTextColor:WW_COLOR_HexRGB(0x333333) font:WW_Font(9)];
-    [_headerView addSubview:_sendByteCountLabel];
-    [_sendByteCountLabel mas_makeConstraints:^(MASConstraintMaker *make) {
-        make.top.equalTo(_headerView).offset(5);
-        make.left.equalTo(_headerView).offset(10);
-    }];
-    
-    [self setSendByteCount:0];
-    
-    _receiveByteCountLabel = [UILabel labelWithTextColor:WW_COLOR_HexRGB(0x333333) font:WW_Font(9)];
-    [_headerView addSubview:_receiveByteCountLabel];
-    [_receiveByteCountLabel mas_makeConstraints:^(MASConstraintMaker *make) {
-        make.top.equalTo(_headerView).offset(5);
-        make.right.equalTo(_headerView).offset(-10);
-    }];
-    
-    [self setReceiveByteCount:0];
-    
-    _receiveRateLabel = [UILabel labelWithTextColor:WW_COLOR_HexRGB(0x333333) font:WW_Font(9)];
-    [_headerView addSubview:_receiveRateLabel];
-    [_receiveRateLabel mas_makeConstraints:^(MASConstraintMaker *make) {
-        make.top.equalTo(_sendByteCountLabel.mas_bottom).offset(5);
-        make.left.equalTo(_headerView).offset(10);
-    }];
-    
-    [self showRecCountBySecond:0];
-    
-    _averageSendRateLabel = [UILabel labelWithTextColor:WW_COLOR_HexRGB(0x333333) font:WW_Font(9)];
-    [_headerView addSubview:_averageSendRateLabel];
-    [_averageSendRateLabel mas_makeConstraints:^(MASConstraintMaker *make) {
-        make.top.equalTo(_receiveRateLabel.mas_bottom).offset(5);
-        make.left.equalTo(_headerView).offset(10);
-    }];
-    
-    [self showAverageSendCountBySecond:0];
-    
-    _flowControlLabel = [UILabel labelWithTextColor:WW_COLOR_HexRGB(0x333333) font:WW_Font(9)];
-    [_headerView addSubview:_flowControlLabel];
-    [_flowControlLabel mas_makeConstraints:^(MASConstraintMaker *make) {
-        make.top.equalTo(_receiveByteCountLabel.mas_bottom).offset(5);
-        make.right.equalTo(_headerView).offset(-10);
-    }];
-    _flowControlLabel.text = self.scanData.bFlowControl ? @"串口流控：使能" : @"串口流控：禁止";
-    
+    [self.collapsedHeaderHeight uninstall];
+
+    _sendByteCountLabel = HJLabel(HJColor(0x333333), [UIFont systemFontOfSize:12]);
+    _receiveByteCountLabel = HJLabel(HJColor(0x333333), [UIFont systemFontOfSize:12]);
+    _receiveRateLabel = HJLabel(HJColor(0x333333), [UIFont systemFontOfSize:12]);
+    _averageSendRateLabel = HJLabel(HJColor(0x333333), [UIFont systemFontOfSize:12]);
+    _flowControlLabel = HJLabel(HJColor(0x333333), [UIFont systemFontOfSize:12]);
+    for (UILabel *label in @[_sendByteCountLabel, _receiveByteCountLabel, _receiveRateLabel, _averageSendRateLabel, _flowControlLabel]) {
+        label.numberOfLines = 2;
+    }
+    UIStackView *left = [[UIStackView alloc] initWithArrangedSubviews:@[_sendByteCountLabel, _receiveRateLabel, _averageSendRateLabel]];
+    left.axis = UILayoutConstraintAxisVertical;
+    left.spacing = 4;
+    UIStackView *right = [[UIStackView alloc] initWithArrangedSubviews:@[_receiveByteCountLabel, _flowControlLabel]];
+    right.axis = UILayoutConstraintAxisVertical;
+    right.spacing = 4;
+    UIStackView *stats = [[UIStackView alloc] initWithArrangedSubviews:@[left, right]];
+    stats.distribution = UIStackViewDistributionFillEqually;
+    stats.alignment = UIStackViewAlignmentTop;
+    stats.spacing = 8;
+
     _testBtn = [UIButton buttonWithType:UIButtonTypeSystem];
     [_testBtn setTitle:@"开始测试" forState:UIControlStateNormal];
     [_testBtn addTarget:self action:@selector(testBtnClicked) forControlEvents:UIControlEventTouchUpInside];
-    [_headerView addSubview:_testBtn];
-    
-    [_testBtn mas_makeConstraints:^(MASConstraintMaker *make) {
-        make.top.equalTo(_averageSendRateLabel.mas_bottom).offset(5);
-        make.right.equalTo(_headerView).offset(-10);
-    }];
+    UIButton *commands = [UIButton buttonWithType:UIButtonTypeSystem];
+    [commands setTitle:@"自定义指令" forState:UIControlStateNormal];
+    [commands addTarget:self action:@selector(customCommandBtnClicked) forControlEvents:UIControlEventTouchUpInside];
+    UIStackView *actions = [[UIStackView alloc] initWithArrangedSubviews:@[[UIView new], commands, _testBtn]];
+    actions.spacing = 12;
+    [commands.widthAnchor constraintGreaterThanOrEqualToConstant:80].active = YES;
+    [_testBtn.widthAnchor constraintGreaterThanOrEqualToConstant:64].active = YES;
+    [actions.heightAnchor constraintEqualToConstant:44].active = YES;
 
-    UIButton *customCommandButton = [UIButton buttonWithType:UIButtonTypeSystem];
-    [customCommandButton setTitle:@"自定义指令" forState:UIControlStateNormal];
-    [customCommandButton addTarget:self action:@selector(customCommandBtnClicked) forControlEvents:UIControlEventTouchUpInside];
-    [_headerView addSubview:customCommandButton];
-    [customCommandButton mas_makeConstraints:^(MASConstraintMaker *make) {
-        make.top.equalTo(_testBtn);
-        make.right.equalTo(_testBtn.mas_left).offset(-12);
+    UIStackView *content = [[UIStackView alloc] initWithArrangedSubviews:@[stats, actions]];
+    content.axis = UILayoutConstraintAxisVertical;
+    content.spacing = 4;
+    [_headerView addSubview:content];
+    [content mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.top.equalTo(_headerView).offset(8);
+        make.right.equalTo(_headerView).offset(-8);
+        // 配置模式折叠头部时，让内部内容可被裁剪而不产生冲突。
+        make.bottom.equalTo(_headerView).offset(-4).priority(999);
     }];
-
+    [self setSendByteCount:0];
+    [self setReceiveByteCount:0];
+    [self showRecCountBySecond:0];
+    [self showAverageSendCountBySecond:0];
+    _flowControlLabel.text = self.scanData.bFlowControl ? @"串口流控：使能" : @"串口流控：禁止";
 }
 
 - (void)setSendByteCount:(NSInteger)count
@@ -378,12 +357,12 @@
     if (isShowHex) {
         _chatToolBar.isHex = true;
         _chatToolBar.inputTextView.keyboardType = UIKeyboardTypeASCIICapable;//UIKeyboardTypeNumberPad;
-        _chatToolBar.inputTextView.placeHolder = @"请输入Hex数据";
+        _chatToolBar.placeholder = @"请输入Hex数据";
     }
     else {
         _chatToolBar.isHex = false;
         _chatToolBar.inputTextView.keyboardType = UIKeyboardTypeDefault;
-        _chatToolBar.inputTextView.placeHolder = @"请输入数据";
+        _chatToolBar.placeholder = @"请输入数据";
     }
 }
 
@@ -406,30 +385,14 @@
 }
 
 
-- (void)keyBoardHidden
-{
-    [_chatToolBar endEditing:YES];
-}
-
 -(void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
     [tableView deselectRowAtIndexPath:indexPath animated:NO];
+    [self.view endEditing:YES];
 }
 
-#pragma mark - DXMessageToolBarDelegate
-- (void)inputTextViewWillBeginEditing:(XHMessageTextView *)messageInputTextView{
-}
-
-- (void)didChangeFrameToHeight:(CGFloat)toHeight
-{
-    [UIView animateWithDuration:0.3 animations:^{
-        CGRect rect = self.tableView.frame;
-        rect.size.height = self.view.frame.size.height - toHeight;
-        self.tableView.frame = rect;
-    }];
-}
-
-- (void)toolBar:(DXMessageToolBar *)toolBar didSendText:(NSString *)text
+#pragma mark - HJMessageInputBarDelegate
+- (void)inputBar:(HJMessageInputBar *)toolBar didSendText:(NSString *)text
 {
     [self.view endEditing:true];
 
@@ -439,18 +402,18 @@
 
     if (_isShowHex) {
         if (text.length % 2 != 0) {
-            [self.view makeToast:@"数据不为2的倍数"];
+            [self.view hj_showMessage:@"数据不为2的倍数"];
             return;
         }
         text = text.uppercaseString;
-        if (![WWRegexUtils isValidateByRegex:@"^[A-Fa-f0-9]+$" value:text]) {
-            [self.view makeToast:@"输入格式错误"];
+        if (![[NSPredicate predicateWithFormat:@"SELF MATCHES %@", @"^[A-Fa-f0-9]+$"] evaluateWithObject:text]) {
+            [self.view hj_showMessage:@"输入格式错误"];
             return;
         }
     }
 
     if (_bBusyBle) {
-        [self.view makeToast:@"蓝牙繁忙，请稍后在试"];
+        [self.view hj_showMessage:@"蓝牙繁忙，请稍后在试"];
         return;
     }
 
@@ -462,7 +425,7 @@
                                                appendReturn:[HJConfigInfo shareInstance].isAddReturn
                                                       error:&error];
     if (!sendData) {
-        [self.view makeToast:error ?: @"输入格式错误"];
+        [self.view hj_showMessage:error ?: @"输入格式错误"];
         return;
     }
     [self sendPreparedData:sendData logText:text clearInput:[HJConfigInfo shareInstance].isClearInput toolbar:toolBar];
@@ -483,11 +446,11 @@
 - (void)executeCustomCommand:(HJCustomCommand *)command
 {
     if (_isTesting) {
-        [self.view makeToast:@"正在测试中，无法执行指令"];
+        [self.view hj_showMessage:@"正在测试中，无法执行指令"];
         return;
     }
     if (_bBusyBle) {
-        [self.view makeToast:@"蓝牙繁忙，请稍后再试"];
+        [self.view hj_showMessage:@"蓝牙繁忙，请稍后再试"];
         return;
     }
 
@@ -496,7 +459,7 @@
                                                appendReturn:[HJConfigInfo shareInstance].isAddReturn
                                                       error:&error];
     if (!sendData) {
-        [self.view makeToast:error ?: @"指令格式错误"];
+        [self.view hj_showMessage:error ?: @"指令格式错误"];
         return;
     }
     [self sendPreparedData:sendData logText:command.command clearInput:NO toolbar:nil];
@@ -505,15 +468,15 @@
 - (void)sendPreparedData:(NSData *)sendData
                  logText:(NSString *)logText
              clearInput:(BOOL)clearInput
-                 toolbar:(DXMessageToolBar *)toolbar
+                 toolbar:(HJMessageInputBar *)toolbar
 {
     if (!sendData || !_connectionPageActive ||
         ![_ble isSessionActive:_scanData.connectionSessionIdentifier peripheral:_peripheral]) {
-        [self.view makeToast:@"蓝牙未连接"];
+        [self.view hj_showMessage:@"蓝牙未连接"];
         return;
     }
     if (_isSending || _isTesting) {
-        [self.view makeToast:@"正在发送，请稍后再试"];
+        [self.view hj_showMessage:@"正在发送，请稍后再试"];
         return;
     }
 
@@ -593,7 +556,7 @@
             default: break;
         }
     }
-    [self.view makeToast:message];
+    [self.view hj_showMessage:message];
 }
 
 // 测试
@@ -606,11 +569,11 @@
         [_testBtn setTitle:@"开始测试" forState:UIControlStateNormal];
     } else {
         if (!_connectionPageActive || ![_ble isSessionActive:_scanData.connectionSessionIdentifier peripheral:_peripheral]) {
-            [self.view makeToast:@"蓝牙未连接"];
+            [self.view hj_showMessage:@"蓝牙未连接"];
             return;
         }
         if (_isSending || _bBusyBle) {
-            [self.view makeToast:@"蓝牙繁忙，请稍后再试"];
+            [self.view hj_showMessage:@"蓝牙繁忙，请稍后再试"];
             return;
         }
         self.isTesting = YES;

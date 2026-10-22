@@ -1,36 +1,36 @@
 #import "HJCustomCommandStore.h"
 #import "HJCustomCommand.h"
-#import <YYCache/YYCache.h>
+#import "HJLegacyCacheReader.h"
 
 static NSString * const HJCustomCommandCacheKey = @"commands.v1";
 static NSString * const HJCustomCommandIDKey = @"id";
 
 @interface HJCustomCommandStore ()
-@property (nonatomic, strong) YYCache *cache;
+@property (nonatomic, copy) NSString *directory;
+@property (nonatomic, copy) NSString *jsonPath;
+@property (nonatomic, strong, readwrite) NSError *lastError;
 @end
 
 @implementation HJCustomCommandStore
 
 - (instancetype)init
 {
-    self = [super init];
-    if (self) {
-        NSString *applicationSupport = [NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory,
-                                                                              NSUserDomainMask,
-                                                                              YES) firstObject];
-        NSString *directory = [applicationSupport stringByAppendingPathComponent:@"HJBleDemo/CustomCommands"];
-        [[NSFileManager defaultManager] createDirectoryAtPath:directory
-                                  withIntermediateDirectories:YES
-                                                   attributes:nil
-                                                        error:nil];
-        _cache = [YYCache cacheWithPath:directory];
+    NSString *support = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES).firstObject;
+    return [self initWithDirectory:[support stringByAppendingPathComponent:@"HJBleDemo/CustomCommands"]];
+}
+
+- (instancetype)initWithDirectory:(NSString *)directory
+{
+    if ((self = [super init])) {
+        _directory = [directory copy];
+        _jsonPath = [directory stringByAppendingPathComponent:@"commands.v1.json"];
     }
     return self;
 }
 
 - (NSArray<HJCustomCommand *> *)allCommands
 {
-    NSArray *storedCommands = (NSArray *)[self.cache objectForKey:HJCustomCommandCacheKey];
+    NSArray *storedCommands = [self storedDictionaries];
     if (![storedCommands isKindOfClass:[NSArray class]]) {
         return @[];
     }
@@ -52,6 +52,7 @@ static NSString * const HJCustomCommandIDKey = @"id";
     }
 
     NSMutableArray *commands = [self storedDictionaries].mutableCopy;
+    if (!commands) return NO;
     [commands addObject:command.dictionaryRepresentation];
     return [self saveDictionaries:commands];
 }
@@ -63,6 +64,7 @@ static NSString * const HJCustomCommandIDKey = @"id";
     }
 
     NSMutableArray *commands = [self storedDictionaries].mutableCopy;
+    if (!commands) return NO;
     for (NSUInteger index = 0; index < commands.count; index++) {
         NSDictionary *dictionary = commands[index];
         if ([dictionary[HJCustomCommandIDKey] isKindOfClass:[NSString class]] &&
@@ -81,6 +83,7 @@ static NSString * const HJCustomCommandIDKey = @"id";
     }
 
     NSMutableArray *commands = [self storedDictionaries].mutableCopy;
+    if (!commands) return NO;
     for (NSUInteger index = 0; index < commands.count; index++) {
         NSDictionary *dictionary = commands[index];
         if ([dictionary[HJCustomCommandIDKey] isKindOfClass:[NSString class]] &&
@@ -94,6 +97,7 @@ static NSString * const HJCustomCommandIDKey = @"id";
 
 - (BOOL)clearAllCommands
 {
+    if (![self storedDictionaries]) return NO;
     return [self saveDictionaries:@[]];
 }
 
@@ -106,17 +110,44 @@ static NSString * const HJCustomCommandIDKey = @"id";
 
 - (BOOL)saveDictionaries:(NSArray<NSDictionary *> *)commands
 {
-    if (!self.cache) {
-        return NO;
-    }
-    [self.cache setObject:commands forKey:HJCustomCommandCacheKey];
-    return YES;
+    NSError *error = nil;
+    NSData *data = [NSJSONSerialization dataWithJSONObject:commands options:0 error:&error];
+    BOOL saved = data != nil && [[NSFileManager defaultManager] createDirectoryAtPath:self.directory
+                            withIntermediateDirectories:YES attributes:nil error:&error] &&
+        [data writeToFile:self.jsonPath options:NSDataWritingAtomic error:&error];
+    self.lastError = error;
+    return saved;
 }
 
 - (NSArray<NSDictionary *> *)storedDictionaries
 {
-    NSArray *storedCommands = (NSArray *)[self.cache objectForKey:HJCustomCommandCacheKey];
-    return [storedCommands isKindOfClass:[NSArray class]] ? storedCommands : @[];
+    self.lastError = nil;
+    NSError *error = nil;
+    BOOL exists = [[NSFileManager defaultManager] fileExistsAtPath:self.jsonPath];
+    id value;
+    if (exists) {
+        NSData *data = [NSData dataWithContentsOfFile:self.jsonPath options:0 error:&error];
+        if (data) value = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
+    } else {
+        value = HJReadLegacyCache(self.directory, HJCustomCommandCacheKey, &error);
+        if (!value && !error) return @[];
+    }
+    BOOL valid = !error && [value isKindOfClass:NSArray.class];
+    if (valid) {
+        for (id dictionary in value) {
+            if (![[HJCustomCommand alloc] initWithDictionary:dictionary]) {
+                valid = NO;
+                break;
+            }
+        }
+    }
+    if (!valid) {
+        self.lastError = error ?: [NSError errorWithDomain:@"HJCustomCommandStore" code:1
+                       userInfo:@{NSLocalizedDescriptionKey:@"指令数据读取失败，原文件已保留"}];
+        return nil; // 禁止以空列表覆盖不可读的数据。
+    }
+    if (!exists && ![self saveDictionaries:value]) return nil;
+    return value;
 }
 
 @end

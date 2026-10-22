@@ -6,11 +6,11 @@
 //  Copyright © 2019 wuruizhi. All rights reserved.
 //
 
-#import <WiseBaseKit/WiseBaseKit.h>
+#import "HJScrollViewController.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface SetViewController : WWBaseViewController
+@interface SetViewController : HJScrollViewController
 
 // 是否支持配置模式
 @property (nonatomic, assign) BOOL isBleConfig;

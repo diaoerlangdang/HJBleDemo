@@ -8,7 +8,7 @@
 //
 
 #import "HJScanTableViewCell.h"
-#import <WiseBaseKit/WiseBaseKit.h>
+#import "HJUI.h"
 
 @interface HJScanTableViewCell()
 
@@ -53,33 +53,38 @@
 
 - (void)initView
 {
-    _nameLabel = [UILabel labelWithTextColor:WW_COLOR_HexRGB(0x333333) font:WW_Font(18)];
+    _nameLabel = HJLabel(HJColor(0x333333), [UIFont systemFontOfSize:18]);
     [self.contentView addSubview:_nameLabel];
     [_nameLabel mas_makeConstraints:^(MASConstraintMaker *make) {
         make.left.equalTo(self.contentView).offset(15);
         make.top.equalTo(self.contentView).offset(10);
+        make.right.lessThanOrEqualTo(self.contentView).offset(-110);
     }];
     
-    _rssiLabel = [UILabel labelWithTextColor:WW_COLOR_HexRGB(0x333333) font:WW_Font(14)];
+    _rssiLabel = HJLabel(HJColor(0x333333), [UIFont systemFontOfSize:14]);
     [self.contentView addSubview:_rssiLabel];
     [_rssiLabel mas_makeConstraints:^(MASConstraintMaker *make) {
         make.right.equalTo(self.contentView).offset(-15);
         make.centerY.equalTo(_nameLabel);
     }];
     
-    _timeLabel = [UILabel labelWithTextColor:WW_COLOR_HexRGB(0x333333) font:WW_Font(14)];
+    _timeLabel = HJLabel(HJColor(0x333333), [UIFont systemFontOfSize:14]);
     [self.contentView addSubview:_timeLabel];
     [_timeLabel mas_makeConstraints:^(MASConstraintMaker *make) {
         make.left.equalTo(self.contentView).offset(15);
         make.top.equalTo(_nameLabel.mas_bottom).offset(10);
-        make.bottom.equalTo(self.contentView).offset(-10);
+        make.right.lessThanOrEqualTo(self.contentView).offset(-15);
+
     }];
     
-    _macLabel = [UILabel labelWithTextColor:WW_COLOR_HexRGB(0x333333) font:WW_Font(15)];
+    _nameLabel.lineBreakMode = NSLineBreakByTruncatingTail;
+    _macLabel = HJLabel(HJColor(0x333333), [UIFont systemFontOfSize:15]);
     [self.contentView addSubview:_macLabel];
     [_macLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(self.contentView).offset(15);
         make.right.equalTo(self.contentView).offset(-15);
-        make.centerY.equalTo(_timeLabel);
+        make.top.equalTo(_timeLabel.mas_bottom).offset(6);
+        make.bottom.equalTo(self.contentView).offset(-10);
     }];
     
     
@@ -90,11 +95,10 @@
     _data = data;
     
     _rssiLabel.text = [NSString stringWithFormat:@"RSSI:%@dB",data.RSSI];
-//    _nameLabel.text = data.peripheral.name;
-    _nameLabel.text = [data.advertisementData objectForKey:CBAdvertisementDataLocalNameKey];
+    _nameLabel.text = data.peripheral.name;
     
     _timeLabel.text = [NSString stringWithFormat:@"time: %@", data.formatDateTime];
-    if (![WWUtils isEmptyString:data.mac]) {
+    if (data.mac.length > 0) {
         _macLabel.text = [NSString stringWithFormat:@"mac: %@", data.mac];
     }
     else {
@@ -107,18 +111,18 @@
 - (void)setMode:(BOOL)isEasy
 {
     if (isEasy) {
-        self.contentView.backgroundColor = WW_COLOR_HexRGB(0x1FA7D3);
-        _nameLabel.textColor = WW_COLOR_HexRGB(0xFFFFFF);
-        _rssiLabel.textColor = WW_COLOR_HexRGB(0xFFFFFF);
-        _timeLabel.textColor = WW_COLOR_HexRGB(0xFFFFFF);
-        _macLabel.textColor = WW_COLOR_HexRGB(0xFFFFFF);
+        self.contentView.backgroundColor = HJColor(0x1FA7D3);
+        _nameLabel.textColor = HJColor(0xFFFFFF);
+        _rssiLabel.textColor = HJColor(0xFFFFFF);
+        _timeLabel.textColor = HJColor(0xFFFFFF);
+        _macLabel.textColor = HJColor(0xFFFFFF);
     }
     else {
-        self.contentView.backgroundColor = WW_COLOR_HexRGB(0xFFFFFF);
-        _nameLabel.textColor = WW_COLOR_HexRGB(0x333333);
-        _rssiLabel.textColor = WW_COLOR_HexRGB(0x333333);
-        _timeLabel.textColor = WW_COLOR_HexRGB(0x333333);
-        _macLabel.textColor = WW_COLOR_HexRGB(0x333333);
+        self.contentView.backgroundColor = HJColor(0xFFFFFF);
+        _nameLabel.textColor = HJColor(0x333333);
+        _rssiLabel.textColor = HJColor(0x333333);
+        _timeLabel.textColor = HJColor(0x333333);
+        _macLabel.textColor = HJColor(0x333333);
     }
 }
 

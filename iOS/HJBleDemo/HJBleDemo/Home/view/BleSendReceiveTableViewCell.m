@@ -7,7 +7,7 @@
 //
 
 #import "BleSendReceiveTableViewCell.h"
-#import <WiseBaseKit/WiseBaseKit.h>
+#import "HJUI.h"
 
 @interface BleSendReceiveTableViewCell()
 
@@ -38,31 +38,32 @@
     //时间
     _timeLab = [[UILabel alloc] init];
     _timeLab.font = [UIFont systemFontOfSize:14];
-    [self addSubview:_timeLab];
+    [self.contentView addSubview:_timeLab];
     [_timeLab mas_makeConstraints:^(MASConstraintMaker *make) {
-        make.right.equalTo(self).offset(-10);
-        make.top.equalTo(self).offset(10);
+        make.right.equalTo(self.contentView).offset(-10);
+        make.top.equalTo(self.contentView).offset(10);
     }];
     
     //标题
     _titleLab = [[UILabel alloc] init];
     _titleLab.font = [UIFont systemFontOfSize:14];
-    [self addSubview:_titleLab];
+    [self.contentView addSubview:_titleLab];
     [_titleLab mas_makeConstraints:^(MASConstraintMaker *make) {
-        make.left.equalTo(self).offset(10);
-        make.top.equalTo(self).offset(10);
+        make.left.equalTo(self.contentView).offset(10);
+        make.right.lessThanOrEqualTo(_timeLab.mas_left).offset(-8);
+        make.top.equalTo(self.contentView).offset(10);
     }];
     
     //内容
     _contextLab = [[UILabel alloc] init];
     _contextLab.font = [UIFont systemFontOfSize:12];
     _contextLab.numberOfLines = 0;//多行
-    [self addSubview:_contextLab];
+    [self.contentView addSubview:_contextLab];
     [_contextLab mas_makeConstraints:^(MASConstraintMaker *make) {
-        make.left.equalTo(self).offset(10);
-        make.right.equalTo(self).offset(-10);
+        make.left.equalTo(self.contentView).offset(10);
+        make.right.equalTo(self.contentView).offset(-10);
         make.top.equalTo(self.titleLab.mas_bottom).offset(10);
-        make.bottom.equalTo(self).offset(-10);
+        make.bottom.equalTo(self.contentView).offset(-10);
     }];
 }
 
