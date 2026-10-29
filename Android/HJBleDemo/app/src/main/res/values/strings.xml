@@ -22,7 +22,8 @@
     <!--    软件设置-->
     <string name="software_setup">软件设置</string>
     <string name="scanning_filtering">扫描过滤</string>
-    <string name="flow_control_title">流控设置</string>
+    <string name="flow_control_title">流控检查</string>
+    <string name="flow_control_hint">连接时查询串口流控状态，下次连接生效</string>
     <string name="data_service">数据服务</string>
     <string name="version_info">版本信息</string>
 
@@ -91,6 +92,7 @@
     <string name="log_title">日志：</string>
     <string name="flow_control_disable">串口流控：禁止</string>
     <string name="flow_control_enable">串口流控：使能</string>
+    <string name="flow_control_unknown">串口流控：--</string>
     <string name="start_test_btn">开始测试</string>
     <string name="stop_test_btn">停止测试</string>
     <string name="clear_data_btn">清屏</string>

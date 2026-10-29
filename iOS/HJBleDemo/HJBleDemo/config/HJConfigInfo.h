@@ -48,6 +48,9 @@ NS_ASSUME_NONNULL_BEGIN
 // 是否过滤，默认true
 @property (nonatomic, assign) BOOL isScanFilter;
 
+// 连接时是否检查串口流控，默认false，下次连接生效
+@property (nonatomic, assign) BOOL isFlowControlCheck;
+
 // 数据主服务
 @property (nonatomic, strong) NSString *dataMainService;
 

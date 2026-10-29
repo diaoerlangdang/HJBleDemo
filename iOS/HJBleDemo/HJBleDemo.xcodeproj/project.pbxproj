@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		B20000000000000000000001 /* HJBleFlowControlCheck.m in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000003 /* HJBleFlowControlCheck.m */; };
+		B20000000000000000000002 /* HJBleFlowControlCheck.m in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000003 /* HJBleFlowControlCheck.m */; };
 		0E8D3FAE3C334FCAE3FB20BA /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = AC7F4A89B12A7644955D2F7F /* PrivacyInfo.xcprivacy */; };
 		16FB60AEE00715B4A13E5518 /* HJCustomCommandViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 6F1716F03437973DD98A023A /* HJCustomCommandViewController.m */; };
 		244606F232E377297B8C562C /* HJCustomCommandStore.m in Sources */ = {isa = PBXBuildFile; fileRef = 661EEC604398372E6747394B /* HJCustomCommandStore.m */; };
@@ -50,6 +52,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		B20000000000000000000003 /* HJBleFlowControlCheck.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = HJBleFlowControlCheck.m; sourceTree = "<group>"; };
+		B20000000000000000000004 /* HJBleFlowControlCheck.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HJBleFlowControlCheck.h; sourceTree = "<group>"; };
 		10F831F5898932D37B755667 /* HJMessageInputBar.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = HJMessageInputBar.h; sourceTree = "<group>"; };
 		1117F08FFA5E0EA3524D2163 /* Pods-HJBleDemo.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-HJBleDemo.release.xcconfig"; path = "Target Support Files/Pods-HJBleDemo/Pods-HJBleDemo.release.xcconfig"; sourceTree = "<group>"; };
 		3221E2AA6286B56651E590EC /* HJLegacyCacheReader.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = HJLegacyCacheReader.h; sourceTree = "<group>"; };
@@ -275,6 +279,8 @@
 		E9E118D022E49E6B00657309 /* model */ = {
 			isa = PBXGroup;
 			children = (
+				B20000000000000000000004 /* HJBleFlowControlCheck.h */,
+				B20000000000000000000003 /* HJBleFlowControlCheck.m */,
 				A10000000000000000000014 /* HJBleDevicePageLifecycle.h */,
 				A10000000000000000000013 /* HJBleDevicePageLifecycle.m */,
 				E9E118D222E49E6B00657309 /* HJBleScanData.h */,
@@ -496,6 +502,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B20000000000000000000002 /* HJBleFlowControlCheck.m in Sources */,
 				A10000000000000000000008 /* HJBleDevicePageLifecycle.m in Sources */,
 				A10000000000000000000004 /* HJBleDevicePageLifecycleTests.m in Sources */,
 				A10000000000000000000005 /* WiseBleWaitRegressionTests.m in Sources */,
@@ -512,6 +519,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B20000000000000000000001 /* HJBleFlowControlCheck.m in Sources */,
 				A10000000000000000000002 /* HJBleDevicePageLifecycle.m in Sources */,
 				E9E118F822E49E6C00657309 /* BleSendReceiveTableViewCell.m in Sources */,
 				E9B031D8241A59C7002E35F4 /* HJScanTableViewCell.m in Sources */,
@@ -740,7 +748,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 4.4.1;
+				MARKETING_VERSION = 4.4.2;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-lsqlite3",
@@ -769,7 +777,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 4.4.1;
+				MARKETING_VERSION = 4.4.2;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-lsqlite3",

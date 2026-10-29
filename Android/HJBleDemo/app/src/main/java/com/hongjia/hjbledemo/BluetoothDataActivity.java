@@ -77,6 +77,7 @@ public class BluetoothDataActivity extends BaseActivity {
     public static final String EXTRAS_DEVICE_IS_CONFIG = "DEVICE_IS_CONFIG";
     // 是否为流控信息
     public static final String EXTRAS_DEVICE_IS_FLOW_CONTROL = "DEVICE_IS_FLOW_CONTROL";
+    public static final String EXTRAS_DEVICE_FLOW_CONTROL_CONFIRMED = "DEVICE_FLOW_CONTROL_CONFIRMED";
 
     // 最大的分包数据
     public static final String EXTRAS_DEVICE_GROUP_LEN_MAX = "DEVICE_GROUP_LEN_MAX";
@@ -166,6 +167,7 @@ public class BluetoothDataActivity extends BaseActivity {
     // 蓝牙是否繁忙
     // 是否为流控模式
     private boolean bFlowControl = false;
+    private boolean flowControlConfirmed = false;
 
     private String fileNameSend = "";
     private String fileNameReceive = "";
@@ -193,9 +195,11 @@ public class BluetoothDataActivity extends BaseActivity {
         }
         isConfig = intent.getBooleanExtra(EXTRAS_DEVICE_IS_CONFIG, false);
         bFlowControl = intent.getBooleanExtra(EXTRAS_DEVICE_IS_FLOW_CONTROL, false);
+        flowControlConfirmed = intent.getBooleanExtra(EXTRAS_DEVICE_FLOW_CONTROL_CONFIRMED, false);
         if (deviceSession != null && deviceSession.getReadyDevice() != null) {
             isConfig = deviceSession.getReadyDevice().isConfig;
             bFlowControl = deviceSession.getReadyDevice().bFlowControl;
+            flowControlConfirmed = deviceSession.getReadyDevice().flowControlConfirmed;
         }
 
         super.onCreate(savedInstanceState);
@@ -294,9 +298,8 @@ public class BluetoothDataActivity extends BaseActivity {
         receiveRateTV = findViewById(R.id.receive_rate_tv);
         maxReceiveRateTV = findViewById(R.id.max_receive_rate_tv);
         tvFlowControl = findViewById(R.id.tv_flow_control);
-        tvFlowControl.setText(bFlowControl ? getResources().getString(R.string.flow_control_enable): getResources().getString(R.string.flow_control_disable));
-        boolean supportFlowControl = HJBleApplication.shareInstance().isFlowControl();
-        tvFlowControl.setVisibility(supportFlowControl ? View.VISIBLE : View.GONE);
+        tvFlowControl.setText(!flowControlConfirmed ? R.string.flow_control_unknown
+                : bFlowControl ? R.string.flow_control_enable : R.string.flow_control_disable);
         readVersionBtn = findViewById(R.id.read_version_btn);
         btnCustomCommands = findViewById(R.id.btn_custom_commands);
 

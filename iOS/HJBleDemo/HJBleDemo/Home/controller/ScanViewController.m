@@ -166,6 +166,7 @@
 {
     WWCharacteristic *configCharacteristic = [HJConfigInfo shareInstance].configReceiveService;
     WWCharacteristic *dataCharacteristic = [HJConfigInfo shareInstance].dataReceiveService;
+    BOOL checkFlowControl = [HJConfigInfo shareInstance].isFlowControlCheck;
     self.connectionWork = dispatch_group_create();
     __weak typeof(self) weakSelf = self;
     dispatch_group_async(self.connectionWork, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
@@ -185,7 +186,8 @@
                                                   error:&error];
         if (initialized && [self.connectionSessionToken isEqual:token]) {
             failureMessage = @"打开通知失败";
-            scanData.bFlowControl = NO;
+            scanData.flowControlState = HJBleFlowControlUnknown;
+            scanData.busy = NO;
             CBCharacteristicProperties properties = [self.ble getCharacteristicProperties:scanData.peripheral
                                                                             characteristic:configCharacteristic];
             scanData.isConfig = (properties & CBCharacteristicPropertyNotify) &&
@@ -199,23 +201,15 @@
                                                      session:token
                                                         time:5000
                                                        error:&error];
-                if (initialized && [self.connectionSessionToken isEqual:token]) {
+                if (initialized && checkFlowControl && [self.connectionSessionToken isEqual:token]) {
                     CBCharacteristicWriteType type = (properties & CBCharacteristicPropertyWrite)
                         ? CBCharacteristicWriteWithResponse : CBCharacteristicWriteWithoutResponse;
-                    NSData *recvData = [self.ble sendReceive:scanData.peripheral
-                                            characteristic:configCharacteristic
-                                                     value:[NSData unicodeToUtf8:@"<RD_UART_FC>"]
-                                                      type:type
-                                    responseCharacteristic:configCharacteristic
-                                                   session:token
-                                                packetSize:20
-                                                      time:5000
-                                                     error:&error];
-                    // 请求失败后停止初始化，避免继续使用仍隔离着迟到响应的连接。
-                    initialized = recvData != nil;
-                    if (recvData != nil) {
-                        scanData.bFlowControl = [[NSString utf8ToUnicode:recvData] isEqualToString:@"<rd_uart_fc=1>"];
-                    }
+                    HJBleFlowControlCheck *check = [[HJBleFlowControlCheck alloc] init];
+                    initialized = [check checkWithBLE:self.ble peripheral:scanData.peripheral
+                                      characteristic:configCharacteristic session:token type:type
+                                             timeout:5000 error:&error];
+                    scanData.flowControlState = check.state;
+                    scanData.busy = check.busy;
                     failureMessage = @"查询流控失败";
                 }
             }

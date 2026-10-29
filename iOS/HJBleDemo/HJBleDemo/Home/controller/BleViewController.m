@@ -93,6 +93,7 @@
     _sendQueue = dispatch_queue_create("com.hongjia.HJBleDemo.send", DISPATCH_QUEUE_SERIAL);
     
     _peripheral = _scanData.peripheral;
+    _bBusyBle = _scanData.busy;
     if (!_scanData.isConfig) {
         [HJConfigInfo shareInstance].isBleConfig = false;
     }
@@ -266,7 +267,11 @@
     [self setReceiveByteCount:0];
     [self showRecCountBySecond:0];
     [self showAverageSendCountBySecond:0];
-    _flowControlLabel.text = self.scanData.bFlowControl ? @"串口流控：使能" : @"串口流控：禁止";
+    switch (self.scanData.flowControlState) {
+        case HJBleFlowControlEnabled: _flowControlLabel.text = @"串口流控：使能"; break;
+        case HJBleFlowControlDisabled: _flowControlLabel.text = @"串口流控：禁止"; break;
+        default: _flowControlLabel.text = @"串口流控：--"; break;
+    }
 }
 
 - (void)setSendByteCount:(NSInteger)count

@@ -1,6 +1,7 @@
 #import <XCTest/XCTest.h>
 #import <wiseBle/WWBluetoothLE.h>
 #import "HJBleDevicePageLifecycle.h"
+#import "HJBleFlowControlCheck.h"
 
 @interface WWBluetoothLE (HJBleTesting)
 - (instancetype)initWithCentralManager:(CBCentralManager *)centralManager queue:(dispatch_queue_t)queue;
@@ -37,6 +38,8 @@
 @property (nonatomic, copy) NSArray *services;
 @property (nonatomic, strong) NSMutableArray<NSData *> *packets;
 @property (nonatomic, copy) void (^writeHandler)(HJSDKFakeCharacteristic *characteristic);
+@property (nonatomic, strong) NSError *writeError;
+@property (nonatomic, assign) BOOL suppressWriteCompletion;
 @end
 
 @implementation HJSDKFakePeripheral
@@ -63,9 +66,9 @@
 {
     [self.packets addObject:data];
     if (self.writeHandler) { self.writeHandler(characteristic); }
-    if (type == CBCharacteristicWriteWithResponse) {
+    if (type == CBCharacteristicWriteWithResponse && !self.suppressWriteCompletion) {
         dispatch_async(self.queue, ^{
-            [self.delegate peripheral:(id)self didWriteValueForCharacteristic:(id)characteristic error:nil];
+            [self.delegate peripheral:(id)self didWriteValueForCharacteristic:(id)characteristic error:self.writeError];
         });
     }
 }
@@ -269,6 +272,148 @@
         [finished fulfill];
     });
     [self waitForExpectations:@[received, finished] timeout:2];
+}
+
+- (void)checkFlowControlReplies:(NSArray<NSString *> *)replies
+                          type:(CBCharacteristicWriteType)type
+                         state:(HJBleFlowControlState)state
+                          busy:(BOOL)busy
+{
+    [self prepareDevice];
+    NSUUID *session = [NSUUID UUID];
+    WWCharacteristic *config = [[WWCharacteristic alloc] initWithServiceID:@"FFF0" characteristicID:@"FFF3"];
+    WWCharacteristic *send = [[WWCharacteristic alloc] initWithServiceID:@"FFF0" characteristicID:@"FFF2"];
+    __weak typeof(self) weakSelf = self;
+    self.peripheralA.writeHandler = ^(HJSDKFakeCharacteristic *characteristic) {
+        __strong typeof(weakSelf) self = weakSelf;
+        if (![characteristic.UUID isEqual:[CBUUID UUIDWithString:@"FFF3"]]) { return; }
+        for (NSString *reply in replies) {
+            characteristic.value = [reply dataUsingEncoding:NSUTF8StringEncoding];
+            [self.peripheralA.delegate peripheral:(id)self.peripheralA didUpdateValueForCharacteristic:(id)characteristic error:nil];
+        }
+    };
+    XCTestExpectation *finished = [self expectationWithDescription:@"flow check and subsequent send"];
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        NSError *error = nil;
+        CBPeripheral *peripheral = (id)self.peripheralA;
+        XCTAssertTrue([self.ble synchronizedConnect:peripheral session:session time:500 maxAttempts:1 cleanupTime:200 error:&error]);
+        XCTAssertTrue([self.ble synchronizedSetNotify:peripheral characteristic:config enable:YES session:session time:500 error:&error]);
+        HJBleFlowControlCheck *check = [[HJBleFlowControlCheck alloc] init];
+        XCTAssertTrue([check checkWithBLE:self.ble peripheral:peripheral characteristic:config session:session type:type timeout:150 error:&error]);
+        XCTAssertEqual(check.state, state);
+        XCTAssertEqual(check.busy, busy);
+        XCTAssertNil(error);
+        // 无回复时仍须真实调用 Pod 发送成功，防止只保持了表面上的连接。
+        XCTAssertTrue([self.ble synchronizedSend:peripheral characteristic:send value:[NSData dataWithBytes:"ok" length:2]
+                                          type:CBCharacteristicWriteWithResponse session:session packetSize:20 time:500 error:&error]);
+        XCTAssertTrue([self.ble isSessionActive:session peripheral:peripheral]);
+        XCTAssertEqual(self.central.disconnectCount, 0U);
+        XCTAssertEqual(self.peripheralA.packets.count, 2U);
+        XCTAssertEqualObjects(self.peripheralA.packets.firstObject, [@"<RD_UART_FC>" dataUsingEncoding:NSUTF8StringEncoding]);
+        [finished fulfill];
+    });
+    [self waitForExpectations:@[finished] timeout:2];
+}
+
+- (void)testFlowCheckWithoutReplyAllowsSubsequentSend
+{
+    [self checkFlowControlReplies:@[] type:CBCharacteristicWriteWithResponse state:HJBleFlowControlUnknown busy:NO];
+}
+
+- (void)testFlowCheckWithoutResponseWriteAllowsSubsequentSend
+{
+    [self checkFlowControlReplies:@[] type:CBCharacteristicWriteWithoutResponse state:HJBleFlowControlUnknown busy:NO];
+}
+
+- (void)testFlowCheckUnknownReplyDoesNotMeanDisabled
+{
+    [self checkFlowControlReplies:@[@"unsupported"] type:CBCharacteristicWriteWithResponse state:HJBleFlowControlUnknown busy:NO];
+}
+
+- (void)testFlowCheckBusyReportDoesNotConsumeEnabledReply
+{
+    [self checkFlowControlReplies:@[@"<HJ_BLE_BUSY_STOP_SEND>", @"<rd_uart_fc=1>"]
+                            type:CBCharacteristicWriteWithResponse state:HJBleFlowControlEnabled busy:YES];
+}
+
+- (void)testFlowCheckIdleReportRestoresSendingAndDisabledReplyIsRecognized
+{
+    [self checkFlowControlReplies:@[@"<HJ_BLE_BUSY_STOP_SEND>", @"<HJ_BLE_IDLE_START_SEND>", @"<rd_uart_fc=0>"]
+                            type:CBCharacteristicWriteWithResponse state:HJBleFlowControlDisabled busy:NO];
+}
+
+- (void)testFlowCheckIgnoresWrongDeviceSessionAndCharacteristic
+{
+    [self prepareDevice];
+    NSUUID *session = [NSUUID UUID];
+    WWCharacteristic *config = [[WWCharacteristic alloc] initWithServiceID:@"FFF0" characteristicID:@"FFF3"];
+    __weak typeof(self) weakSelf = self;
+    self.peripheralA.writeHandler = ^(HJSDKFakeCharacteristic *characteristic) {
+        __strong typeof(weakSelf) self = weakSelf;
+        dispatch_async(dispatch_get_main_queue(), ^{
+            for (NSUInteger i = 0; i < 3; i++) {
+                NSDictionary *info = @{WWBLEPeripheralKey: i == 0 ? (id)self.peripheralB : (id)self.peripheralA,
+                                       WWBLESessionKey: i == 1 ? [NSUUID UUID] : session,
+                                       WWBLECharacteristicKey: i == 2 ? [[WWCharacteristic alloc] initWithServiceID:@"FFF0" characteristicID:@"FFF1"] : config,
+                                       WWBLEDataKey:[@"<rd_uart_fc=1>" dataUsingEncoding:NSUTF8StringEncoding]};
+                [[NSNotificationCenter defaultCenter] postNotificationName:WWBLEDidReceiveDataNotification object:self.ble userInfo:info];
+            }
+        });
+    };
+    XCTestExpectation *finished = [self expectationWithDescription:@"unrelated notifications ignored"];
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        XCTAssertTrue([self.ble synchronizedConnect:(id)self.peripheralA session:session time:500 maxAttempts:1 cleanupTime:200 error:NULL]);
+        HJBleFlowControlCheck *check = [[HJBleFlowControlCheck alloc] init];
+        XCTAssertTrue([check checkWithBLE:self.ble peripheral:(id)self.peripheralA characteristic:config session:session
+                                   type:CBCharacteristicWriteWithResponse timeout:150 error:NULL]);
+        XCTAssertEqual(check.state, HJBleFlowControlUnknown);
+        [finished fulfill];
+    });
+    [self waitForExpectations:@[finished] timeout:2];
+}
+
+- (void)testFlowCheckWriteFailureAndWriteTimeoutRemainFailures
+{
+    for (NSNumber *timeout in @[@NO, @YES]) {
+        [self prepareDevice];
+        self.peripheralA.writeError = [NSError errorWithDomain:CBATTErrorDomain code:CBATTErrorWriteNotPermitted userInfo:nil];
+        self.peripheralA.suppressWriteCompletion = timeout.boolValue;
+        NSUUID *session = [NSUUID UUID];
+        WWCharacteristic *config = [[WWCharacteristic alloc] initWithServiceID:@"FFF0" characteristicID:@"FFF3"];
+        XCTestExpectation *finished = [self expectationWithDescription:@"write failure remains fatal"];
+        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+            XCTAssertTrue([self.ble synchronizedConnect:(id)self.peripheralA session:session time:500 maxAttempts:1 cleanupTime:200 error:NULL]);
+            HJBleFlowControlCheck *check = [[HJBleFlowControlCheck alloc] init];
+            NSError *error = nil;
+            XCTAssertFalse([check checkWithBLE:self.ble peripheral:(id)self.peripheralA characteristic:config session:session
+                                        type:CBCharacteristicWriteWithResponse timeout:150 error:&error]);
+            XCTAssertEqual(error.code, timeout.boolValue ? WWBLEErrorTimedOut : WWBLEErrorOperationFailed);
+            XCTAssertEqual(check.state, HJBleFlowControlUnknown);
+            [self.ble disconnect:(id)self.peripheralA session:session error:NULL];
+            [finished fulfill];
+        });
+        [self waitForExpectations:@[finished] timeout:2];
+    }
+}
+
+- (void)testFlowCheckCancellationDoesNotWaitForResponseTimeout
+{
+    [self prepareDevice];
+    NSUUID *session = [NSUUID UUID];
+    WWCharacteristic *config = [[WWCharacteristic alloc] initWithServiceID:@"FFF0" characteristicID:@"FFF3"];
+    XCTestExpectation *written = [self expectationWithDescription:@"query written"];
+    self.peripheralA.writeHandler = ^(HJSDKFakeCharacteristic *characteristic) { [written fulfill]; };
+    XCTestExpectation *finished = [self expectationWithDescription:@"cancelled without waiting five seconds"];
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        XCTAssertTrue([self.ble synchronizedConnect:(id)self.peripheralA session:session time:500 maxAttempts:1 cleanupTime:200 error:NULL]);
+        HJBleFlowControlCheck *check = [[HJBleFlowControlCheck alloc] init];
+        XCTAssertFalse([check checkWithBLE:self.ble peripheral:(id)self.peripheralA characteristic:config session:session
+                                    type:CBCharacteristicWriteWithResponse timeout:5000 error:NULL]);
+        [finished fulfill];
+    });
+    [self waitForExpectations:@[written] timeout:1];
+    [self.ble disconnect:(id)self.peripheralA session:session error:NULL];
+    [self waitForExpectations:@[finished] timeout:0.5];
 }
 
 - (void)testPowerLossCleanupAndReconnectKeepOldPageFromDisconnectingNewSession

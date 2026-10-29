@@ -55,11 +55,22 @@
             android:layout_height="wrap_content"
             android:layout_alignParentEnd="true"
             android:layout_centerVertical="true"
+            android:contentDescription="@string/flow_control_title"
             android:switchMinWidth="20dp"
             android:thumb="@drawable/switch_thumb"
             android:track="@drawable/switch_track"/>
 
     </RelativeLayout>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
+        android:paddingStart="15dp"
+        android:paddingEnd="15dp"
+        android:textColor="#666"
+        android:textSize="12sp"
+        android:text="@string/flow_control_hint"/>
 
     <RelativeLayout
         android:id="@+id/rl_data_service"

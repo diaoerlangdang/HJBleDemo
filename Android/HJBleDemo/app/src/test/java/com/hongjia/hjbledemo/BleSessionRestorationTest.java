@@ -53,6 +53,7 @@ public class BleSessionRestorationTest {
         ready.device = device;
         ready.isConfig = true;
         ready.bFlowControl = true;
+        ready.flowControlConfirmed = true;
         ready.mtuLen = 244;
         session.setPacketLength(244);
         try (MockedStatic<BleManager> singleton = mockStatic(BleManager.class)) {
@@ -68,6 +69,7 @@ public class BleSessionRestorationTest {
             advertisement.device = device;
             list.addDevice(advertisement);
             assertTrue(list.getScanDeviceInfo(0).bFlowControl);
+            assertTrue(list.getScanDeviceInfo(0).flowControlConfirmed);
             assertEquals(244, list.getScanDeviceInfo(0).mtuLen);
             session.disconnect(device);
             assertFalse(BleDeviceSession.isReady(device));

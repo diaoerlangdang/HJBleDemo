@@ -7,6 +7,7 @@
 //
 
 #import <CoreBluetooth/CoreBluetooth.h>
+#import "HJBleFlowControlCheck.h"
 
 @interface HJBleScanData : NSObject
 
@@ -18,8 +19,10 @@
 @property (nonatomic, assign) BOOL isEasy;
 // 是否支持配置
 @property (nonatomic, assign) BOOL isConfig;
-// 是否支持流控
-@property (nonatomic, assign) BOOL bFlowControl;
+// 本次连接查询确认的流控状态，未查询或未确认时为 Unknown
+@property (nonatomic, assign) HJBleFlowControlState flowControlState;
+// 初始化期间收到的设备忙状态
+@property (nonatomic, assign) BOOL busy;
 // 最大发送数据长度
 @property (nonatomic, assign) NSInteger sendDataLenMax;
 

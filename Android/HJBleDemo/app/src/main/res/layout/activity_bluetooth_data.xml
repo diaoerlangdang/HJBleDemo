@@ -150,7 +150,7 @@
                 android:layout_toEndOf="@id/ll_log"
                 android:layout_centerVertical="true"
                 android:textSize="10sp"
-                android:text="@string/flow_control_disable"/>
+                android:text="@string/flow_control_unknown"/>
 
 
         </RelativeLayout>

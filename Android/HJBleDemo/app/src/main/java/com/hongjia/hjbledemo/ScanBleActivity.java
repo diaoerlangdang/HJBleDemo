@@ -108,6 +108,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
         final AtomicBoolean cancelled = new AtomicBoolean();
         final BleDevice device;
         final BleDeviceSession session;
+        final boolean checkFlowControl;
         final WiseWaitEvent recvEvent = new WiseWaitEvent();
         final StringBuilder response = new StringBuilder();
         volatile boolean waitingForFlow;
@@ -116,6 +117,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
         ConnectionWork(BleDevice device) {
             this.device = device;
             session = BleDeviceSession.begin(device);
+            checkFlowControl = HJBleApplication.shareInstance().isFlowControl();
         }
     }
 
@@ -299,6 +301,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
         final Intent intent = new Intent(ScanBleActivity.this, BluetoothDataActivity.class);
         intent.putExtra(BluetoothDataActivity.EXTRAS_DEVICE_IS_CONFIG, scanDevice.isConfig);
         intent.putExtra(BluetoothDataActivity.EXTRAS_DEVICE_IS_FLOW_CONTROL, scanDevice.bFlowControl);
+        intent.putExtra(BluetoothDataActivity.EXTRAS_DEVICE_FLOW_CONTROL_CONFIRMED, scanDevice.flowControlConfirmed);
         intent.putExtra(BluetoothDataActivity.EXTRAS_DEVICE_GROUP_LEN_MAX, scanDevice.mtuLen);
 
         intent.putExtra(BluetoothDataActivity.EXTRAS_DEVICE, scanDevice.device);
@@ -460,7 +463,7 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
                         String response = work.response.toString();
                         String value = response.contains("<rd_uart_fc=1>") ? "<rd_uart_fc=1>"
                                 : response.contains("<rd_uart_fc=0>") ? "<rd_uart_fc=0>" : null;
-                        if (value != null) {
+                        if (value != null && work.flowResponse == null) {
                             work.flowResponse = ConvertData.utf8ToBytes(value);
                             work.recvEvent.setSignal(WiseWaitEvent.SUCCESS);
                         }
@@ -503,9 +506,11 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
         return true;
     }
 
-    static byte[] sendRecvData(BleManager manager, BleDevice device, WiseCharacteristic send,
-                                       byte[] data, ConnectionWork work) {
-        if (isConnectionCancelled(work)) return null;
+    static boolean checkFlowControl(BleManager manager, HJBleScanDevice scanDevice, ConnectionWork work) {
+        scanDevice.flowControlConfirmed = false;
+        scanDevice.bFlowControl = false;
+        if (isConnectionCancelled(work)) return false;
+        if (!work.checkFlowControl || !scanDevice.isConfig) return true;
         synchronized (work.response) {
             work.response.setLength(0);
             work.flowResponse = null;
@@ -513,12 +518,24 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
             work.waitingForFlow = true;
         }
         try {
-            if (sendDataSynchronization(manager, device, send, data, work)
-                    && !isConnectionCancelled(work)
-                    && work.recvEvent.waitSignal(5000) == WiseWaitEvent.SUCCESS) return work.flowResponse;
-            return null;
+            if (!sendDataSynchronization(manager, scanDevice.device, BleConfig.Ble_Config_Send_Service,
+                    ConvertData.utf8ToBytes("<RD_UART_FC>"), work) || isConnectionCancelled(work)) return false;
+            int result = work.recvEvent.waitSignal(5000);
+            if (isConnectionCancelled(work)) return false;
+            // 写入成功但无有效业务回复时保持未确认，继续初始化。
+            synchronized (work.response) {
+                if (result == WiseWaitEvent.SUCCESS && work.flowResponse != null) {
+                    scanDevice.flowControlConfirmed = true;
+                    scanDevice.bFlowControl = "<rd_uart_fc=1>".equals(ConvertData.bytesToUtf8(work.flowResponse));
+                }
+            }
+            return true;
         } finally {
-            work.waitingForFlow = false;
+            synchronized (work.response) {
+                work.waitingForFlow = false;
+                work.response.setLength(0);
+                work.flowResponse = null;
+            }
         }
     }
 
@@ -632,7 +649,6 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
                         }
                     });
 
-                    scanDevice.bFlowControl = false;
                     scanDevice.isConfig = isSupportConfigService(bleManager, scanDevice.device);
 
 
@@ -657,13 +673,8 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
                     scanDevice.mtuLen = mtuLen;
                     cancellation.session.setPacketLength(mtuLen);
 
-                    // 是否为流控模式
-                    boolean bFlowControl = false;
-
-                    boolean supportFlowControl = HJBleApplication.shareInstance().isFlowControl();
-
                     // 支持配置模式的设备，获取是否为流控模式
-                    if (scanDevice.isConfig && supportFlowControl) {
+                    if (scanDevice.isConfig && cancellation.checkFlowControl) {
                         runConnectionUi(cancellation, new Runnable() {
                             @Override
                             public void run() {
@@ -671,17 +682,10 @@ public class ScanBleActivity extends BaseActivity implements EasyPermissions.Per
                                 loadingDialog.setMessage(getResources().getString(R.string.reading_flow_control));
                             }
                         });
-
-                        byte[] cmd = ConvertData.utf8ToBytes("<RD_UART_FC>");
-                        byte[] recv = sendRecvData(bleManager, scanDevice.device, BleConfig.Ble_Config_Send_Service, cmd, cancellation);
-                        if (recv == null) {
-                            showConnectionFailure(cancellation);
-                            return;
-                        }
-                        bFlowControl = "<rd_uart_fc=1>".equals(ConvertData.bytesToUtf8(recv));
-
-                        scanDevice.bFlowControl = bFlowControl;
-
+                    }
+                    if (!checkFlowControl(bleManager, scanDevice, cancellation)) {
+                        showConnectionFailure(cancellation);
+                        return;
                     }
 
                     if (isConnectionCancelled(cancellation)) {

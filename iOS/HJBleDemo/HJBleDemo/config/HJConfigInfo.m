@@ -128,6 +128,16 @@
     [_cache setObject:@(isScanFilter) forKey:@"isScanFilter"];
 }
 
+- (BOOL)isFlowControlCheck
+{
+    return [[_cache objectForKey:@"isFlowControlCheck"] boolValue];
+}
+
+- (void)setIsFlowControlCheck:(BOOL)isFlowControlCheck
+{
+    [_cache setObject:@(isFlowControlCheck) forKey:@"isFlowControlCheck"];
+}
+
 - (NSString *)dataMainService
 {
     NSString *tmp = (NSString *)[_cache objectForKey:@"dataMainService"];

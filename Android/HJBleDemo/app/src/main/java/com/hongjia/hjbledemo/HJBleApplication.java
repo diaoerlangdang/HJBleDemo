@@ -65,7 +65,7 @@ public class HJBleApplication extends Application {
         SPUtils.put(getAppContext(), "isScanFilter", scanFilter);
     }
 
-    // 是否支持流控
+    // 连接时是否查询串口流控，默认关闭，下次连接生效
     public boolean isFlowControl() {
         Boolean flowControl = (Boolean)SPUtils.get(getAppContext(), "isFlowControl", false);
         return flowControl.booleanValue();

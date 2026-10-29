@@ -15,6 +15,7 @@
 
 // 扫描过滤
 @property(nonatomic, strong) UISwitch *filterSwitch;
+@property(nonatomic, strong) UISwitch *flowControlSwitch;
 
 @end
 
@@ -31,6 +32,8 @@
     [_filterSwitch addTarget:self action:@selector(onChangeFilter) forControlEvents:UIControlEventValueChanged];
     
     _filterSwitch.on = [HJConfigInfo shareInstance].isScanFilter;
+    [_flowControlSwitch addTarget:self action:@selector(onChangeFlowControl) forControlEvents:UIControlEventValueChanged];
+    _flowControlSwitch.on = [HJConfigInfo shareInstance].isFlowControlCheck;
 }
 
 - (void)initView {
@@ -55,6 +58,33 @@
     }];
     
     lastView = filterView;
+
+    // 流控检查
+    UIView *flowControlView = [self createItemView:@"流控检查"];
+    _flowControlSwitch = [[UISwitch alloc] init];
+    _flowControlSwitch.accessibilityLabel = @"流控检查";
+    _flowControlSwitch.accessibilityHint = @"连接时查询串口流控状态，下次连接生效";
+    [flowControlView addSubview:_flowControlSwitch];
+    [_flowControlSwitch mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.centerY.equalTo(flowControlView);
+        make.right.equalTo(flowControlView).offset(-15);
+    }];
+    [self.contentView addSubview:flowControlView];
+    [flowControlView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.right.equalTo(self.contentView);
+        make.top.equalTo(lastView.mas_bottom).offset(10);
+        make.height.equalTo(@(VIEW_HEIGHT));
+    }];
+    UILabel *flowControlHint = HJLabel(HJColor(0x666666), [UIFont systemFontOfSize:12]);
+    flowControlHint.text = @"连接时查询串口流控状态，下次连接生效";
+    flowControlHint.numberOfLines = 0;
+    [self.contentView addSubview:flowControlHint];
+    [flowControlHint mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.equalTo(self.contentView).offset(15);
+        make.right.equalTo(self.contentView).offset(-15);
+        make.top.equalTo(flowControlView.mas_bottom).offset(5);
+    }];
+    lastView = flowControlHint;
     
     // 数据服务
     UIView *dataServiceView = [self createItemView:@"数据服务"];
@@ -125,6 +155,11 @@
     BleServiceConfigViewController *vc = [[BleServiceConfigViewController alloc] init];
     [self.navigationController pushViewController:vc animated:true];
 
+}
+
+- (void)onChangeFlowControl
+{
+    [HJConfigInfo shareInstance].isFlowControlCheck = _flowControlSwitch.on;
 }
 
 

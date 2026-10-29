@@ -20,7 +20,8 @@ public class HJBleScanDevice implements Comparable<HJBleScanDevice> {
     public boolean bMtu;
     // 减过3了
     public int mtuLen;
-    //
+    // 本次连接是否已确认串口流控状态
+    public boolean flowControlConfirmed;
     public boolean bFlowControl;
 
     // 时间

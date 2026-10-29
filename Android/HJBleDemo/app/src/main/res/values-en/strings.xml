@@ -22,7 +22,8 @@
     <!--    软件设置-->
     <string name="software_setup">Software setup</string>
     <string name="scanning_filtering">Scanning filtering</string>
-    <string name="flow_control_title">Flow Control</string>
+    <string name="flow_control_title">Flow Control Check</string>
+    <string name="flow_control_hint">Query UART flow control status when connecting. Changes apply to the next connection.</string>
     <string name="data_service">Data service</string>
     <string name="version_info">Version information</string>
 
@@ -90,6 +91,7 @@
     <string name="log_title">Log：</string>
     <string name="flow_control_disable">Flow control：disable</string>
     <string name="flow_control_enable">Flow control：enable</string>
+    <string name="flow_control_unknown">Flow control：--</string>
     <string name="start_test_btn">Start test</string>
     <string name="stop_test_btn">Stop test</string>
     <string name="clear_data_btn">Clear Data</string>
